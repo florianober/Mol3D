@@ -110,23 +110,9 @@ contains
 !~         CALL parse('R_in2',R_in2,'input/input.dat')
 !~         CALL parse('R_ou2',R_ou2,'input/input.dat')
         
-!~         IF ( (P_xy >= 20.0_r2) .and. (P_xy < model%r_ou) ) THEN
-!~            P_h     = 20.0_r2 * (P_xy/100.0_r2)**1.125_r2
-!~            density = (P_xy/100.0_r2)**(-2.625_r2)  *  exp( -0.5_r2 * (P_z/P_h)**2 )
-!~            !density = 100.0_r2
-!~         ELSE
-!~            density = 0.0_r2
-!~         END IF
-!~         print *, caco(2)
-!~         IF  (abs(caco(2)) .lt. 5) print *, 'here'
-!~         IF ( (P_z .lt. 5) .and. (abs(caco(1)-95.0) .lt. 5) .and. (abs(caco(2)) .lt. 5) ) THEN
-!~             density = 100.0_r2
-!~             print *, 'here'
-!~         ELSE
-!~             density = 0.0_r2
-!~         END IF
-!~         print *, (P_xy > R_ou2 .or. P_xy < R_in2), (P_xy >= model%r_in) .and. (P_xy < model%r_ou)
-        IF ( (P_xy >= model%r_in) .and. (P_xy < model%r_ou) .and. (P_xy > R_ou2 .or. P_xy < R_in2) ) THEN
+        #IF ( (P_xy >= model%r_in) .and. (P_xy < model%r_ou) .and. (P_xy > R_ou2 .or. P_xy < R_in2) ) THEN
+        IF ( (P_xy >= model%r_in) .and. (P_xy < model%r_ou) ) THEN
+
             P_h     = 20.0_r2 * (P_xy/100.0_r2)**1.125_r2
             density = (P_xy/100.0_r2)**(-2.625_r2)  *  exp( -0.5_r2 * (P_z/P_h)**2 )
         ELSE
