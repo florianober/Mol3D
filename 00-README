@@ -1,0 +1,28 @@
+===============================================================================
+mol3d: 3d RLT code based on mc3d v.4.x
+
+--------
+author:         Florian Ober
+version:        Feb 2014
+email:          fober@astrophysik.uni-kiel.de
+
+--------
+mc3d by S.Wolf 	[SW: wolf@astrophysik.uni-kiel.de]
+--------
+===============================================================================
+
+---
+[A]  Preparations
+--- 
+(1)
+You may have to (re-)compile the code:
+
+>make new
+
+The default compiler is intel fortran compiler.
+You can change the compiler in the make process by
+
+>make FC=gfortran new
+
+For more options on the make process check out
+>make help

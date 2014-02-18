@@ -1,0 +1,40 @@
+# generic files to ignore
+# backup files (*~) and vim swap file (.swp), MacOS dir file (.DS_Store)
+
+*~
+*.lock
+*.swp
+*.out
+*.log
+*.backup
+*#
+*.aux
+*.bbl
+*.blg
+*.toc
+*.bib
+*.lof
+*.lot
+*.dvi
+
+#ignore python load files
+*.pyc
+
+#ignore generated .class files
+*.class
+*.out
+*.in
+
+#ignore mcmol3d specific files / directories
+results/
+build/
+mol3d
+#ignore pictures, pdf, ...
+
+*.jpg
+*.gif
+*.pdf
+*.png
+
+#except this file
+!.gitignore

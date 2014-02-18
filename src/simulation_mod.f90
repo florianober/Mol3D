@@ -1,0 +1,639 @@
+MODULE simulation_mod
+
+    USE datatype
+    USE var_globalnew
+
+    USE basic_type
+    USE randgen_type
+    USE fluxes_type
+    USE model_type
+    USE grid_type
+    USE gas_type
+    USE dust_type
+    
+    USE grd_mod
+    USE math_mod
+    USE tools_mod
+    USE fileio
+    USE transfer_mod
+    USE string_mod
+    USE error_mod
+    USE lvlpop_mod
+    USE temp_mod
+    USE linkedlist_mod
+    
+    IMPLICIT NONE
+    
+    !--------------------------------------------------------------------------!
+    PRIVATE :: get_intensity_px
+    !--------------------------------------------------------------------------!
+    PUBLIC :: run_simu!, primary_temp, primary_scatt, dust_RT
+    !--------------------------------------------------------------------------!
+CONTAINS
+
+    SUBROUTINE run_simu(basics, fluxes ,grid , model, dust, gas)
+    
+    IMPLICIT NONE
+    !--------------------------------------------------------------------------!
+    TYPE(Basic_TYP),INTENT(IN)                       :: basics
+    TYPE(Fluxes_TYP),INTENT(INOUT)                   :: fluxes
+    TYPE(Grid_TYP),INTENT(INOUT)                     :: grid
+    TYPE(Model_TYP),INTENT(IN)                       :: model
+    TYPE(Dust_TYP),INTENT(IN)                        :: dust
+    TYPE(Gas_TYP),INTENT(INOUT)                      :: gas
+    
+    TYPE(l_list), POINTER                            :: pixel_list => null()
+    TYPE(Pixel_TYP), POINTER                         :: pixel_p => null()
+    
+    !--------------------------------------------------------------------------!   
+    !logical :: in_front, kill_photon
+    
+    INTEGER                       :: i_map, i_r, i, j, no_pixel, k
+         
+    INTEGER,DIMENSION(0:2*model%n_bin_map,0:2*model%n_bin_map)  :: counter
+    INTEGER,DIMENSION(:,:),ALLOCATABLE                          :: notopx
+    
+    REAL(kind=r2)                 :: hd_stepwidth, dz_min, hd_rmax, t1, t2
+         
+    REAL(KIND=r2)                 :: rho_size_i, rho_size_j   ! [AU]
+    REAL(KIND=r2)                 :: pix_res_i, pix_res_j     ! pixelsize [arcsec]
+    REAL(KIND=r2)                 :: unit_value               ! unit conversion 
+    
+    real(kind=r2), dimension(1:2) :: coor_map
+    real(kind=r2), dimension(1:3) :: ex, ey
+    !real(kind=r2), dimension(:), allocatable   :: hd_stokes_ray
+    !real(kind=r2), dimension(:,:), allocatable :: kappa_old, kappa_new, kappa_mean
+    REAL(kind=r2), dimension(:,:), allocatable :: calc_px
+    REAL(kind=r2), dimension(:,:,:), allocatable :: inten_px
+    
+    
+    !--------------------------------------------------------------------------!
+    print *,''                                                    
+    print *,'starting simulation [level 4]'
+    
+    ! --- calculate or set temperature
+    print *,' setting temperature distribution'
+    CALL set_temperature(basics, grid, model, dust, gas, fluxes)
+    
+    ! --- save all results for later use
+    CALL save_model(grid, basics)
+    
+    
+    ! --- calculate level populations
+    print *,' calculation of level populations'
+    CALL calc_lvlpop(basics, grid , model, gas)
+
+    IF (basics%do_raytr) THEN
+    
+        hd_stepwidth = 0.2_r2
+        
+        ! 1. allocations
+       
+        ! 2. define step width = f(radial grid cell index)
+        dz_min = grid%co_mx_a(grid%n(1))
+        do i_r=1,grid%n(1)
+            if ( (grid%co_mx_a(i_r) - grid%co_mx_a(i_r-1)) < dz_min ) then
+              dz_min = grid%co_mx_a(i_r) - grid%co_mx_a(i_r-1)
+            end if
+        end do
+        dz_min = hd_stepwidth * dz_min
+        
+        ! maximum radial distance of a pixel to center [in pixel units]
+        hd_rmax = real(model%n_bin_map,kind=r2) * sqrt(2.0_r2)
+           
+        ! ---
+        ! raytracing
+        print *, "Raytracing started ..."
+
+        
+        do i_map=1, model%n_map               ! orientation of the map
+!~             print *, "    - Map #", i_map, " of ", model%n_map
+           
+            !unity vector pointing to the observer  
+                
+            grid%dir_xyz(1) = sin(model%th_map(i_map)) * sin(basics%PI2-model%ph_map(i_map))
+            grid%dir_xyz(2) = sin(model%th_map(i_map)) * sin(model%ph_map(i_map))
+            grid%dir_xyz(3) = sin(basics%PI2-model%th_map(i_map))
+            !print '(3(ES15.6E3))',grid%dir_xyz
+            
+            ! vector marking the +x-direction in the map
+            
+            ex(1) = -sin(model%ph_map(i_map))
+            ex(2) =  sin(basics%PI2-model%ph_map(i_map))
+            ex(3) =  0.0_r2
+            
+            ! vector marking the +y-direction in the map
+            
+            ey(1) = sin(basics%PI2-model%th_map(i_map)) * (-sin(basics%PI2-model%ph_map(i_map)))
+            ey(2) = sin(basics%PI2-model%th_map(i_map)) * (-sin(model%ph_map(i_map)))
+            ey(3) = sin(model%th_map(i_map))
+            
+            
+            ! calculate the size of each px  
+            rho_size_i = model%r_ou/(REAL(model%n_bin_map,KIND=r2)+0.5_r2)/model%zoom_map(1)   !user unit, but should be fixed to [AU]
+            rho_size_j = model%r_ou/(REAL(model%n_bin_map,KIND=r2)+0.5_r2)/model%zoom_map(1)   !user unit, but should be fixed to [AU]
+            
+            pix_res_i  = rho_size_i/model%distance *PI /(3600.0_r2*180.0_r2)
+            pix_res_j  = rho_size_j/model%distance *PI /(3600.0_r2*180.0_r2)
+            
+            IF (GetFluxesName(fluxes) == 'Jy_pix') THEN
+                unit_value = 1.0e26_r2*pix_res_i*pix_res_j
+            ELSE IF (GetFluxesName(fluxes) == 'T_mb') THEN
+                unit_value =  (con_c/gas%trans_freq(gas%tr_cat(1)))**2.0_r2/2.0_r2/con_k 
+            ELSE
+                PRINT *, '  WARNING: requested unit not found'
+                unit_value = 1.0_r2
+            END IF
+            
+            DO i = 0, 2*model%n_bin_map
+!~             DO i = 50, 50!2*model%n_bin_map
+!~                 print '(A,I4)',' i =', i
+                DO j = 0,2*model%n_bin_map
+!~                 DO j = 50,50!2*model%n_bin_map
+!~                     print '(A,I4)','   j =', j
+
+                    coor_map(1) = rho_size_i * (REAL(i, KIND=r2) + 0.5) - model%r_ou/model%zoom_map(1)
+                    coor_map(2) = rho_size_j * (REAL(j, KIND=r2) + 0.5) - model%r_ou/model%zoom_map(1)
+!~                     print *, i,coor_map(1),coor_map(2)
+                    
+                    CALL get_map_px(basics, grid, model, &
+                                  i, j, rho_size_i*0.5_r2, rho_size_j*0.5_r2,     &
+                                  coor_map(1), coor_map(2), ex, ey, pixel_list)
+                END DO ! coord(2), j
+            END DO ! coord(1), i   
+            
+!~             PRINT *, '  calculated no of pixel (including subpixel)'
+            
+            no_pixel = GetSize(pixel_list)
+            counter = 0
+            ALLOCATE (calc_px (1:no_pixel,1:4))
+            ALLOCATE (notopx (1:no_pixel,1:2))
+            ALLOCATE (inten_px (1:no_pixel,-gas%i_vel_chan:gas%i_vel_chan,1:gas%n_tr))
+            DO i = 1, no_pixel
+                CALL GetLast(pixel_list,pixel_p)
+                notopx(i,:) = pixel_p%pixel
+                counter(notopx(i,1),notopx(i,2)) = counter(notopx(i,1),notopx(i,2)) +1
+                calc_px(i,1:2) = pixel_p%pos_xy
+                calc_px(i,3:4) = pixel_p%size_xy
+                CALL RemoveLast(pixel_list)
+            END DO
+            PRINT '(A,I7,A,I5,A)', '   do raytrace with ',no_pixel,' Pixel (', &
+                                      no_pixel-(2*model%n_bin_map +1)**2, ' subpixel)' 
+            k = 1
+
+            !$omp parallel num_threads(basics%num_core)
+            !$omp do schedule(dynamic) private(i) 
+!~             CALL cpu_time(t1)
+            DO i = 1, no_pixel
+!~             DO i = 23001,26101! no_pixel
+!~                 print *,i
+                IF (i == int(k*no_pixel*0.05)) THEN
+                    WRITE (*,'(A,I3,A)') '      ',int(i/real(no_pixel)*100),' % done...'//char(27)//'[A'
+                    k = k + 1
+                END IF
+!~                 print '(A,I6,A,I6)',' i =', i,'/',no_pixel
+                inten_px(i,:,:)     =   get_intensity_px(basics, grid, &
+                                        model, dust, gas, &
+                                        calc_px(i,1), calc_px(i,2), ex, ey)
+!~                 print *, notopx(i,1),notopx(i,2)
+            END DO
+
+!~             CALL cpu_time(t2)
+!~             write (*,'(a,1pg12.4)')    'cpu_time:     ', t2-t1
+            
+            !$omp end do nowait
+            !CLOSE(unit=1)
+            !$omp end parallel
+            WRITE (*,"(A)") " Raytracing ... finished! "
+            DO i = 1, no_pixel
+                fluxes%channel_map(notopx(i,1),notopx(i,2),:,:) = &
+                         fluxes%channel_map(notopx(i,1),notopx(i,2),:,:) + inten_px(i,:,:)
+            END DO
+            
+            DO i = 0, 2*model%n_bin_map
+!~             DO i = 1, 1!2*model%n_bin_map
+                DO j = 0, 2*model%n_bin_map
+!~                 DO j = 1, 1!2*model%n_bin_map
+                    fluxes%channel_map(i,j,:,:) = fluxes%channel_map(i,j,:,:)/ &
+                                                  REAL(counter(i,j),kind=r2)*unit_value
+                END DO
+            END DO
+
+            DEALLOCATE( calc_px, inten_px, notopx)
+        END DO ! orientation map.
+    END IF
+    
+    print *, ' Saving channel maps'
+
+    CALL save_ch_map(model, basics, gas, fluxes)
+
+    
+    print *, 'Simulation finished!'
+    
+    END SUBROUTINE run_simu
+    
+ 
+
+    FUNCTION get_intensity_px(basics, grid, model, dust, gas, coor_map1, coor_map2, ex, ey)     &
+                                        RESULT(px_intensity)
+        
+    IMPLICIT NONE
+        !--------------------------------------------------------------------------!
+        TYPE(Basic_TYP),INTENT(IN)                       :: basics
+        TYPE(Grid_TYP),INTENT(INOUT)                     :: grid
+        TYPE(Model_TYP),INTENT(IN)                       :: model
+        TYPE(Dust_TYP),INTENT(IN)                        :: dust
+        TYPE(Gas_TYP),INTENT(IN)                         :: gas
+        
+        !--------------------------------------------------------------------------!  
+        REAL(KIND=r2), DIMENSION(1:3),INTENT(IN)         :: ex
+        REAL(KIND=r2), DIMENSION(1:3),INTENT(IN)         :: ey
+        REAL(KIND=r2),INTENT(IN)                         :: coor_map1
+        REAL(KIND=r2),INTENT(IN)                         :: coor_map2
+        
+        
+        REAL(KIND=r2), DIMENSION(-gas%i_vel_chan:gas%i_vel_chan,1:gas%n_tr) :: px_intensity
+        
+        
+        REAL(KIND=r2)                                    :: ray_len
+        REAL(KIND=r2)                                    :: dz
+        REAL(KIND=r2)                                    :: dz_new
+        REAL(KIND=r2)                                    :: dz_sum
+        REAL(KIND=r1)                                    :: j_dust
+        REAL(KIND=r1)                                    :: alpha_dust
+        REAL(KIND=r1)                                    :: velo_dir_xyz
+        
+        REAL(KIND=r2)                                    :: d_l
+        REAL(KIND=r2)                                    :: cell_d_l
+        REAL(KIND=r2)                                    :: cell_sum
+        REAL(KIND=r1)                                    :: ray_minA
+        REAL(KIND=r1)                                    :: abs_err
+        REAL(KIND=r1)                                    :: rel_err
+        REAL(KIND=r1)                                    :: epsi
+        REAL(KIND=r2)                                    :: epsr2
+        
+        
+        REAL(KIND=r1)                                              :: gauss_val
+        REAL(KIND=r1), DIMENSION(-gas%i_vel_chan:gas%i_vel_chan)   :: intensity
+        REAL(KIND=r1)                                              :: intensity_new
+        REAL(KIND=r1)                                              :: intensity_new2
+        REAL(KIND=r1)                                              :: j_ges
+        REAL(KIND=r1)                                              :: j_ul
+        REAL(KIND=r1)                                              :: expo
+
+        REAL(KIND=r1)                                              :: alpha_ges
+        REAL(KIND=r1)                                              :: alpha_ul
+        
+        
+        REAL(KIND=r2), DIMENSION(1:3)                      :: pos_xyz
+        REAL(KIND=r2), DIMENSION(1:3)                      :: pos_xyz_new
+        REAL(KIND=r2), DIMENSION(1:3)                      :: pos_xyz_cell
+        
+        REAL(KIND=r2), DIMENSION(1:6)                      :: RK_k
+        
+         
+        INTEGER                                          :: vch
+        INTEGER                                          :: tr, k
+        INTEGER                                          :: nr_cell
+        INTEGER                                          :: nr_cell_new
+    
+        LOGICAL                                          :: kill_photon, log_size
+        !--------------------------------------------------------------------------!
+        !save photon way
+!~         open(unit=1, file=TRIM(basics%path_results)//Getproname(basics)//'_'//'rays.dat', &
+!~         action="write", status="unknown", form="formatted")
+        
+
+        rel_err = 1.0e-8
+        abs_err = 1.0e-20
+        
+        ! reset intensity in current ray
+        j_dust     = 0.0
+        j_ges      = 0.0
+        j_ul       = 0.0
+        alpha_dust = 0.0
+        alpha_ges  = 0.0
+        alpha_ul   = 0.0
+        
+        SELECT CASE(GetGridName(grid))
+        
+        CASE('spherical')
+            ray_len = model%r_ou**2-coor_map1**2-coor_map2**2 ! need (length of ray)**2
+        CASE('cylindrical')
+            ray_len = model%r_ou**2-coor_map1**2-coor_map2**2
+        CASE('cartesian')
+            ray_len = 1.
+            print *,'TbD, not implemented yet'
+            stop
+        CASE DEFAULT
+            print *, 'selected coordinate system not found, simulation'
+            stop
+        END SELECT
+        
+        pos_xyz(:)  = -grid%dir_xyz(:) * sqrt(ray_len) + coor_map1*ex + coor_map2*ey
+        px_intensity(:,:) = 0.0  
+        intensity(:)      = 0.0  
+        ray_minA          = 20.0_r2
+        epsr2             = EPSILON(dz)
+        dz                = epsr2
+        dz_sum            =  0.0_r2
+        
+        log_size = .False.
+        
+        IF ( ray_len .gt. 0.0_r2 ) THEN
+                       
+
+            nr_cell      = get_cell_nr(grid,pos_xyz)
+            DO WHILE ( dz_sum*(1.0_r2+epsr2*1.0e3) .lt. 2.0_r2* sqrt(ray_len) )
+                IF ( nr_cell == 0 ) THEN
+                    SELECT CASE(GetGridName(grid))
+                    !px_intensity(:,:) = 0.0_r2
+                    CASE('spherical')
+                        d_l =  abs(dot_product(grid%dir_xyz, pos_xyz)) / &
+                                (norm(pos_xyz)*norm(grid%dir_xyz))*(2.0_r2*model%r_in+epsilon(d_l)*1.0e6_r2)
+                        IF (d_l <= 1.0E-10_r2) THEN
+                            d_l = 2.0_r2* sqrt(ray_len)
+                        END IF      
+                        d_l = d_l + d_l*epsilon(d_l)*1.0e6_r2
+                        
+                        pos_xyz_new    = pos_xyz + d_l * grid%dir_xyz
+                        
+                            
+                    CASE('cylindrical')
+
+                        IF (abs(dot_product(grid%dir_xyz,(/0,0,1/))) == 1.0 ) THEN
+                            EXIT
+                        ELSE
+                            d_l =  abs((2.0_r2+epsr2*1.0e2_r2) * model%r_in * &
+                                   dot_product(grid%dir_xyz(1:2),pos_xyz(1:2))/ &
+                                   sqrt(sum(pos_xyz(1:2)**2)) / sqrt(sum(grid%dir_xyz(1:2)**2)) /&
+                                   sqrt(1.0-abs(dot_product(grid%dir_xyz,(/0,0,1/)))))
+
+                        END IF
+                            pos_xyz_new    = pos_xyz + d_l * grid%dir_xyz
+                    END SELECT
+                    
+                    nr_cell_new    = get_cell_nr( grid, pos_xyz_new)
+
+                ELSE
+
+                    CALL path( grid, pos_xyz, pos_xyz_new, nr_cell, nr_cell_new, d_l, kill_photon, grid%dir_xyz)
+
+                END IF
+
+                ! At this point, we have an entrance point(pos_xyz) and exit point (pos_xyz_new) and 
+                ! the length of the cell path (d_l) 
+                IF ( (nr_cell /= 0 ) .and. (grid%grd_mol_density(nr_cell) .gt. 1.0e-200_r2) ) THEN
+                    DO tr = 1, gas%n_tr   ! be careful with more than one transition at once
+                        alpha_dust =    grid%grd_dust_density(nr_cell,1) * &
+                                        dust%C_ext(1,dust%num_lam_map(dust%cont_map(tr)))
+!~                             alpha_dust = 0.0_r2
+                        
+                        j_dust       =  alpha_dust * &
+                                        planckhz(grid%t_dust(nr_cell, 1 ),&
+                                        REAL(con_c/dust%lam(dust%num_lam_map(dust%cont_map(tr))),kind=r1))
+!~                             j_dust = 0.0_r2
+!~                         alpha_dust = 0.0_r2
+                        j_ul =      grid%grd_mol_density(nr_cell)                     *   &
+                                    grid%lvl_pop(nr_cell,gas%trans_upper(gas%tr_cat(tr)))  *   &
+                                    gas%trans_einstA(gas%tr_cat(tr)) * &
+                                    basics%linescale*grid%cell_gauss_a(nr_cell)
+!~                             j_ul = 0.0_r2
+
+                        alpha_ul =      grid%grd_mol_density(nr_cell)                     *   &
+                                        (grid%lvl_pop(nr_cell,gas%trans_lower(gas%tr_cat(tr))) *   &
+                                        gas%trans_einstB_l(gas%tr_cat(tr))                 -   &
+                                        grid%lvl_pop(nr_cell,gas%trans_upper(gas%tr_cat(tr)))  *   &
+                                        gas%trans_einstB_u(gas%tr_cat(tr))) * &
+                                        basics%linescale*grid%cell_gauss_a(nr_cell)
+                                        
+!~                             alpha_ul = 0.0_r2
+                        DO vch = -gas%i_vel_chan, gas%i_vel_chan
+                            cell_d_l = d_l
+                            dz = cell_d_l * model%ref_unit
+                            cell_sum = 0.0_r2
+                            pos_xyz_cell = pos_xyz
+                            intensity_new   = 0.0
+                            intensity_new2  = 0.0
+                            DO WHILE (cell_sum .lt. d_l)
+                                RK_k(:) = 0.0
+                                
+                                DO k = 1,6
+                                    velo_dir_xyz   =  dot_product(Get_velo(pos_xyz_cell+ &
+                                                      cell_d_l*grid%dir_xyz*RK_c(k)),grid%dir_xyz) 
+                                    expo = -((gas%velo_channel(vch)-velo_dir_xyz)**2*      &
+                                                     grid%cell_gauss_a2(nr_cell))
+                                    gauss_val  =  exp(expo)
+                                    !gauss_val    = get_expo(expo)
+                                    j_ges          = j_ul  * gauss_val  + j_dust
+                                    alpha_ges      = alpha_ul * gauss_val  + alpha_dust
+                                    !j_ges         = get_opa(j_ul,gauss_val,j_dust)
+                                    !alpha_ges     = get_opa(alpha_ul,gauss_val,alpha_dust) 
+                                    
+                                    RK_k(k) = ( -alpha_ges*(intensity(vch) + &
+                                                dz*dot_product(RK_a(:,k),RK_k(:)) ) + j_ges)
+                                END DO ! for all k
+                        
+                                intensity_new  = intensity(vch) + dz*(dot_product(RK_b1(:),RK_k(:)))
+                                intensity_new2 = intensity(vch) + dz*(dot_product(RK_b2(:),RK_k(:)))
+                                
+                                epsi= abs(intensity_new2-intensity_new)/&
+                                         ( rel_err*abs(intensity_new) + abs_err)
+                                         
+    !~                             dz_new = 0.9_r2*dz*exp(-log(epsi)*0.2_r2)
+                                dz_new = 0.9*dz*epsi**(-0.2)
+                                IF ( epsi .le. 1 ) THEN
+                                    intensity(vch) = intensity_new
+                                    pos_xyz_cell = pos_xyz_cell+cell_d_l*grid%dir_xyz
+                                    cell_sum = cell_sum + cell_d_l
+    !~                                 print '(4(ES15.6E3))', norm(pos_xyz), intensity(-1:1)
+                                    dz = MIN(dz_new,4*dz)
+                                    cell_d_l = dz*model%ref_unitn
+                                    IF ( cell_sum + cell_d_l .gt. d_l) THEN
+                                        cell_d_l = d_l - cell_sum
+                                        dz = cell_d_l*model%ref_unit
+                                    END IF
+                                
+                                ELSE
+                                    dz = MAX(dz_new,0.25*dz)
+                                    cell_d_l = dz*model%ref_unitn
+                                END IF
+                            
+    !~                             IF (cell_sum .ge. d_l) THEN
+    !~                                     EXIT
+    !~                             END IF
+                            END DO  ! end walk inside one cell
+                        END DO !vch
+!~                     print *, nr_cell
+                    END DO !transitions
+                END IF
+                
+                pos_xyz = pos_xyz_new
+!~                 print '(161(ES15.6E3))', norm(pos_xyz), j_ul(-gas%i_vel_chan:gas%i_vel_chan)
+                nr_cell = nr_cell_new
+                dz_sum = dz_sum + d_l
+            END DO !walk in z direction towards observer
+            
+        px_intensity(:,1) = intensity
+        END IF
+!~         close(unit=1)
+    END FUNCTION get_intensity_px
+    
+    RECURSIVE SUBROUTINE get_map_px(basics, grid, model, i,j,  &
+                                        xxres,yyres, coor_map1, coor_map2, ex, ey, pixel_list)
+
+        
+    IMPLICIT NONE
+        !--------------------------------------------------------------------------!
+        TYPE(Basic_TYP),INTENT(IN)                       :: basics
+        TYPE(Grid_TYP),INTENT(INOUT)                     :: grid
+        TYPE(Model_TYP),INTENT(IN)                       :: model
+
+        TYPE(l_list),POINTER,INTENT(INOUT)               :: pixel_list
+        TYPE(Pixel_TYP)                                  :: pixel_data
+        
+        !--------------------------------------------------------------------------!  
+        REAL(KIND=r2), DIMENSION(3),INTENT(IN)           :: ex
+        REAL(KIND=r2), DIMENSION(3),INTENT(IN)           :: ey
+        REAL(KIND=r2),INTENT(IN)                         :: xxres
+        REAL(KIND=r2),INTENT(IN)                         :: yyres
+        REAL(KIND=r2),INTENT(IN)                         :: coor_map1
+        REAL(KIND=r2),INTENT(IN)                         :: coor_map2
+        
+
+        
+        REAL(KIND=r2)                                    :: ray_len
+        REAL(KIND=r2)                                    :: dz
+        REAL(KIND=r2)                                    :: dz_sum
+        
+        REAL(KIND=r2)                                    :: d_l
+        REAL(KIND=r2)                                    :: ray_minA
+
+        REAL(KIND=r2), DIMENSION(3)                      :: pos_xyz
+        REAL(KIND=r2), DIMENSION(3)                      :: pos_xyz_new
+
+        INTEGER                                          :: nr_cell
+        INTEGER                                          :: nr_cell_new
+        INTEGER,INTENT(IN)                               :: i,j
+
+    
+        LOGICAL                                          :: kill_photon, log_size
+        !--------------------------------------------------------------------------!
+
+        
+        SELECT CASE(GetGridName(grid))
+        
+        CASE('spherical')
+            ray_len = model%r_ou**2-coor_map1**2-coor_map2**2 ! need (length of ray)**2
+        CASE('cylindrical')
+            ray_len = model%r_ou**2-coor_map1**2-coor_map2**2
+        CASE('cartesian')
+            ray_len = 1.
+            print *,'TbD, not implemented yet'
+            stop
+        CASE DEFAULT
+            print *, 'selected coordinate system not found, simulation'
+            stop
+        END SELECT
+        pos_xyz(:)  = -grid%dir_xyz(:) * sqrt(ray_len) + coor_map1*ex + coor_map2*ey
+
+        ray_minA          = 20.0
+        dz                = EPSILON(dz)
+        dz_sum            =  0.0_r2
+        log_size = .False.   
+        
+        IF ( ray_len .gt. 0.0_r2 ) THEN
+
+            nr_cell      = get_cell_nr(grid,pos_xyz)
+!~             print *, 2.0_r2* sqrt(ray_len)
+            DO WHILE ( dz_sum*(1.0_r2+epsilon(dz_sum)*1.0e3) .lt. 2.0_r2* sqrt(ray_len) )
+                IF ( nr_cell == 0 ) THEN
+                    SELECT CASE(GetGridName(grid))
+                    CASE('spherical')
+                        d_l =  abs(dot_product(grid%dir_xyz, pos_xyz)) / &
+                                (norm(pos_xyz)*norm(grid%dir_xyz))*(2.0_r2*model%r_in+epsilon(d_l)*1.0e6_r2)
+                        IF (d_l <= 1.0E-10_r2) THEN
+                            d_l = 2.0_r2* sqrt(ray_len)
+                        END IF      
+                        d_l = d_l + d_l*epsilon(d_l)*1.0e6_r2
+                        pos_xyz_new    = pos_xyz + d_l * grid%dir_xyz
+                        
+                        IF (show_error ) THEN
+                            IF (norm(pos_xyz_new) .lt. model%r_in) THEN 
+!~                                 print *, d_l, d_l +(model%r_in - norm(pos_xyz)), d_l +d_l*epsilon(d_l)*1.0e5_r2
+!~                                 print *, norm(pos_xyz)
+!~                                 print *, norm(pos_xyz_new)
+!~                                 print *, get_cell_nr(grid,pos_xyz_new)
+                                print *, 'ERROR1: new cell is still zero'
+                            END IF
+                            
+                        END IF
+                    CASE('cylindrical')
+
+                        IF (abs(dot_product(grid%dir_xyz,(/0,0,1/))) == 1.0 ) THEN
+                            EXIT
+                        ELSE
+                            d_l =  abs((2.0_r2+epsilon(d_l)*1.0e2_r2) * model%r_in * &
+                                   dot_product(grid%dir_xyz(1:2),pos_xyz(1:2))/ &
+                                   sqrt(sum(pos_xyz(1:2)**2)) / sqrt(sum(grid%dir_xyz(1:2)**2)) /&
+                                   sqrt(1.0-abs(dot_product(grid%dir_xyz,(/0,0,1/)))))
+
+                        END IF
+                            pos_xyz_new    = pos_xyz + d_l * grid%dir_xyz
+                    END SELECT
+                    
+                    nr_cell_new    = get_cell_nr( grid, pos_xyz_new)
+
+                ELSE
+
+                    CALL path( grid, pos_xyz, pos_xyz_new, nr_cell, nr_cell_new, d_l, kill_photon, grid%dir_xyz)
+
+                END IF
+                
+                ray_minA = MIN(ray_minA, grid%cell_minA(nr_cell))
+                IF ( xxres*yyres .gt. ray_minA .and. ray_minA .gt. 1.0e-3) THEN
+                    log_size = .True.
+                    EXIT
+                END IF
+
+                pos_xyz = pos_xyz_new
+                nr_cell = nr_cell_new
+
+                dz_sum = dz_sum + d_l
+
+            END DO !walk in z direction towards observer
+            
+        END IF
+        IF ( log_size) THEN      
+            
+
+            CALL        get_map_px(basics, grid, model,                                &
+                        i,j, xxres*0.5_r2, yyres*0.5_r2,                      &
+                        coor_map1+xxres*0.5_r2, coor_map2+yyres*0.5_r2,                    &
+                        ex, ey, pixel_list)
+
+            CALL        get_map_px(basics, grid,model,                             &
+                        i,j, xxres*0.5_r2, yyres*0.5_r2,                      &
+                        coor_map1+xxres*0.5_r2, coor_map2-yyres*0.5_r2,                    &
+                        ex, ey, pixel_list)
+                        
+            CALL        get_map_px(basics, grid,model,                             &
+                        i,j, xxres*0.5_r2, yyres*0.5_r2,                      &
+                        coor_map1-xxres*0.5_r2, coor_map2+yyres*0.5_r2,                    &
+                        ex, ey,pixel_list )
+                        
+            CALL        get_map_px(basics, grid, model,                             &
+                        i,j, xxres*0.5_r2, yyres*0.5_r2,                      &
+                        coor_map1-xxres*0.5_r2, coor_map2-yyres*0.5_r2,                    &
+                        ex, ey, pixel_list)                                                         
+        ELSE
+            pixel_data%pixel  =  (/i,j/)
+            pixel_data%pos_xy  = (/coor_map1,coor_map2/)
+            pixel_data%size_xy = (/xxres,yyres/)
+            CALL AddElement(pixel_list,pixel_data)
+            CONTINUE
+        END IF
+
+    END SUBROUTINE get_map_px
+    
+END MODULE simulation_mod

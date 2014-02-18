@@ -1,0 +1,53 @@
+##############################################################################
+#
+# awk program file
+# for automatic generation of dependencies
+#
+# (c) T. Illenseer & J. Sauter 2010
+##############################################################################
+#
+# input parameters:
+#
+#    builddir  : directory where .mod and .o files are stored
+#                (with trailing slash!)
+#    
+#    obs       : list of available object files  
+#
+##############################################################################
+#
+# example call sequence in a Makefile
+#
+#       awk -f makedeps -v objfiles=$(objfiles) builddir=./build/ *f90
+#
+##############################################################################
+#
+# 
+BEGIN { dependencies=""; objnum=split(objfiles,objlist)}
+{
+   if (((tolower($1) ~/module/) && !(tolower($2) ~/procedure/)) \
+       || (tolower($1) ~/program/))
+      target=builddir$2".o :"
+
+   if ((tolower($1) ~/use/) && !(tolower($1) ~/!use/))
+   {
+      module=$2
+      sub(/,/,"",module)
+      module=builddir module".o"
+      if ( !(dependencies ~ module)) {
+         if (objnum == 0) dependencies=dependencies" \\\n\t"module
+         else
+           for (i=1; i<=objnum; i++) {
+              if (module == builddir objlist[i]) \
+                 dependencies=dependencies" \\\n\t"module
+           }
+      }
+   }
+
+   if ( ((tolower($1) ~/end/) && ((tolower($2) ~/module/) \
+      || (tolower($2) ~/program/)) ) && !(dependencies == "") )
+   {
+      print target dependencies"\n"
+      dependencies=""
+   }
+}
+END {}
