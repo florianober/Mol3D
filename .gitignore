@@ -8,14 +8,6 @@
 *.log
 *.backup
 *#
-*.aux
-*.bbl
-*.blg
-*.toc
-*.bib
-*.lof
-*.lot
-*.dvi
 
 #ignore python load files
 *.pyc
