@@ -205,44 +205,40 @@ CONTAINS
         print *,''
         print '(A,ES11.4,A)',' dust mass           : ',hd_totalmass, ' M_sun'
         
-!~         stop
         ! estimate gas mass and rescale 
         ! Nv_mol,  defined molecule
         ! Nv_col,  collision partners 1 = H , 2 = H para ...,3 = H ortho
         !---- H2
-        IF (.not. basics%old_model) THEN
-            hd_totalmass =  sum(grid%Nv_col(:,1)) * col_p_weight(1)/con_Na*1.0e-3_r2/ M_sun
-            
-            grid%Nv_col(:,1) =  grid%Nv_col(:,1) * &
-                                model%mass*gas%dust_mol_ratio/(1.0_r2+gas%mol_abund)/hd_totalmass             
-    !~         grid%Nv_col(:,1) =  grid%Nv_col(:,1) * &
-    !~                             model%mass*gas%dust_mol_ratio/hd_totalmass             
-            
-            grid%grd_col_density(:,1) = grid%Nv_col(:,1)/grid%cell_vol(:)
-            
-            !---- H2 para
+        
+        hd_totalmass =  sum(grid%Nv_col(:,1)) * col_p_weight(1)/con_Na*1.0e-3_r2/ M_sun
+        
+        grid%Nv_col(:,1) =  grid%Nv_col(:,1) * &
+                            model%mass*gas%dust_mol_ratio/(1.0_r2+gas%mol_abund)/hd_totalmass                      
+        
+        grid%grd_col_density(:,1) = grid%Nv_col(:,1)/grid%cell_vol(:)
+        
+        !---- H2 para
 
-            grid%Nv_col(:,2) =  0.25*grid%Nv_col(:,1) 
-                                
-            grid%grd_col_density(:,2) = grid%Nv_col(:,2)/grid%cell_vol(:)
-            
-            !---- H2 ortho
+        grid%Nv_col(:,2) =  0.25*grid%Nv_col(:,1) 
+                            
+        grid%grd_col_density(:,2) = grid%Nv_col(:,2)/grid%cell_vol(:)
+        
+        !---- H2 ortho
 
-            grid%Nv_col(:,3) =  0.75*grid%Nv_col(:,1) 
-                                
-            grid%grd_col_density(:,3) = grid%Nv_col(:,3)/grid%cell_vol(:)
-            
+        grid%Nv_col(:,3) =  0.75*grid%Nv_col(:,1) 
+                            
+        grid%grd_col_density(:,3) = grid%Nv_col(:,3)/grid%cell_vol(:)
+        
 
-            !---- selected molecule
-            hd_totalmass =  sum(grid%Nv_mol(:)) *gas%mol_weight/con_Na*1.0e-3_r2/ M_sun
-            
-            grid%Nv_mol(:) =    grid%Nv_mol(:) * &
-                                model%mass*gas%dust_mol_ratio/(1.0_r2+1.0_r2/gas%mol_abund)/hd_totalmass
-                                
-            grid%grd_mol_density(:) =   grid%grd_mol_density(:) * &
-                                        model%mass*gas%dust_mol_ratio/(1.0_r2+1.0_r2/gas%mol_abund)/hd_totalmass
+        !---- selected molecule
+        hd_totalmass =  sum(grid%Nv_mol(:)) *gas%mol_weight/con_Na*1.0e-3_r2/ M_sun
+        
+        grid%Nv_mol(:) =    grid%Nv_mol(:) * &
+                            model%mass*gas%dust_mol_ratio/(1.0_r2+1.0_r2/gas%mol_abund)/hd_totalmass
+                            
+        grid%grd_mol_density(:) =   grid%grd_mol_density(:) * &
+                                    model%mass*gas%dust_mol_ratio/(1.0_r2+1.0_r2/gas%mol_abund)/hd_totalmass
 
-        END IF
         !TbD: all other partners:
         grid%Nv_col(:,4:6)            = 0.0_r2
         grid%grd_col_density(:,4:6)   = 0.0_r2
