@@ -117,7 +117,8 @@ CONTAINS
         CALL READ_mol_file(this)
         
         this%dust_mol_ratio = moldustratio
-        abundance           = this%mol_weight*nvratio/col_p_weight(1)
+        abundance           = nvratio
+!~         abundance           = this%mol_weight*nvratio/col_p_weight(1)
         this%mol_abund      = abundance
         
     END SUBROUTINE InitGas
