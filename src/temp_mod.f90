@@ -67,7 +67,6 @@ CONTAINS
     IF (.not. basics%old_model) THEN
         IF ( basics%calc_tmp) THEN
             CALL primary_temp(basics,grid,model,dust,fluxes)
-            grid%t_gas(:) = grid%t_dust(:,1)
         ELSE IF (.not. basics%calc_tmp) THEN
             print *, '  using analytical temperature distribution'
             i_cell = 0
@@ -81,17 +80,13 @@ CONTAINS
                         moco(3) = ( grid%co_mx_c(i_c) + grid%co_mx_c(i_c -1) ) / 2.0_r2
                         
                         caco = mo2ca(grid, moco)
-                        
-    !~                     IF ( grid%grd_density(i_cell,1) .gt. 0.0_r2 ) THEN
                         grid%t_dust(i_cell,1)  = Get_temp(caco)
-                        grid%t_gas(i_cell) = grid%t_dust(i_cell,1)! setting the gas temperature equal to the dust temperature
-    !~                     ELSE
-    !~                         grid%t_dust(i_cell,1)  = 0.0_r2
-    !~                     END IF
+
                     END DO
                 END DO
             END DO
         END IF
+        
     END IF
     
     
@@ -103,13 +98,20 @@ CONTAINS
 
     !CALL sv_temp(basics, grid)      ! maybe we want to reeuse the calculated temperature profile
     
-    PRINT *, '  temperature included, now calculate some additional parameters'
     DO i_cell = 1,grid%n_cell
         IF (grid%grd_dust_density(i_cell,1) <= 1.0e-34 ) THEN
             grid%t_dust(i_cell,1) = 0.0
-            grid%t_gas(i_cell) = 0.0
-            
         END IF
+        grid%t_gas(i_cell) = grid%t_dust(i_cell,1)! setting the gas temperature equal to the dust temperature
+        
+        ! include some kind of freeze out Temperature (TbD: define this more generally)
+        IF ( grid%t_gas(i_cell) <= 1.0 ) THEN
+            grid%grd_mol_density(i_cell)   = 0.0
+        END IF
+    END DO
+    
+    PRINT *, '  temperature included, now calculate some additional parameters'
+    DO i_cell = 1,grid%n_cell
 
         ! set line width in each cell (in fact the inverse value)
         grid%cell_gauss_a(i_cell) = 1.0_r2/(sqrt(2.0_r2*con_k*grid%t_dust(i_cell,1)/ &  

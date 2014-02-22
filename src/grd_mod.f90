@@ -630,12 +630,11 @@ CONTAINS
                             STOP
                         END IF
                         
-                        ! set density
+                        ! set dust density, all other molecules can be set by the model_mod module
                         grid%grd_dust_density(i_cell,1) = line(4)
                         
-                        grid%grd_mol_density(i_cell)    = line(5)
-                        
-                        grid%grd_col_density(i_cell,1:3) = line(6:8)
+                        !grid%grd_col_density(i_cell,1:3) = line(6:8)
+                        !grid%grd_mol_density(i_cell)    = line(5)
                         
                         ! set temperature
                         grid%t_dust(i_cell,1) = line(9)
@@ -644,20 +643,23 @@ CONTAINS
 
                     ELSE
                         ! density at midpoint coordinate (number of particles / m^3)
-                        ! here, we set the density distribution for all elements
+                        ! here, we set the density distribution for dust and H2 
                         ! tbd: This is the same distribution for all elements, this should be generalized
                         !      in future
                         !
                         ! set the density for the dust component
                         grid%grd_dust_density(i_cell,:)    = dustden(model,caco(:))
                         
-                        ! set the density for the selected molecule
-                        grid%grd_mol_density(i_cell)       = dustden(model,caco(:))*gas%mol_abund
-                        
                         ! set the density for all other elements (H, He,...)
                         grid%grd_col_density(i_cell,:)     = dustden(model,caco(:))
 
                     END IF
+                    
+                    ! set the density for the selected molecule
+                    ! don't load this from the old model, so we are able to distribute the molecules
+                    ! in the way we want
+                    
+                    grid%grd_mol_density(i_cell)       = dustden(model,caco(:))*gas%mol_abund
 
                     ! resulting number of particles/molecules
 
