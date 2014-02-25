@@ -43,15 +43,17 @@ CONTAINS
             action="write", status="unknown", form="formatted")
         
         ! write header:
-        write(unit=1,fmt='(11A)') '#cell  ','mid_x  ','mid_y  ','mid_z  ',  'no_dens_dust  ','no_dens_mol  ', &
-                                    'no_dens_H  ', 'no_dens_Hp  ', 'no_dens_Ho  ','T_dust  ', 'T_gas  '
+        write(unit=1,fmt='(12A)') '#cell  ','mid_x  ','mid_y  ','mid_z  ',  'no_dens_dust  ','no_dens_mol  ', &
+                                    'no_dens_H  ', 'no_dens_Hp  ', 'no_dens_Ho  ','T_dust  ', 'T_gas  ', &
+                                    'abs_velocity'
         
         DO i_cell=1,grid%n_cell
             
-            write(unit=1,fmt='(I5,10(ES15.6E3))') i_cell, grid%cellmidcaco(i_cell,:), grid%grd_dust_density(i_cell,1), &
+            write(unit=1,fmt='(I5,11(ES15.6E3))') i_cell, grid%cellmidcaco(i_cell,:), grid%grd_dust_density(i_cell,1), &
                                                    grid%grd_mol_density(i_cell) , &
                                                    grid%grd_col_density(i_cell,1:3), &
-                                                   grid%t_dust(i_cell,1), grid%t_gas(i_cell)
+                                                   grid%t_dust(i_cell,1), grid%t_gas(i_cell), &
+                                                   grid%absvelo(i_cell)
             
         END DO
         CLOSE(unit=1)
@@ -101,9 +103,9 @@ CONTAINS
 !~             h_array = REAL(grid%t_dust, kind=r2)
             visarr  => grid%t_dust
 !~             EXIT
-        ELSE IF ( typename == 'velo' ) THEN
-            print *,'visualize velocity distribution'
-            visarr => grid%absvelo
+!~         ELSE IF ( typename == 'velo' ) THEN
+!~             print *,'visualize velocity distribution'
+!~             visarr => grid%absvelo
         ELSE
             print *, 'Wrong input type, skip...'
             RETURN
@@ -333,7 +335,7 @@ CONTAINS
         !--------------------------------------------------------------------------!
     
         CALL sv_temp_x(basics, grid)
-        Call sv_temp_dist(basics, grid)
+!~         Call sv_temp_dist(basics, grid)
     END SUBROUTINE sv_temp
     
      SUBROUTINE load_temp_dist(basics, grid,tmp_found)

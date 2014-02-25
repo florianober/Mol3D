@@ -96,7 +96,6 @@ CONTAINS
     grid%col_finalcolmatrixup  = 0.0_r2
     grid%col_finalcolmatrixlow = 0.0_r2
 
-    !CALL sv_temp(basics, grid)      ! maybe we want to reeuse the calculated temperature profile
     
     DO i_cell = 1,grid%n_cell
         IF (grid%grd_dust_density(i_cell,1) <= 1.0e-34 ) THEN
@@ -110,6 +109,9 @@ CONTAINS
         END IF
     END DO
     
+    CALL sv_temp(basics, grid)      ! The propose of this routine has changed, nowadays it
+                                    ! is just for saving the x midplane temperature
+
     PRINT *, '  temperature included, now calculate some additional parameters'
     DO i_cell = 1,grid%n_cell
 

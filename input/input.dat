@@ -9,39 +9,40 @@
 #                                                                                #
 # author: Florian Ober                                                           #
 # email : fober@astrophysik.uni-kiel.de                                          #    
-# date  : Nov 2013                                                               #
+# date  : Feb 2014                                                               #
 ##################################################################################
 
 
-proname = {example}                       project name
-r_path = {results/}                       define results path, it is recommend to change this path 
+proname = {COequalmass0.8}                   project name
+r_path = {/data/fober/mol3dresults/}      define results path, it is recommend to change this path 
 
 num_core    = {003}                       number of cores used (raytracing, temperature calculation (TbD))
-old_model   = {F}                         use results from earlier calculations 
-old_proname = {oldproname}              the project name of the older calculation 
+old_model   = {T}                         use results from earlier calculations 
+old_proname = {temp3}                     the project name of the older calculation 
 
 calc_temp = {T}                           calculate temperature (with monte carlo method)
-do_raytr = {T}    
+do_raytr  = {T}    
 
-r_in   = {2.0}                            inner radius
+r_in   = {0.1}                            inner radius
 r_ou   = {120}                            outer radius
 mass_dust = {1e-6}                        dust mass of disk
 t_eff = {4000.0}                          effective Temperature
-R_star = {2}                              radius of star
+R_star = {2}                              stellar radius (R_sun)
+M_star = {0.8}                            stellar mass   (M_sun), this is cucial for the velocity field, purely keplerian rotation is assumed
 
 distance  = {140.0}                       object distance [pc]
 n_bin_map = {200}                         half number of pixel, total pixel = 2 * n_bin_map1 + 1
-n_star_emi = {10000}                      number of photons per wavelength
-th_map = {90.0}                           inclination to observer
+n_star_emi = {5000}                       number of photons per wavelength
+th_map = {60.0}                           inclination to observer
 ph_map = {0.0}
-zoom_map = {1.0}
+zoom_map = {1.2}
 
 molratio = {99.0}
 abundance = {1e-4}
 line_mode = {3}                           set the method to calculate the level populations
                                           1 := LTE  2 := FEP  3 := LVG
 line = {3}                                line transition no (see gas_input file)     
-i_vel_chan = {36}                         (half) Number of velocity channels
+i_vel_chan = {36}                         (half) Number of velocity channels, total no = 2*i_vel_chan +1
 vel_max = {4000.0}                        max velocity in spectrum (in m/s)
 
 gas_cat_name = {co.dat}                   gas catalog name (in input/mol) (leiden databaase style)

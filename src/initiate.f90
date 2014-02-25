@@ -60,6 +60,7 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas)
     REAL(kind=r2)                                    :: vel_max
     REAL(kind=r2)                                    :: t_eff
     REAL(kind=r2)                                    :: R_star
+    REAL(kind=r2)                                    :: M_star
     REAL(kind=r2)                                    :: distance
     REAL(kind=r2)                                    :: sizexp
     REAL(kind=r1)                                    :: t_dust_max
@@ -246,6 +247,11 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas)
     WRITE(unit=3,fmt='(A)') 'R_star = {'//TRIM(help)//&
     '}                        radius of star'
     
+    CALL parse('M_star',M_star,new_input_file)
+    WRITE(help,fmt='(ES15.6)') M_star
+    WRITE(unit=3,fmt='(A)') 'M_star = {'//TRIM(help)//&
+    '}                        stellar mass'
+    
     WRITE(unit=3,fmt='(A)') ''
     n_map     = 1                          !numper of maps to calculate
     CALL parse('distance',distance,new_input_file)
@@ -291,7 +297,7 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas)
     
     al_map(1)   = 1
     
-    CALL InitModel(model,1, ref_u_str, ref_u, r_in, r_ou, mass_dust, t_eff, R_star, n_map, distance, &
+    CALL InitModel(model,1, ref_u_str, ref_u, r_in, r_ou, mass_dust, t_eff, R_star, M_star, n_map, distance, &
                    n_star_emi,th_map,ph_map,zoom_map,al_map,n_bin_map)
                     
     DEALLOCATE( th_map, &

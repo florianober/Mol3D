@@ -125,7 +125,7 @@ CONTAINS
     REAL(kind=r1),DIMENSION(1:gas%egy_lvl,1:gas%egy_lvl)           :: A
     REAL(kind=r1),DIMENSION(1:gas%egy_lvl)                         :: c
     REAL(kind=r2),DIMENSION(1:gas%trans_lvl)                       :: J_mid, J_ext
-    REAL(kind=r2)                                                  :: sum_p
+    REAL(kind=r1)                                                  :: sum_p
     INTEGER                                                        :: i_cell, i
     !--------------------------------------------------------------------------!        
     
@@ -146,9 +146,9 @@ CONTAINS
 
         sum_p = sum(grid%lvl_pop(i_cell,:))
 
-        IF ( abs(1.0_r2-sum_p) > 1.0e2*epsilon(sum_p) ) THEN
+        IF ( abs(1.0-sum_p) > 1.0e4*epsilon(sum_p) ) THEN
             print *, 'Warning, level polulation do not sum to 1'
-            print *, sum_p
+            print *, abs(1.0-sum_p)
         END IF
     END DO
 
@@ -176,7 +176,7 @@ CONTAINS
     REAL(kind=r1),DIMENSION(1:gas%egy_lvl)                         :: old_pop
     REAL(kind=r2),DIMENSION(1:gas%trans_lvl)                       :: J_mid, J_ext
     REAL(kind=r1)                                                  :: sum_p
-    REAL(kind=r2)                                     :: R_mid, L
+    REAL(kind=r2)                                                  :: R_mid, L
     
     INTEGER                                           :: i_cell, i, max_iteration
     !--------------------------------------------------------------------------!        
@@ -206,7 +206,7 @@ CONTAINS
         
         
         R_mid = sqrt(grid%cellmidcaco(i_cell,1)**2+grid%cellmidcaco(i_cell,2)**2)
-        L = R_mid * sqrt(2.0/3.0 /( grid%cell_gauss_a(i_cell) * grid%absvelo(i_cell,1))) * model%ref_unit
+        L = R_mid * sqrt(2.0/3.0 /( grid%cell_gauss_a(i_cell) * grid%absvelo(i_cell))) * model%ref_unit
         
         DO i = 1, max_iteration  ! more iteration needed if cells are far from LTE solution
             old_pop = grid%lvl_pop(i_cell,:)
@@ -227,7 +227,7 @@ CONTAINS
             sum_p = sum(grid%lvl_pop(i_cell,:))
             IF ( abs(1.0-sum_p) > 1.0e4*epsilon(sum_p) ) THEN
                 print *, 'Warning, level polulation do not sum to 1'
-                print *, sum_p
+                print *, abs(1.0-sum_p)
             ELSE IF (isnan(sum_p)) THEN
                 print *, 'lvl_populations are nan',i_cell, i
                 print *, old_pop

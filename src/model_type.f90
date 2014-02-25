@@ -25,9 +25,11 @@ MODULE model_type
         REAL(kind=r1)        :: r_ou
         REAL(kind=r1)        :: mass
         REAL(kind=r1)        :: r_star
+        REAL(kind=r1)        :: M_star
         REAL(kind=r1)        :: t_star
         REAL(kind=r1)        :: l_star
         REAL(kind=r1)        :: distance
+        REAL(kind=r1)        :: kep_const
         
         REAL(kind=r2),DIMENSION(:),POINTER         :: th_map
         REAL(kind=r2),DIMENSION(:),POINTER         :: ph_map
@@ -58,7 +60,7 @@ MODULE model_type
 CONTAINS
 
     SUBROUTINE InitModel(this, ut , un, ref_u, r_in, r_ou, &
-                    mass_dust, t_eff, r_star, n_map, distance, &
+                    mass_dust, t_eff, r_star,M_star, n_map, distance, &
                     n_star_emi,th_map,ph_map,zoom_map,al_map,n_bin_map)
         IMPLICIT NONE
         !------------------------------------------------------------------------!
@@ -79,6 +81,7 @@ CONTAINS
         REAL(kind=r2)         :: mass_dust
         REAL(kind=r2)         :: t_eff
         REAL(kind=r2)         :: r_star
+        REAL(kind=r2)         :: M_star
         
         REAL(kind=r2),DIMENSION(1:n_map)         :: th_map
         REAL(kind=r2),DIMENSION(1:n_map)         :: ph_map
@@ -88,7 +91,7 @@ CONTAINS
         
         !------------------------------------------------------------------------!
         INTENT(IN)          ::  ut,un,ref_u, r_in, r_ou, &
-                                mass_dust, t_eff, r_star, n_map, distance, &
+                                mass_dust, t_eff, r_star, M_star, n_map, distance, &
                                 th_map,ph_map,zoom_map,al_map,n_bin_map,n_star_emi
         !tbd: add l_star
         INTENT(INOUT)       :: this
@@ -100,7 +103,10 @@ CONTAINS
         
         this%t_star = t_eff
         this%r_star = r_star*R_sun
+        this%M_star = M_star*M_sun
         
+        this%kep_const = (con_gamma * this%M_star/con_AU)**0.5  ! in units of m/s
+        print *, this%kep_const
         this%l_star = 4.0_r2 * PI * this%r_star**2 * con_sigma * this%t_star**4
         print *, " => Stellar luminosity [L_sun]: ", this%l_star/L_sun
         ALLOCATE(   this%th_map(1:n_map), &

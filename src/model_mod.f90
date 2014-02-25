@@ -8,7 +8,7 @@ module model_mod
     use datatype
     use var_globalnew
     implicit none
-    public :: dustden!, get_n_den_par 
+    public :: get_den!, get_n_den_par 
 contains
 
   ! ################################################################################################
@@ -83,9 +83,8 @@ contains
   !
   ! b) example: see below
   ! ---
-    FUNCTION dustden(model,caco) RESULT(density)
+    FUNCTION get_den(model,caco) RESULT(density)
         USE model_type, ONLY : Model_TYP
-        USE parser_mod
         
         IMPLICIT NONE
         !--------------------------------------------------------------------------!
@@ -94,7 +93,6 @@ contains
 
         REAL(kind=r2)                                    :: density
         REAL(kind=r2)                                    :: P_xy, P_z, P_h
-        REAL(kind=r2)                                    :: R_ou2, R_in2
         !--------------------------------------------------------------------------!
         
         ! ---
@@ -105,14 +103,8 @@ contains
         ! BEGIN: DEFINITION DENSITY DISTRIBUTION
         P_xy = sqrt(caco(1)**2+caco(2)**2)
         P_z  = abs(caco(3))
-        R_ou2 = 20.0_r2
-        R_in2 = 10.0_r2
-!~         CALL parse('R_in2',R_in2,'input/input.dat')
-!~         CALL parse('R_ou2',R_ou2,'input/input.dat')
-        
-        #IF ( (P_xy >= model%r_in) .and. (P_xy < model%r_ou) .and. (P_xy > R_ou2 .or. P_xy < R_in2) ) THEN
-        IF ( (P_xy >= model%r_in) .and. (P_xy < model%r_ou) ) THEN
 
+        IF ( (P_xy >= model%r_in) .and. (P_xy < model%r_ou) ) THEN
             P_h     = 20.0_r2 * (P_xy/100.0_r2)**1.125_r2
             density = (P_xy/100.0_r2)**(-2.625_r2)  *  exp( -0.5_r2 * (P_z/P_h)**2 )
         ELSE
@@ -124,9 +116,9 @@ contains
         
         ! DO NEVER REMOVE THIS LINE
         
-        density = density *model%mass !old relict
-        !grid%ddust(:) = model%mass * density * sidi(:)
-    END FUNCTION dustden
+        density = density *model%mass !old relict from mc3d, tbd: can be removed
+        
+    END FUNCTION get_den
   
 end module model_mod
 

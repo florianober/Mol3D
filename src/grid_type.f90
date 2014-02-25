@@ -74,8 +74,8 @@ MODULE Grid_type
         REAL(kind=r1), DIMENSION(:,:), POINTER   :: col_finalcolmatrixup
         REAL(kind=r1), DIMENSION(:,:), POINTER   :: col_finalcolmatrixlow
         
-        REAL(kind=r1),DIMENSION(:,:,:),POINTER    :: velo
-        REAL(kind=r1),DIMENSION(:,:),POINTER      :: absvelo
+        REAL(kind=r1),DIMENSION(:,:),POINTER      :: velo
+        REAL(kind=r1),DIMENSION(:),POINTER        :: absvelo
         REAL(kind=r2),DIMENSION(:,:),POINTER      :: cellmidcaco
         REAL(kind=r2),DIMENSION(:,:,:),POINTER    :: i_star_abs
         REAL(kind=r1),DIMENSION(:,:),POINTER      :: t_dust
@@ -89,8 +89,8 @@ MODULE Grid_type
         INTEGER                                   :: n_cell
         INTEGER                                   :: i_cell
         INTEGER                                   :: nh_n_dust
-        INTEGER,DIMENSION(:,:,:),POINTER        :: cell_idx2nr
-        INTEGER,DIMENSION(:,:),POINTER          :: cell_nr2idx
+        INTEGER,DIMENSION(:,:,:),POINTER          :: cell_idx2nr
+        INTEGER,DIMENSION(:,:),POINTER            :: cell_nr2idx
                 
         INTEGER                                   :: counter
         
@@ -165,9 +165,9 @@ CONTAINS
             this%grd_dust_density( 0:this%n_cell, 1:n_dust ), &
             this%grd_mol_density( 0:this%n_cell), &
             this%grd_col_density( 0:this%n_cell,1:6), &
-            this%velo( 0:this%n_cell, 1:n_dust,1:3 ), &
+            this%velo( 0:this%n_cell,1:3 ), &
             this%cellmidcaco(0:this%n_cell,1:3), &
-            this%absvelo( 0:this%n_cell, 1:n_dust ), &
+            this%absvelo( 0:this%n_cell), &
             this%cell_idx2nr( 0:this%n(1), 0:this%n(2), 0:this%n(3) ), &
             this%cell_nr2idx( 1:3, 0:this%n_cell ), &
             this%t_dust(  0:this%n_cell, 1:n_dust ), &
@@ -193,8 +193,8 @@ CONTAINS
         this%grd_dust_density(:,:)= 0.0_r2
         this%grd_col_density(:,:) = 0.0_r2
         this%grd_mol_density(:)   = 0.0_r2
-        this%velo(:,:,:)          = 0.0_r2
-        this%absvelo(:,:)         = 0.0_r2
+        this%velo(:,:)            = 0.0_r2
+        this%absvelo(:)           = 0.0_r2
         this%cell_idx2nr(:,:,:)   = 0
         this%cell_nr2idx(:,:)     = 0
         this%t_dust(:,:)          = 0.0

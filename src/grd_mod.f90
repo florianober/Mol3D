@@ -13,7 +13,6 @@ MODULE grd_mod
     USE model_type
     USE math_mod
     USE tools_mod
-
     IMPLICIT NONE
     
     !--------------------------------------------------------------------------!
@@ -568,7 +567,7 @@ CONTAINS
     ! prepared for gerneral coordinates
     
         USE model_mod
-        
+        USE parser_mod
         IMPLICIT NONE
         !------------------------------------------------------------------------!
         TYPE(Grid_TYP), INTENT(INOUT)               :: grid
@@ -581,18 +580,22 @@ CONTAINS
         INTEGER                                     :: i_b 
         INTEGER                                     :: i_c 
         INTEGER                                     :: i_cell, i_cell_in
-        INTEGER                                     :: io, key_found
+        INTEGER                                     :: io
         
 
         
         REAL(kind=r2), DIMENSION(1:3)               :: caco
         REAL(kind=r2), DIMENSION(1:3)               :: moco
         REAL(kind=r2), DIMENSION(10)                :: line
-        
+        REAL(kind=r2)                               :: R_gap_in, R_gap_ou
+        REAL(kind=r1)                               :: P_xy, P_z
         CHARACTER(len=256)                          :: filename
         CHARACTER(len=256)                          :: waste
         !------------------------------------------------------------------------!
         ! ---
+
+        CALL parse('R_gap_in',R_gap_in,'input/additional.dat')
+        CALL parse('R_gap_ou',R_gap_ou,'input/additional.dat')
 
         IF (basics%old_model) THEN
         
@@ -604,7 +607,8 @@ CONTAINS
             READ(unit=1,fmt=*) waste
         END IF
         
-        
+
+
         i_cell = 0
         do i_a=1, grid%n(1)
             do i_b=1, grid%n(2)
@@ -620,11 +624,14 @@ CONTAINS
                     moco(3) = ( grid%co_mx_c(i_c) + grid%co_mx_c(i_c -1) ) / 2.0_r2
                     
                     caco = mo2ca(grid, moco)
+                    P_xy = sqrt(caco(1)**2+caco(2)**2)
+                    P_z  = abs(caco(3))
                     grid%cellmidcaco(i_cell,:) = caco
                     
                     IF (basics%old_model) THEN
 
                         READ(unit=1,fmt=*,iostat=io) i_cell_in, line
+!~                         print *, i_cell_in, i_cell
                         IF (io < 0 .or. i_cell_in /= i_cell) THEN
                             PRINT *,'ERROR in model file ('//TRIM(filename)//') cell not found',i_cell
                             STOP
@@ -633,8 +640,7 @@ CONTAINS
                         ! set dust density, all other molecules can be set by the model_mod module
                         grid%grd_dust_density(i_cell,1) = line(4)
                         
-                        !grid%grd_col_density(i_cell,1:3) = line(6:8)
-                        !grid%grd_mol_density(i_cell)    = line(5)
+                        grid%grd_col_density(i_cell,1:3) = line(6:8)
                         
                         ! set temperature
                         grid%t_dust(i_cell,1) = line(9)
@@ -648,36 +654,37 @@ CONTAINS
                         !      in future
                         !
                         ! set the density for the dust component
-                        grid%grd_dust_density(i_cell,:)    = dustden(model,caco(:))
-                        
-                        ! set the density for all other elements (H, He,...)
-                        grid%grd_col_density(i_cell,:)     = dustden(model,caco(:))
-
+                        !###########################################################################
+                        ! add your custom density distribution here
+                        !
+                        IF (P_xy .lt. R_gap_in .or. P_xy .gt. R_gap_ou) THEN
+                            grid%grd_dust_density(i_cell,:)    = get_den(model,caco(:))
+                            
+                            ! set the density for all other elements (H, He,...)
+                            grid%grd_col_density(i_cell,:)     = get_den(model,caco(:))
+                        END IF
+                        !###########################################################################
                     END IF
                     
                     ! set the density for the selected molecule
                     ! don't load this from the old model, so we are able to distribute the molecules
                     ! in the way we want
-                    
-                    grid%grd_mol_density(i_cell)       = dustden(model,caco(:))*gas%mol_abund
-
+                    IF (P_z .gt. P_xy**2/500. .and. P_z .lt. P_xy**2/100.) THEN
+                        grid%grd_mol_density(i_cell)   = grid%grd_col_density(i_cell,1)*gas%mol_abund
+                    ELSE
+                        grid%grd_mol_density(i_cell)   = 0.0
+                    END IF
                     ! resulting number of particles/molecules
 
                     grid%Nv(i_cell,:)     = grid%grd_dust_density(i_cell,:) * REAL(grid%cell_vol(i_cell),kind=r2)
                     grid%Nv_mol(i_cell)   = grid%grd_mol_density(i_cell)    * REAL(grid%cell_vol(i_cell),kind=r2)
                     grid%Nv_col(i_cell,:) = grid%grd_col_density(i_cell,:)  * REAL(grid%cell_vol(i_cell),kind=r2)
-!~                     if (i_cell == 46) THEN
-!~                         print *, REAL(grid%grd_dust_density(i_cell,1),kind=r2) * REAL(grid%cell_vol(i_cell),kind=r2)
-!~                         print *, grid%grd_mol_density(i_cell), grid%cell_vol(i_cell)
-!~                         print *, grid%grd_col_density(i_cell,1)
-!~                         stop
-!~                     END IF
                     ! set velocity, in a future release we should generalize this as well somehow
                     ! 
-                    grid%velo(i_cell,1,:)  = Get_velo(caco)
+                    grid%velo(i_cell,:)  = Get_velo(caco,model%kep_const)
                     
                     
-                    grid%absvelo(i_cell,1) = norm(REAL(grid%velo(i_cell,1,:),kind=r2))
+                    grid%absvelo(i_cell) = norm(REAL(grid%velo(i_cell,:),kind=r2))
                     
                 end do
             end do
@@ -690,22 +697,27 @@ CONTAINS
     END SUBROUTINE set_grid_properties
     
     
-    PURE FUNCTION Get_velo(caco) RESULT(velo)
+    PURE FUNCTION Get_velo(caco,kep_const) RESULT(velo)
     
-        !define your velocity distribution here! velo in cartesian coordinates
+        ! define your velocity distribution here! velo in cartesian coordinates
+        !
         IMPLICIT NONE
         !------------------------------------------------------------------------!
         REAL(kind=r2), DIMENSION(1:3),INTENT(IN)                 :: caco
         REAL(kind=r1), DIMENSION(1:3)                            :: velo
         REAL(kind=r2)                                            :: konst, expp, r
+        REAL(kind=r1),INTENT(IN)                                 :: kep_const
         !------------------------------------------------------------------------!
-        konst = 26000.0_r2   !m/s = 26 km/s
-        expp  = -1.5_r2
-        r     = (caco(1)**2+caco(2)**2)**(expp*0.5_r2)*konst
+        ! we assume pure keplerian rotation, therefore v(r) ~ r**-0.5
+!~         konst = 26000.0_r2 
+        konst = kep_const  !
         
-        velo(1) = (-1.0_r2) * caco(2) * r
-        velo(2) =             caco(1) * r
-        velo(3) = 0.0_r2 
+        expp  = -1.5  ! is a result of keplerian rotation and coordinate system conversion
+        r     = (caco(1)**2+caco(2)**2)**(expp*0.5)*konst
+        
+        velo(1) = (-1.0) * caco(2) * r
+        velo(2) =          caco(1) * r
+        velo(3) = 0.0
         
     END FUNCTION Get_velo
     

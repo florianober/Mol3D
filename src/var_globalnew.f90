@@ -26,7 +26,7 @@ module var_globalnew
         con_c2    = 1.43878631423230881E-2_r2, &
         con_AU    = 1.496e+11_r2, &
         con_pc    = 3.0856776e+16_r2,&
-        con_gamma = 6.672e-11_r2, &
+        con_gamma = 6.67384e-11_r2, &
         con_sigma = 5.6704e-8_r2, &
         con_mu    = 1.660538e-27_r2, &
         L_sun     = 3.85e+26_r2, &

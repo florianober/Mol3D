@@ -1,0 +1,15 @@
+##################################################################################
+#                        additional mol3d input file                             #
+#                                                                                #
+# Additional input parameters, maybe for a customized user density distribution  #
+#                                                                                #
+# If you have questions, please feel free to ask me.                             #
+#                                                                                #
+# author: Florian Ober                                                           #
+# email : fober@astrophysik.uni-kiel.de                                          #    
+# date  : Nov 2013                                                               #
+##################################################################################
+
+R_gap_in = {10.0}
+R_gap_ou = {11.0}
+

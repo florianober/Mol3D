@@ -4,6 +4,9 @@
 easy visualisation tool for mol3d.
 ver.: 0.1
 
+NOTE: This file can be used and has some advantages, but it is obsolent, please use
+      the new file: visual_mol3d.py
+
 How to get started: 
 
 date   : 30/05/2013

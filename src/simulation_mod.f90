@@ -221,11 +221,12 @@ CONTAINS
 
             DEALLOCATE( calc_px, inten_px, notopx)
         END DO ! orientation map.
+        print *, ' Saving channel maps'
+
+        CALL save_ch_map(model, basics, gas, fluxes)
     END IF
     
-    print *, ' Saving channel maps'
 
-    CALL save_ch_map(model, basics, gas, fluxes)
 
     
     print *, 'Simulation finished!'
@@ -420,7 +421,7 @@ CONTAINS
                                 
                                 DO k = 1,6
                                     velo_dir_xyz   =  dot_product(Get_velo(pos_xyz_cell+ &
-                                                      cell_d_l*grid%dir_xyz*RK_c(k)),grid%dir_xyz) 
+                                                      cell_d_l*grid%dir_xyz*RK_c(k),model%kep_const),grid%dir_xyz) 
                                     expo = -((gas%velo_channel(vch)-velo_dir_xyz)**2*      &
                                                      grid%cell_gauss_a2(nr_cell))
                                     gauss_val  =  exp(expo)
