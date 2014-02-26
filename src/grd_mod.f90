@@ -669,11 +669,11 @@ CONTAINS
                     ! set the density for the selected molecule
                     ! don't load this from the old model, so we are able to distribute the molecules
                     ! in the way we want
-                    IF (P_z .gt. P_xy**2/500. .and. P_z .lt. P_xy**2/100.) THEN
+!~                     IF (P_z .gt. P_xy**2/500. .and. P_z .lt. P_xy**2/100.) THEN
                         grid%grd_mol_density(i_cell)   = grid%grd_col_density(i_cell,1)*gas%mol_abund
-                    ELSE
-                        grid%grd_mol_density(i_cell)   = 0.0
-                    END IF
+!~                     ELSE
+!~                         grid%grd_mol_density(i_cell)   = 0.0
+!~                     END IF
                     ! resulting number of particles/molecules
 
                     grid%Nv(i_cell,:)     = grid%grd_dust_density(i_cell,:) * REAL(grid%cell_vol(i_cell),kind=r2)

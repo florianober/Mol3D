@@ -609,7 +609,7 @@ contains
     hi1     = hi_arr1(1)
     
     
-    d_l = d_lx_sel(hi1) +1.0e5_r2*epsilon(d_l)
+    d_l = d_lx_sel(hi1) +1.0e6_r2*epsilon(d_l)
     
     ! check: is the calculated step width large than the minimum allowed step width?
     if (d_l < grid%d_l_min) then
