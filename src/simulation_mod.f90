@@ -66,7 +66,7 @@ CONTAINS
     REAL(kind=r2), dimension(:,:), allocatable :: calc_px
     REAL(kind=r2), dimension(:,:,:), allocatable :: inten_px
     
-    
+    CHARACTER(len=252)                           :: filename
     !--------------------------------------------------------------------------!
     print *,''                                                    
     print *,'starting simulation [level 4]'
@@ -177,7 +177,7 @@ CONTAINS
                 calc_px(i,3:4) = pixel_p%size_xy
                 CALL RemoveLast(pixel_list)
             END DO
-            PRINT '(A,I7,A,I5,A)', '   do raytrace with ',no_pixel,' Pixel (', &
+            PRINT '(A,I7,A,I7,A)', '   do raytrace with ',no_pixel,' Pixel (', &
                                       no_pixel-(2*model%n_bin_map +1)**2, ' subpixel)' 
             k = 1
 
@@ -187,7 +187,7 @@ CONTAINS
             DO i = 1, no_pixel
 !~             DO i = 23001,26101! no_pixel
 !~                 print *,i
-                IF (i == int(k*no_pixel*0.05)) THEN
+                IF (i == int(k*no_pixel*0.01)) THEN
                     WRITE (*,'(A,I3,A)') '      ',int(i/real(no_pixel)*100),' % done...'//char(27)//'[A'
                     k = k + 1
                 END IF
@@ -204,20 +204,25 @@ CONTAINS
             !$omp end do nowait
             !CLOSE(unit=1)
             !$omp end parallel
+            filename = TRIM(basics%path_results)//Getproname(basics)//'_pixelmap.dat'
+                open(unit=1, file=TRIM(filename), &
+                action="write", status="unknown", form="formatted")
             WRITE (*,"(A)") " Raytracing ... finished! "
             DO i = 1, no_pixel
                 fluxes%channel_map(notopx(i,1),notopx(i,2),:,:) = &
-                         fluxes%channel_map(notopx(i,1),notopx(i,2),:,:) + inten_px(i,:,:)
+                         fluxes%channel_map(notopx(i,1),notopx(i,2),:,:) +  unit_value* &
+                         inten_px(i,:,:)*(calc_px(i,3)*calc_px(i,4)*4.)/(rho_size_i*rho_size_j)
+                WRITE(unit=1,fmt=*) calc_px(i,1:2)
             END DO
-            
-            DO i = 0, 2*model%n_bin_map
+            close(unit=1)
+!~             stop
+!~             DO i = 0, 2*model%n_bin_map
 !~             DO i = 1, 1!2*model%n_bin_map
-                DO j = 0, 2*model%n_bin_map
+!~                 DO j = 0, 2*model%n_bin_map
 !~                 DO j = 1, 1!2*model%n_bin_map
-                    fluxes%channel_map(i,j,:,:) = fluxes%channel_map(i,j,:,:)/ &
-                                                  REAL(counter(i,j),kind=r2)*unit_value
-                END DO
-            END DO
+!~                     fluxes%channel_map(i,j,:,:) = fluxes%channel_map(i,j,:,:) * unit_value
+!~                 END DO
+!~             END DO
 
             DEALLOCATE( calc_px, inten_px, notopx)
         END DO ! orientation map.
@@ -570,9 +575,10 @@ CONTAINS
                             
                         END IF
                     CASE('cylindrical')
-
+!~                         print *,  grid%dir_xyz,(/0,0,1/)
                         IF (abs(dot_product(grid%dir_xyz,(/0,0,1/))) == 1.0 ) THEN
-                            EXIT
+                            dz_sum = 2.1* sqrt(ray_len)
+                            d_l = 0.0
                         ELSE
                             d_l =  abs((2.0_r2+epsilon(d_l)*1.0e2_r2) * model%r_in * &
                                    dot_product(grid%dir_xyz(1:2),pos_xyz(1:2))/ &
@@ -580,7 +586,7 @@ CONTAINS
                                    sqrt(1.0-abs(dot_product(grid%dir_xyz,(/0,0,1/)))))
 
                         END IF
-                            pos_xyz_new    = pos_xyz + d_l * grid%dir_xyz
+                        pos_xyz_new    = pos_xyz + d_l * grid%dir_xyz
                     END SELECT
                     
                     nr_cell_new    = get_cell_nr( grid, pos_xyz_new)
@@ -592,7 +598,7 @@ CONTAINS
                 END IF
                 
                 ray_minA = MIN(ray_minA, grid%cell_minA(nr_cell))
-                IF ( xxres*yyres .gt. ray_minA .and. ray_minA .gt. 1.0e-3) THEN
+                IF ( xxres*yyres .gt. ray_minA .and. ray_minA .gt. 1.0e-9) THEN
                     log_size = .True.
                     EXIT
                 END IF

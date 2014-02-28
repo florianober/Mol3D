@@ -104,7 +104,7 @@ CONTAINS
         grid%t_gas(i_cell) = grid%t_dust(i_cell,1)! setting the gas temperature equal to the dust temperature
         
         ! include some kind of freeze out Temperature (TbD: define this more generally)
-        IF ( grid%t_gas(i_cell) <= 1.0 ) THEN
+        IF ( grid%t_gas(i_cell) <= 35.0 .or. grid%t_gas(i_cell) >= 60.0 ) THEN
             grid%grd_mol_density(i_cell)   = 0.0
         END IF
     END DO

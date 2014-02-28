@@ -49,7 +49,7 @@ CONTAINS
         
         DO i_cell=1,grid%n_cell
             
-            write(unit=1,fmt='(I5,11(ES15.6E3))') i_cell, grid%cellmidcaco(i_cell,:), grid%grd_dust_density(i_cell,1), &
+            write(unit=1,fmt='(I8,11(ES15.6E3))') i_cell, grid%cellmidcaco(i_cell,:), grid%grd_dust_density(i_cell,1), &
                                                    grid%grd_mol_density(i_cell) , &
                                                    grid%grd_col_density(i_cell,1:3), &
                                                    grid%t_dust(i_cell,1), grid%t_gas(i_cell), &

@@ -135,7 +135,7 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas)
     n_interact_max    = 100000
     project_2D = .TRUE.                  ! old parameter from mc3d
     
-    show_error = .True.                             ! show some minor warnings
+    show_error = .False.                             ! show some minor warnings
 
     ! use results of earlier calculations
     !

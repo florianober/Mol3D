@@ -40,8 +40,8 @@ def make_model(path_results,p_name):
     
     model = np.loadtxt(path_results+p_name+'_model.dat',skiprows=1)
     
-    # tbd: assuming at the moment only one cell in phi direction
-    x = -model[:,1]
+    # tbd: assuming rotational symmetry
+    x = (model[:,1]**2+model[:,2]**2)**0.5*np.sign(model[:,1])*np.sign(model[:,2])
     y = model[:,3]
 
     # gas Temperature

@@ -24,28 +24,31 @@ try:
     p_name = sys.argv[1]
 except:
     p_name = 'temp2'
-
+    
 try:
-    path_results = sys.argv[2]
+    inp2 = sys.argv[2]
     
 except:
-    #~ path_results = '../results/'
-    path_results = '/data/fober/mol3dresults/'
+    inp2 = '/data/fober/mol3dresults/'
 
+path_results = inp2
+    
 home         = '../'
+show_all = False
 
 def main():
+    
+    if show_all:
+        # present the model
 
-    # present the model
-
-    sm.make_model(path_results,p_name)
-    
-    # present temperature in x midplane
-    
-    oneD(path_results+p_name+'_temp_x.dat',i=0)
-    
+        sm.make_model(path_results,p_name)
+        
+        # present temperature in x midplane
+        
+        oneD(path_results+p_name+'_temp_x.dat',i=0)
+        
     # present line spectrum
-    
+        
     oneD(path_results+p_name+'_velo_ch_mapsum.dat',i=1)
     
     # present velocity channel integrated map

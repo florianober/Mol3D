@@ -107,7 +107,7 @@ CONTAINS
                 end do
             end do
         end do
-        grid%cell_minA(0) = MINVAL(grid%cell_minA(1:grid%n_cell))
+        grid%cell_minA(0) = model%r_in**2*PI
 !    ! fill grid with disk properties,e.g. temp, density, velocity...
         CALL set_grid_properties(basics,grid,gas,model)   
     ! verification: maximum cell number (i.e., total number of cells) = total number of cells
@@ -360,7 +360,7 @@ CONTAINS
         grid%cell_minA(i_cell) = MIN( 0.5* dth *  (grid%co_mx_a(i_r)**2-grid%co_mx_a(i_r-1)**2), &
                                     ( dth * grid%co_mx_a(i_r-1) * dz), &
                                     ( (grid%co_mx_a(i_r)-grid%co_mx_a(i_r-1))*dz))
-                               
+        grid%cell_minA(i_cell) = grid%cell_minA(i_cell)
         ! volume of individual cells [m^3]
         
         grid%cell_vol(i_cell) = 0.5_r2 * dz * dth * &
@@ -454,6 +454,7 @@ CONTAINS
         REAL(kind=r2)                               :: dr1
         REAL(kind=r2)                               :: dth
         REAL(kind=r2)                               :: dz
+        REAL(kind=r2)                               :: sf
         !------------------------------------------------------------------------!        
         ! ---
         ! 1.1. rho
@@ -488,15 +489,16 @@ CONTAINS
         ! co_mx_c( 0 )  =- r_out
         ! co_mx_c(n(3)) =  r_out
         ! dz should not be constant, because we want to have small cells in the inner region
-        !      -> we use sf too
+        !      -> we use sf too, but not the user given value but a fixed one
         
 !~         grid%co_mx_c(grid%n(3)*0.5) = 0.0_r2
-        
+        sf = 1.08_r2
+!~         sf = grid%sf
         !dz = 2.0_r2*model%r_ou / real(grid%n(3), kind=r2)
-        dz = model%r_ou * (grid%sf-1.0_r2)/ (grid%sf**((grid%n(3)-1)*0.5) - 1.0_r2)
+        dz = model%r_ou * (sf-1.0_r2)/ (sf**((grid%n(3)-1)*0.5) - 1.0_r2)
         do i_z=1, int(grid%n(3)*0.5)
-            grid%co_mx_c(int((grid%n(3)-1)*0.5+i_z+1)) =            dz * (grid%sf**i_z - 1.0_r2) / (grid%sf-1.0_r2)
-            grid%co_mx_c(int((grid%n(3)-1)*0.5-i_z)) =  -1.0_r2 * dz * (grid%sf**i_z - 1.0_r2) / (grid%sf-1.0_r2)
+            grid%co_mx_c(int((grid%n(3)-1)*0.5+i_z+1)) =            dz * (sf**i_z - 1.0_r2) / (sf-1.0_r2)
+            grid%co_mx_c(int((grid%n(3)-1)*0.5-i_z)) =  -1.0_r2 * dz * (sf**i_z - 1.0_r2) / (sf-1.0_r2)
         end do
         grid%co_mx_c(int((grid%n(3)-1)*0.5)) = -1.0_r2/3.0_r2 * dz 
         grid%co_mx_c(int((grid%n(3)-1)*0.5+1)) = 1.0_r2/3.0_r2 * dz 

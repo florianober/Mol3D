@@ -20,11 +20,14 @@ import numpy as np
 import little as l
 from mpl_toolkits.axes_grid1 import AxesGrid
 
-path_mol3d  = '/data/fober/mcmolresults/'
-pname       = 'CO3to2nogapana'
-#~ pname       = 'CO3to2gap9to11'
-#~ pname       = 'CO1to0nogap'
-pname       = 'CO3to2test6'
+try:
+    pname = sys.argv[1]
+
+except:
+    pname = 'CO3to2nogapana'
+    
+
+path_mol3d  = '/data/fober/mol3dresults/'
 ch_map      = '_velo_ch_map.dat'
 int_map      = '_velo_ch_mapint.dat'
 
@@ -53,8 +56,8 @@ def main():
     velmap  = l.mol3d_intmap(map_in,vch)
     
     #~ velmap[200,195] = 0
-    #~ l.plot_image(velmap,num=2,fig_title=pname,xlab="d [AU]",ylab="d [AU]",map_range=[-120,120,-120,120]
-                    #~ ,color_loc=True)
+    l.plot_image(velmap,num=2,fig_title=pname,xlab="d [AU]",ylab="d [AU]",map_range=[-120,120,-120,120]
+                    ,color_loc=True)
     #~ plt.figure(8)
     
     #~ plt.plot(vch,map_in[:,200,206])
@@ -96,10 +99,10 @@ def main():
             #~ grid[t].plot(vch,spec,'k',label='Pix no: '+str(i))
             #~ plt.figure(t+101)
             #fig, ax = plt.subplots()
-            im = grid[grd_pos[t]].plot(vch,spec,'k')
+            #~ im = grid[grd_pos[t]].plot(vch,spec,'k')
             ext = [vch[0],-vch[0],0,np.max(spec)]
-            #~ im = grid[grd_pos[t]].imshow(map_in.sum(axis=0)[k*no_subpix:(k+1)*no_subpix,j*no_subpix:(j+1)*no_subpix]*(vch[1]-vch[0])*1e-3,
-                #~ origin='lower',interpolation='None',vmin=vmin,vmax=vmax,aspect="auto",extent=ext)
+            im = grid[grd_pos[t]].imshow(map_in.sum(axis=0)[k*no_subpix:(k+1)*no_subpix,j*no_subpix:(j+1)*no_subpix]*(vch[1]-vch[0])*1e-3,
+                origin='lower',interpolation='None',vmin=vmin,vmax=vmax,aspect="auto",extent=ext)
             
             #~ im = grid[t].imshow(map_in.sum(axis=0))
             #~ grid.cbar_axes[t].colorbar(im)
