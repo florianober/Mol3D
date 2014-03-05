@@ -13,6 +13,7 @@ MODULE grd_mod
     USE model_type
     USE math_mod
     USE tools_mod
+    USE fileio
     IMPLICIT NONE
     
     !--------------------------------------------------------------------------!
@@ -66,7 +67,8 @@ CONTAINS
         INTEGER                                     :: i_cell
         INTEGER                                     :: i_dust
         
-        REAL(kind=r1)                               :: hd_totalmass
+        REAL(kind=r2)                               :: hd_totalmass
+        REAL(kind=r2)                               :: hd_dusttotalmass
         REAL(kind=r1)                               :: hd1
         REAL(kind=r1)                               :: hd2
 
@@ -76,7 +78,7 @@ CONTAINS
         ! ---
         ! 1. set boundaries of each cell for the selected coordinate system
 
-        Call set_boundaries(grid, model)
+        Call set_boundaries(grid, model,basics)
         
         
         ! ---
@@ -132,7 +134,7 @@ CONTAINS
             print *, 'selected coordinate system not found, verification of volume space'
             stop
         END SELECT
-        
+!~         print *, abs(hd1-hd2)/hd1
         if ( abs(hd1-hd2)/hd1 > 0.01_r2 ) then
             print *,"!!! Warning:in subroutine make_grid() "
             print *,"    Difference between the VOLUME OF THE MODEL SPACE"
@@ -144,7 +146,7 @@ CONTAINS
             stop
         end if
         
-        
+        print *, ''
         !------------------------------------------------------------------------!
         !    ! estimate mass
         
@@ -164,9 +166,7 @@ CONTAINS
                 hd_totalmass =  hd_totalmass + sum(grid%Nv(:,i_dust)) * 4.0_r2*PI/3.0_r2 * &
                                 hd2**3 * dust%den_dust(i_dust)*1.0e+3_r2 / M_sun
             end do
-    !~         print *, sum(grid%Nv(:,1))
             ! rescale mass to user-defined value
-            
             grid%grd_dust_density(:,:) = grid%grd_dust_density(:,:) * model%mass/hd_totalmass
             grid%Nv(:,:)               = grid%Nv(:,:)               * model%mass/hd_totalmass
         END IF
@@ -183,7 +183,7 @@ CONTAINS
         
         ! dust mass verification
         hd_totalmass = 0.0_r2
-    
+        hd_dusttotalmass = 0.0_r2
         do i_dust=1, dust%n_dust
             if (dust%sidi_par(i_dust,3)==0.0_r2) then
                 hd2 = dust%sidi_par(i_dust,1)
@@ -195,11 +195,10 @@ CONTAINS
                 dust%sidi_par(i_dust,1)**(1.0_r2+dust%sidi_par(i_dust,3)))
                 hd2 = hd2**(1.0_r2/3.0_r2)
             end if
-            hd_totalmass =  hd_totalmass + sum(grid%Nv(:,i_dust)) * 4.0_r2*PI/3.0_r2 * &
+            hd_dusttotalmass =  hd_dusttotalmass + sum(grid%Nv(:,i_dust)) * 4.0_r2*PI/3.0_r2 * &
                             hd2**3 * dust%den_dust(i_dust)*1.0e+3_r2 / M_sun
         end do
-        print *,''
-        print '(A,ES11.4,A)',' dust mass           : ',hd_totalmass, ' M_sun'
+
         
         ! estimate gas mass and rescale 
         ! Nv_mol,  defined molecule
@@ -211,7 +210,8 @@ CONTAINS
                  
         
         ! rescale total mass
-        grid%grd_col_density(:,1) = grid%grd_col_density(:,1) * model%mass*gas%dust_mol_ratio/hd_totalmass
+!~         grid%grd_col_density(:,1) = grid%grd_col_density(:,1) * model%mass*gas%dust_mol_ratio/hd_totalmass
+        grid%grd_col_density(:,1) = grid%grd_col_density(:,1) * hd_dusttotalmass*gas%dust_mol_ratio/hd_totalmass
         
         grid%Nv_col(:,1) = grid%grd_col_density(:,1) * REAL(grid%cell_vol(:),kind=r2)
         
@@ -261,6 +261,10 @@ CONTAINS
                         sum(grid%Nv_mol(:))     *gas%mol_weight/con_Na*1.0e-3_r2/ M_sun
         
 !~         print *, grid%Nv_col(46,1)
+        print '(A,ES11.4,A)',' dust mass           : '&
+               ,sum(grid%Nv(:,1)) * 4.0_r2*PI/3.0_r2 * &
+                            hd2**3 * dust%den_dust(1)*1.0e+3_r2 / M_sun, ' M_sun'
+
         print '(A,ES11.4,A)',' H2 ortho mass       : '&
               ,sum(grid%Nv_col(:,3)) *col_p_weight(1)/con_Na*1.0e-3_r2/ M_sun, ' M_sun'
               
@@ -412,13 +416,14 @@ CONTAINS
     
     
     !  ! ################################################################################################    
-    SUBROUTINE set_boundaries(grid,model)
+    SUBROUTINE set_boundaries(grid,model,basics)
         !generic routine
         IMPLICIT NONE
         !------------------------------------------------------------------------!
         
         TYPE(Grid_TYP), INTENT(INOUT)               :: grid
         TYPE(Model_TYP), INTENT(IN)                 :: model
+        TYPE(Basic_TYP), INTENT(IN)                 :: basics
         !------------------------------------------------------------------------!
         
         SELECT CASE(GetGridName(grid))
@@ -436,6 +441,8 @@ CONTAINS
             print *, 'selected coordinate system not found, set_boundaries'
             stop
         END SELECT
+        
+        CALL save_boundaries(grid,model,basics)
     
     END SUBROUTINE set_boundaries
     
@@ -671,7 +678,7 @@ CONTAINS
                     ! set the density for the selected molecule
                     ! don't load this from the old model, so we are able to distribute the molecules
                     ! in the way we want
-!~                     IF (P_z .gt. P_xy**2/500. .and. P_z .lt. P_xy**2/100.) THEN
+!~                     IF (P_z .gt. P_xy**1.8/1000. .and. P_z .lt. P_xy**1.2/5.) THEN
                         grid%grd_mol_density(i_cell)   = grid%grd_col_density(i_cell,1)*gas%mol_abund
 !~                     ELSE
 !~                         grid%grd_mol_density(i_cell)   = 0.0

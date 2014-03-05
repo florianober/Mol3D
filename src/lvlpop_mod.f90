@@ -251,7 +251,7 @@ CONTAINS
         ! ---    
         IMPLICIT NONE
         !--------------------------------------------------------------------------!
-        REAL(kind=r1),INTENT(IN)                                 :: mol_dens
+        REAL(kind=r2),INTENT(IN)                                 :: mol_dens
         REAL(kind=r1),INTENT(IN)                                 :: lvl_pop_u
         REAL(kind=r1),INTENT(IN)                                 :: lvl_pop_l
         REAL(kind=r1),INTENT(IN)                                 :: doppler

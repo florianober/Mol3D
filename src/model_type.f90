@@ -21,9 +21,9 @@ MODULE model_type
         !-----------------------------------------------------------------------!
         REAL(kind=r2)        :: ref_unit
         REAL(kind=r2)        :: ref_unitn
-        REAL(kind=r1)        :: r_in
-        REAL(kind=r1)        :: r_ou
-        REAL(kind=r1)        :: mass
+        REAL(kind=r2)        :: r_in
+        REAL(kind=r2)        :: r_ou
+        REAL(kind=r2)        :: mass
         REAL(kind=r1)        :: r_star
         REAL(kind=r1)        :: M_star
         REAL(kind=r1)        :: t_star

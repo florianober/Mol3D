@@ -46,7 +46,7 @@ MODULE Grid_type
         REAL(kind=r1),DIMENSION(:),POINTER        :: cell_gauss_a
         REAL(kind=r1),DIMENSION(:),POINTER        :: cell_gauss_a2
         ! cell_vol(i_cell)  : volume of cell #i_cell [m^3]
-        REAL(kind=r1),DIMENSION(:),POINTER        :: cell_vol
+        REAL(kind=r2),DIMENSION(:),POINTER        :: cell_vol
         !  Nv(i_cell, i_dust): number of grains of species #i_dust in cell #i_cell
         REAL(kind=r2),DIMENSION(:,:),POINTER      :: Nv       
         REAL(kind=r2),DIMENSION(:,:),POINTER      :: Nv_col        
@@ -54,7 +54,7 @@ MODULE Grid_type
         REAL(kind=r1),DIMENSION(:,:),POINTER      :: lvl_pop        
         REAL(kind=r2),DIMENSION(:,:),POINTER      :: Nv_r
         !  grd_density: this is the number density of the dust component (from mc3d)
-        REAL(kind=r1),DIMENSION(:,:),POINTER      :: grd_dust_density
+        REAL(kind=r2),DIMENSION(:,:),POINTER      :: grd_dust_density
         !  grd_coldensity: this is the number density of all(!) possible collision partner for the
         !                  selected molecule
         !                  first dimension: cell identifier
@@ -65,10 +65,10 @@ MODULE Grid_type
         !                                    4) He
         !                                    5) Elektron
         !                                    6) ...
-        REAL(kind=r1),DIMENSION(:,:),POINTER      :: grd_col_density
+        REAL(kind=r2),DIMENSION(:,:),POINTER      :: grd_col_density
         !  grd_mol_density: this is the number density of the selected molecule
         !
-        REAL(kind=r1),DIMENSION(:),POINTER         :: grd_mol_density
+        REAL(kind=r2),DIMENSION(:),POINTER         :: grd_mol_density
         
         
         REAL(kind=r1), DIMENSION(:,:), POINTER   :: col_finalcolmatrixup

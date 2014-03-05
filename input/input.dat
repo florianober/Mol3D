@@ -11,11 +11,11 @@
 # email          : fober@astrophysik.uni-kiel.de                                 #
 # mol3d version  : Feb 2014                                                      #
 #                                                                                #
-# execution date : 2014-02-28 / 13:01                                            #
+# execution date : 2014-03-05 / 12:49                                            #
 ##################################################################################
 
 
-proname = {prob_cy_5}                 project name
+proname = {dens_test}                 project name
 r_path = {/data/fober/mol3dresults/}      define results path
 old_model = {F}
 old_proname = {notdefined}           the project name of the older calculation
@@ -24,35 +24,35 @@ num_core = {003}                       number of cores used (raytracing, tempera
 calc_temp = {F}                        calculate temperature (with monte carlo method)
 do_raytr = {T}
 
-r_in = {   1.000000E-01}                        inner radius
-r_ou = {   1.200000E+02}                        outer radius
-mass_dust = {   1.000000E-06}                        dust mass
+r_in = {   4.000000E-02}                        inner radius
+r_ou = {   8.000000E+02}                        outer radius
+mass_dust = {   7.000000E-04}                        dust mass
 t_eff = {   4.000000E+03}                        effective Temperature
-R_star = {   2.000000E+00}                        radius of star
-M_star = {   1.000000E+00}                        stellar mass
+R_star = {   2.640000E+00}                        radius of star
+M_star = {   7.000000E-01}                        stellar mass
 
 distance = {   1.400000E+02}                   object distance [pc]
-n_bin_map = {3}                     half number of pixel, total pixel = 2 * n_bin_map1 + 1
+n_bin_map = {0400}                     half number of pixel, total pixel = 2 * n_bin_map1 + 1
 n_star_emi = {    100000}                     number of photons per wavelength
-th_map = { 0.00}                   inclination to observer
+th_map = { 60.00}                   inclination to observer
 ph_map = {  0.00}                   
 
 zoom_map = {  1.00}                    factor to zoom inside the model >= 1 !
 
 molratio = {   9.900000E+01}                        gas-dust ratio
-abundance = {   1.000000E-04}                        selected molecule abundance to H
+abundance = {   1.000000E-09}                        selected molecule abundance to H
 line_mode = {3}                           set the method to calculate the level populations,1 := LTE  2 := FEP  3 := LVG  9 := file (TbD)
 line = {3}                        line transition no (see gas_input file)  
 
-gas_cat_name = {co.dat}                     gas catalog name (in input/mol) (leiden databaase style)
-i_vel_chan = {40}                     (half) Number of velocity channels
+gas_cat_name = {hco+@xpol.dat}                     gas catalog name (in input/mol) (leiden databaase style)
+i_vel_chan = { 80}                     (half) Number of velocity channels
 vel_max = {4000.00}                   max velocity in spectrum (in m/s)
 dust_cat_name = {mrn---v4}                     dust catalog name (in input/dust) (in mc3d style)
 
-grid_type = {cylindrical}                  possible values: spherical (OK), cylindrical, cartesian (planned)
-n_a = {80}                     
-n_b = {1}                     
-n_c = {51}                     
-sf = { 1.001000000}                   stepfactor for logarithm grid
+grid_type = {spherical}                  possible values: spherical (OK), cylindrical, cartesian (planned)
+n_a = {700}                     
+n_b = {181}                     
+n_c = {  1}                     
+sf = { 1.005000000}                   stepfactor for logarithm grid
 
 flux_unit = {Jy_pix}                  possible values: spherical (OK), cylindrical, cartesian (planned)

@@ -104,9 +104,9 @@ CONTAINS
         grid%t_gas(i_cell) = grid%t_dust(i_cell,1)! setting the gas temperature equal to the dust temperature
         
         ! include some kind of freeze out Temperature (TbD: define this more generally)
-        IF ( grid%t_gas(i_cell) <= 35.0 .or. grid%t_gas(i_cell) >= 60.0 ) THEN
-            grid%grd_mol_density(i_cell)   = 0.0
-        END IF
+!~         IF ( grid%t_gas(i_cell) <= 35.0 .or. grid%t_gas(i_cell) >= 60.0 ) THEN
+!~             grid%grd_mol_density(i_cell)   = 0.0
+!~         END IF
     END DO
     
     CALL sv_temp(basics, grid)      ! The propose of this routine has changed, nowadays it
@@ -201,7 +201,7 @@ CONTAINS
             P_h     = 5.0_r2 * (P_xy/100.0_r2)**1.125_r2
             
            ! temps   = 500.0_r2*P_xy**(-0.5) * (2.0-exp(-0.5*(abs(caco(3))/P_h)**2))
-            temps   = 500.0_r2*P_xy**(-0.5)
+            temps   = 200.0_r2*P_xy**(-0.5)
 
     END FUNCTION Get_temp
   

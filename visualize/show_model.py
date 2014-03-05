@@ -46,67 +46,77 @@ def make_model(path_results,p_name):
 
     # gas Temperature
     
-    z = model[:,10]
-    create_plot(x,y,z,'Gas Temperature')
+    #~ z = model[:,10]
+    #~ create_plot(x,y,z,'Gas Temperature')
     
     # dust distribution
     
-    z = model[:,4]
-    create_plot(x,y,np.log10(z),'Dust number density distribution')
+    #~ z = model[:,4]
+    #~ create_plot(x,y,np.log10(z*1e-6),'Dust number density distribution')
     
     # H2 distribution
-    
+    #~ 
     z = model[:,6]
-    create_plot(x,y,np.log10(z),'H2 number density distribution')
+    create_plot(x,y,np.log10(z*1e-6),'H2 number density distribution')
     
     # molecule distribution
     
     z = model[:,5]
-    create_plot(x,y,np.log10(z),'Molecule number density distribution')
+    create_plot(x,y,np.log10(z*1e-6),'Molecule number density distribution')
     
     # molecule distribution in relation to H2
-    
-    z = model[:,5]/model[:,6]
-    create_plot(x,y,z,'Molecule/H2 density distribution')
+    #~ 
+    #~ z = model[:,5]/model[:,6]
+    #~ create_plot(x,y,z,'Molecule/H2 density distribution')
 
     # velocity distribution
-    if model.shape[1] > 11:  # just to work with older versions
-        z = model[:,11]/1000
-        create_plot(x,y,z,'Velocity distribution')
+    #~ if model.shape[1] > 11:  # just to work with older versions
+        #~ z = model[:,11]/1000
+        #~ create_plot(x,y,z,'Velocity distribution')
 
 
 def create_plot(x,y,z,name):
     
-    xi = np.linspace(np.max(x),np.min(x),400)
-    yi = np.linspace(np.max(y),np.min(y),400)
+    N = 501
+    xi = np.linspace(np.max(x),np.min(x),N)
+    yi = np.linspace(np.max(y),np.min(y),N)
     
     zi = griddata((x, y), z, (xi[None,:], yi[:,None]), method='linear')
     
     plt.figure(name)
     #cont = [30,35,40,45,50]
-    #~ print name.split()
-    colors = 150
     bar = True
+    colors = 151
     if 'Temperature' in name:
         ext = ' [K]'
-        cont = [30,35,40,45]
-        
+        cont = [10,20,25,30,35,40]
+        #~ colors = 151
+        colors = np.round(np.linspace(0,100,151))
     elif 'density' in name:
-        ext = ' lg [m^-3]'
-        cont = 10
+        ext = ' lg [cm^-3]'
+        cont = np.round(np.linspace(-5,np.nanmax(zi),10))
+        colors = np.round(np.linspace(-12,np.nanmax(zi),151))
+        if 'H2' in name:
+            ext = ' lg [cm^-3]'
+            cont = np.round(np.linspace(-5,np.nanmax(zi),10))
+            cont = [5,5.5,6,6.5,7,7.5,8]
+            colors = np.round(np.linspace(-12,np.nanmax(zi),151))
     elif 'Velocity' in name:
         ext = ' [km/s]'
-        cont = [40,10,5,3]
-        
+        #~ cont = [zi[,1.5,2,3,5]
+        cont = [1,1.5,2,3,5]
+        colors = np.round(np.linspace(0,16,151),2)
     if 'Molecule/H2' in name:
         colors = 1
         bar = False
 
     if not 'Molecule/H2' in name:
-        CS = plt.contour(xi,yi,zi,cont,linewidths=0.5,colors='k')
+        #~ pass
+        CS = plt.contour(xi,yi,zi,cont,linewidths=1,colors='k')
         plt.clabel(CS,inline=1,fmt='%2.1f', fontsize=10)
+
     CS = plt.contourf(xi,yi,zi,colors,cmap=plt.cm.jet)
-    
+
     plt.xlim(np.min(x),np.max(x))
     plt.ylim(np.min(y),np.max(y))
     

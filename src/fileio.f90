@@ -4,22 +4,85 @@ MODULE fileio
     USE datatype
     USE grid_type
     USE basic_type
-    USE dust_type
+!~     USE dust_type
     USE model_type
     USE fluxes_type
     USE gas_type
-    USE math_mod
+!~     USE math_mod
     
-    USE grd_mod
     
     IMPLICIT NONE
     !--------------------------------------------------------------------------!
     PRIVATE
     !--------------------------------------------------------------------------!
-    PUBLIC :: vis_plane, save_ch_map, sv_temp, load_temp_dist, save_input, save_model
+    PUBLIC :: vis_plane, save_ch_map, sv_temp, load_temp_dist, save_input, save_model, &
+              save_boundaries
     !--------------------------------------------------------------------------!
-CONTAINS
+CONTAINS    
 
+    SUBROUTINE save_boundaries(grid,model,basics)
+        IMPLICIT NONE
+        !--------------------------------------------------------------------------!
+        TYPE(Grid_TYP), INTENT(IN)                   :: grid
+        TYPE(Basic_TYP), INTENT(IN)                  :: basics
+        TYPE(Model_TYP), INTENT(IN)                  :: model
+        !--------------------------------------------------------------------------!
+        INTEGER                                      :: i
+        CHARACTER(len=252)                           :: filename
+        CHARACTER(len=16)                            :: a
+        CHARACTER(len=16)                            :: b
+        CHARACTER(len=16)                            :: c
+        !--------------------------------------------------------------------------!
+        filename = TRIM(basics%path_results)//Getproname(basics)//'_cell_boundaries.dat'
+        open(unit=1, file=TRIM(filename), &
+            action="write", status="unknown", form="formatted")
+            
+        ! write header:
+        write(unit=1,fmt='(A)') '# cell boundaries: '
+        SELECT CASE(GetGridName(grid))
+        
+        CASE('spherical')
+            write(unit=1,fmt='(A)') '# id            r            theta            phi'
+            
+        CASE('cylindrical')
+            write(unit=1,fmt='(A)') '# id            r            phi              z'
+            
+        CASE('cartesian')
+            write(unit=1,fmt='(A)') '# id            x            y                z'
+        CASE DEFAULT   
+            print *, 'selected coordinate system not found, save_boundaries'
+            stop
+        END SELECT
+        write(unit=1,fmt='(A)') ''
+        DO i = 0,maxval(grid%n)
+        
+            IF ( i .gt. grid%n(1) ) THEN
+            
+                WRITE(a,fmt='(A)') ''
+            ELSE
+                WRITE(a,fmt='(F16.8)') grid%co_mx_a(i)
+            END IF
+            
+            IF ( i .gt. grid%n(2) ) THEN
+                WRITE(b,fmt='(A)') ''
+            ELSE
+                WRITE(b,fmt='(F16.8)') grid%co_mx_b(i)
+            END IF
+            
+            IF ( i .gt. grid%n(3) ) THEN
+                WRITE(c,fmt='(A)') ''
+            ELSE
+                WRITE(c,fmt='(F16.8)') grid%co_mx_c(i)
+            END IF
+            
+!~             write(unit=1,fmt='(I5,3(F16.8))') i,a,b,c
+            write(unit=1,fmt='(I5,3(A))') i,a,b,c
+        
+        END DO
+        CLOSE(unit=1)
+!~         stop
+    END SUBROUTINE  save_boundaries
+        
     SUBROUTINE save_model(grid, basics)
     
         IMPLICIT NONE
@@ -91,7 +154,7 @@ CONTAINS
 !~             visarr => grid%grd_dust_density
             print *,'visualize dust density distribution'
         ELSE IF ( typename == 'densH2')  THEN
-            visarr => grid%grd_col_density
+!~             visarr => grid%grd_col_density
             print *,'visualize H2 density distribution'   
             !TbD!!!!
 !~         ELSE IF ( typename == 'densmol')  THEN
