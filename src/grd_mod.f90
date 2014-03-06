@@ -73,6 +73,8 @@ CONTAINS
         REAL(kind=r1)                               :: hd2
 
         REAL(kind=r2), DIMENSION(:), ALLOCATABLE    :: hd_arr1
+        
+        LOGICAL                                     :: mass_dens
         !------------------------------------------------------------------------!
         
         ! ---
@@ -149,28 +151,37 @@ CONTAINS
         print *, ''
         !------------------------------------------------------------------------!
         !    ! estimate mass
-        
+        !  scale to given mass, or to given density (at some point here 100 AU)
+!~         mass_dens = .True.
+        mass_dens = .False.
         IF (.not. basics%old_model) THEN
-            hd_totalmass = 0.0_r2
-            do i_dust=1, dust%n_dust
-                if (dust%sidi_par(i_dust,3)==0.0_r2) then
-                    hd2 = dust%sidi_par(i_dust,1)
-                else
-                    hd2 = (1.0_r2+dust%sidi_par(i_dust,3)) / (4.0_r2+dust%sidi_par(i_dust,3)) &
-                    * (dust%sidi_par(i_dust,2)**(4.0_r2+dust%sidi_par(i_dust,3)) - &
-                    dust%sidi_par(i_dust,1)**(4.0_r2+dust%sidi_par(i_dust,3))) &
-                    / (dust%sidi_par(i_dust,2)**(1.0_r2+dust%sidi_par(i_dust,3)) - &
-                    dust%sidi_par(i_dust,1)**(1.0_r2+dust%sidi_par(i_dust,3)))
-                    hd2 = hd2**(1.0_r2/3.0_r2)
-                end if
-                hd_totalmass =  hd_totalmass + sum(grid%Nv(:,i_dust)) * 4.0_r2*PI/3.0_r2 * &
-                                hd2**3 * dust%den_dust(i_dust)*1.0e+3_r2 / M_sun
-            end do
-            ! rescale mass to user-defined value
-            grid%grd_dust_density(:,:) = grid%grd_dust_density(:,:) * model%mass/hd_totalmass
-            grid%Nv(:,:)               = grid%Nv(:,:)               * model%mass/hd_totalmass
+            IF (mass_dens) THEN
+                hd_totalmass = 0.0_r2
+                do i_dust=1, dust%n_dust
+                    if (dust%sidi_par(i_dust,3)==0.0_r2) then
+                        hd2 = dust%sidi_par(i_dust,1)
+                    else
+                        hd2 = (1.0_r2+dust%sidi_par(i_dust,3)) / (4.0_r2+dust%sidi_par(i_dust,3)) &
+                        * (dust%sidi_par(i_dust,2)**(4.0_r2+dust%sidi_par(i_dust,3)) - &
+                        dust%sidi_par(i_dust,1)**(4.0_r2+dust%sidi_par(i_dust,3))) &
+                        / (dust%sidi_par(i_dust,2)**(1.0_r2+dust%sidi_par(i_dust,3)) - &
+                        dust%sidi_par(i_dust,1)**(1.0_r2+dust%sidi_par(i_dust,3)))
+                        hd2 = hd2**(1.0_r2/3.0_r2)
+                    end if
+                    hd_totalmass =  hd_totalmass + sum(grid%Nv(:,i_dust)) * 4.0_r2*PI/3.0_r2 * &
+                                    hd2**3 * dust%den_dust(i_dust)*1.0e+3_r2 / M_sun
+                end do
+                ! rescale mass to user-defined value
+                grid%grd_dust_density(:,:) = grid%grd_dust_density(:,:) * model%mass/hd_totalmass
+                grid%Nv(:,:)               = grid%Nv(:,:)               * model%mass/hd_totalmass
+            ELSE
+                i_cell = get_cell_nr(grid,(/100.0_r2,0.0_r2,0.0_r2/))
+                hd_totalmass = 2254.74449086548_r2/grid%grd_dust_density(i_cell,1)
+                grid%Nv(:,:)               = grid%Nv(:,:) * hd_totalmass
+                grid%grd_dust_density(:,:) = grid%grd_dust_density(:,:) * hd_totalmass
+
+            END IF
         END IF
-        
         ! for immediate_temp
         DO i_dust = 1, dust%n_dust
             grid%Nv_r(:,i_dust) = grid%Nv(:,i_dust) * dust%r_dust(i_dust)**2 * basics%PI2x4
@@ -181,6 +192,8 @@ CONTAINS
             END DO
         END DO
         
+        print *,grid%grd_dust_density(get_cell_nr(grid,(/100.0_r2,0.0_r2,0.0_r2/)),1)
+!~         print *,grid%Nv(get_cell_nr(grid,(/100.0_r2,0.0_r2,0.0_r2/)),1)
         ! dust mass verification
         hd_totalmass = 0.0_r2
         hd_dusttotalmass = 0.0_r2
@@ -198,7 +211,6 @@ CONTAINS
             hd_dusttotalmass =  hd_dusttotalmass + sum(grid%Nv(:,i_dust)) * 4.0_r2*PI/3.0_r2 * &
                             hd2**3 * dust%den_dust(i_dust)*1.0e+3_r2 / M_sun
         end do
-
         
         ! estimate gas mass and rescale 
         ! Nv_mol,  defined molecule
@@ -214,7 +226,6 @@ CONTAINS
         grid%grd_col_density(:,1) = grid%grd_col_density(:,1) * hd_dusttotalmass*gas%dust_mol_ratio/hd_totalmass
         
         grid%Nv_col(:,1) = grid%grd_col_density(:,1) * REAL(grid%cell_vol(:),kind=r2)
-        
 !~         grid%Nv_col(:,1) =  grid%Nv_col(:,1) * &
 !~                             model%mass*gas%dust_mol_ratio/(1.0_r2+gas%mol_abund)/hd_totalmass                      
         
@@ -235,7 +246,7 @@ CONTAINS
 
         !---- selected molecule
         
-        grid%grd_mol_density(:) = grid%grd_mol_density(:) * model%mass*gas%dust_mol_ratio/hd_totalmass
+        grid%grd_mol_density(:) = grid%grd_mol_density(:) * hd_dusttotalmass*gas%dust_mol_ratio/hd_totalmass
         grid%Nv_mol(:) = grid%grd_mol_density(:) * REAL(grid%cell_vol(:),kind=r2)
 !~         hd_totalmass =  sum(grid%Nv_mol(:)) *gas%mol_weight/con_Na*1.0e-3_r2/ M_sun
         
@@ -281,7 +292,7 @@ CONTAINS
         print '(A,ES11.4,A)',' total disk mass     : ',hd_totalmass, ' M_sun'
         print *,''
         !------------------------------------------------------------------------!
-        
+!~         stop
         ! ---
         ! set smallest step width for photon transfer
         ! - goal: avoid step widths smaller than the amount that will change a r2 type floating point
