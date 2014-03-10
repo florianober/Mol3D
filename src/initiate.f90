@@ -341,7 +341,7 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas)
     WRITE(unit=3,fmt='(A)') ''
     CALL parse('gas_cat_name',gas_cat_name,new_input_file)
     WRITE(unit=3,fmt='(A)') 'gas_cat_name = {'//TRIM(gas_cat_name)// &
-    '}                     gas catalog name (in input/mol) (leiden databaase style)'
+    '}                     gas catalog name (in input/mol) (leiden database style)'
     
     CALL parse('i_vel_chan',i_vel_chan,new_input_file)
     WRITE(help,fmt='(I3)') i_vel_chan
