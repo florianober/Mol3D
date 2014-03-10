@@ -55,6 +55,7 @@ def main():
     
     map_in = l.load_mol3d_map(path_results+p_name+'_velo_ch_mapint.dat')
     l.plot_image(map_in*1000,num=path_results+p_name+'_velo_ch_mapint.dat')
+    plt.clim(vmax=np.nanmax(map_in*1000)/10.,vmin=None)
     plt.colorbar().set_label('Flux [mJy]')
     
 def oneD(file_path,i=0):

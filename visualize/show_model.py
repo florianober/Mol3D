@@ -46,8 +46,8 @@ def make_model(path_results,p_name):
 
     # gas Temperature
     
-    #~ z = model[:,10]
-    #~ create_plot(x,y,z,'Gas Temperature')
+    z = model[:,10]
+    create_plot(x,y,z,'Gas Temperature')
     
     # dust distribution
     
@@ -56,8 +56,8 @@ def make_model(path_results,p_name):
     
     # H2 distribution
     #~ 
-    z = model[:,6]
-    create_plot(x,y,np.log10(z*1e-6),'H2 number density distribution')
+    #~ z = model[:,6]
+    #~ create_plot(x,y,np.log10(z*1e-6),'H2 number density distribution')
     
     # molecule distribution
     
@@ -90,6 +90,7 @@ def create_plot(x,y,z,name):
     if 'Temperature' in name:
         ext = ' [K]'
         cont = [10,20,25,30,35,40]
+        #~ cont = 1
         #~ colors = 151
         colors = np.round(np.linspace(0,100,151))
     elif 'density' in name:

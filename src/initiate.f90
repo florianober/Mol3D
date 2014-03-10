@@ -408,16 +408,16 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas)
       ! ..
       
     CALL parse('n_a',n_a,input_file)
-    WRITE(help,fmt='(I3)') n_a
+    WRITE(help,fmt='(I4)') n_a
     WRITE(unit=3,fmt='(A)') 'n_a = {'//TRIM(help)// &
     '}                     '
     CALL parse('n_b',n_b,input_file) 
-    WRITE(help,fmt='(I3)') n_b
+    WRITE(help,fmt='(I4)') n_b
     WRITE(unit=3,fmt='(A)') 'n_b = {'//TRIM(help)// &
     '}                     '
     
     CALL parse('n_c',n_c,input_file)
-    WRITE(help,fmt='(I3)') n_c
+    WRITE(help,fmt='(I4)') n_c
     WRITE(unit=3,fmt='(A)') 'n_c = {'//TRIM(help)// &
     '}                     ' 
     CALL parse('sf',sf,input_file) 
