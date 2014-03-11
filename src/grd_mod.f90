@@ -153,7 +153,7 @@ CONTAINS
         !    ! estimate mass
         !  scale to given mass, or to given density (at some point here 100 AU)
         mass_dens = .True.
-!        mass_dens = .False.
+!~         mass_dens = .False.
         IF (.not. basics%old_model) THEN
             IF (mass_dens) THEN
                 hd_totalmass = 0.0_r2
@@ -176,7 +176,7 @@ CONTAINS
                 grid%Nv(:,:)               = grid%Nv(:,:)               * model%mass/hd_totalmass
             ELSE
                 i_cell = get_cell_nr(grid,(/100.0_r2,0.0_r2,0.0_r2/))
-                hd_totalmass = 2254.74449086548_r2/grid%grd_dust_density(i_cell,1)
+                hd_totalmass = 22895.6132878962_r2/grid%grd_dust_density(i_cell,1)
                 grid%Nv(:,:)               = grid%Nv(:,:) * hd_totalmass
                 grid%grd_dust_density(:,:) = grid%grd_dust_density(:,:) * hd_totalmass
 
