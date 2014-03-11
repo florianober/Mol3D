@@ -30,8 +30,12 @@ try:
     path_results = sys.argv[2]
     
 except:
-    #~ path_results = '../results/'
-    path_results = '/data/fober/mol3dresults/'
+    path_results = ''
+    
+if path_results == '':
+    f = open('path_result.dat')
+    path_results = f.readline().split()[0]
+    f.close()
     
 
 def make_model(path_results,p_name):

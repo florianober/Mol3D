@@ -15,10 +15,11 @@ email  : fober@astrophysik.uni-kiel.de
 import numpy as np
 import matplotlib.pyplot as plt
 import os
+import glob
 import sys
 import show_model as sm
 
-import little as l
+import mol3d_routines as l
 
 try:
     p_name = sys.argv[1]
@@ -29,13 +30,23 @@ try:
     inp2 = sys.argv[2]
     
 except:
-    inp2 = '/data/fober/mol3dresults/'
+    inp2 = ''
+
+if inp2 == '':
+
+    f = open('path_result.dat')
+    inp2 = f.readline().split()[0]
+    f.close()
 
 path_results = inp2
     
 home         = '../'
 show_all = False
 
+if len(glob.glob(os.path.join(path_results,p_name+'*'))) < 1:
+    print 'results not found, maybe the path in "path_result.dat" is not correct'
+    sys.exit()
+    
 def main():
     
     if show_all:
@@ -54,8 +65,9 @@ def main():
     # present velocity channel integrated map
     
     map_in = l.load_mol3d_map(path_results+p_name+'_velo_ch_mapint.dat')
-    l.plot_image(map_in*1000,num=path_results+p_name+'_velo_ch_mapint.dat')
-    plt.clim(vmax=np.nanmax(map_in*1000)/10.,vmin=None)
+    plt.figure(p_name)
+    plt.imshow(map_in*1000,origin='lower')
+    plt.clim(vmax=np.nanmax(map_in*1000),vmin=None)
     plt.colorbar().set_label('Flux [mJy]')
     
 def oneD(file_path,i=0):
@@ -75,7 +87,6 @@ def oneD(file_path,i=0):
             plt.ylabel('normalized intensity')
             title='velocity spectrum'
             maxi = np.max(pic[:,1])
-
     else:
         title=''
         plt.title(title,fontsize=14)
@@ -84,3 +95,5 @@ def oneD(file_path,i=0):
 
 main()
 plt.show()
+
+print 'bye bye'
