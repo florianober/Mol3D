@@ -152,8 +152,8 @@ CONTAINS
         !------------------------------------------------------------------------!
         !    ! estimate mass
         !  scale to given mass, or to given density (at some point here 100 AU)
-!        mass_dens = .True.
-        mass_dens = .False.
+        mass_dens = .True.
+!~         mass_dens = .False.
         IF (.not. basics%old_model) THEN
             IF (mass_dens) THEN
                 hd_totalmass = 0.0_r2
