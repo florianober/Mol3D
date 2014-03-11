@@ -451,11 +451,11 @@ CONTAINS
                 this%cont_map(tr) = hi1+1
             END IF
         END DO
-         print '(A,F11.2,A)',' wavelenght dust:',this%lam(this%cont_map(1)) *1e6, ' micron'
+         print '(A,F11.2,A)',' wavelength dust:',this%lam(this%cont_map(1)) *1e6, ' micron'
 !~         print *, this%cont_map(1)
 !~         stop
         !print *, gas%tr_cat(1)
-        print '(A,F11.2,A)',' wavelenght  gas:',con_c/gas%trans_freq(gas%tr_cat(1))*1e6, ' micron'
+        print '(A,F11.2,A)',' wavelength  gas:',con_c/gas%trans_freq(gas%tr_cat(1))*1e6, ' micron'
 !~         stop
         DO i_lam = 1, this%n_lam
             this%i_star_emi(i_lam) = PI * 4.0_r2 * PI * model%r_star**2 * planck(model%t_star,this%lam(i_lam))  ! [W/m]
