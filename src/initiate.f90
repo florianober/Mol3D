@@ -185,7 +185,7 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas)
     
 
     WRITE(unit=3,fmt='(A)') 'proname = {'//TRIM(proname)//'}                 project name'
-    WRITE(unit=3,fmt='(A)') 'r_path = {'//TRIM(r_path)//'}      define results path'
+    WRITE(unit=3,fmt='(A)') 'r_path = {'//TRIM(r_path)//'}                  define results path'
     
     WRITE(help,fmt='(L1)') old_model
     WRITE(unit=3,fmt='(A)') 'old_model = {'//TRIM(help)//'}'
@@ -197,7 +197,7 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas)
     
     WRITE(help,fmt='(I3.3)') num_core
     WRITE(unit=3,fmt='(A)') 'num_core = {'//TRIM(help)// &
-    '}                       number of cores used (raytracing, temperature calculation (TbD))'
+    '}                     number of cores used (raytracing, temperature calculation (TbD))'
     WRITE(unit=3,fmt='(A)') '' 
     
     ! calculate dust temperature (with monte carlo method), or use an analytical expression
@@ -206,7 +206,7 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas)
     
     WRITE(help,fmt='(L1)') calc_tmp
     WRITE(unit=3,fmt='(A)') 'calc_temp = {'//TRIM(help)//&
-    '}                        calculate temperature (with monte carlo method)'
+    '}                      calculate temperature (with monte carlo method)'
     
     CALL parse('do_raytr',do_raytr,new_input_file)
     WRITE(help,fmt='(L1)') do_raytr
@@ -224,51 +224,51 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas)
     CALL parse('r_in',r_in,input_file)
     WRITE(help,fmt='(ES15.6)') r_in
     WRITE(unit=3,fmt='(A)') 'r_in = {'//TRIM(help)//&
-    '}                        inner radius'
+    '}             inner radius'
 
     CALL parse('r_ou',r_ou,input_file)
     WRITE(help,fmt='(ES15.6)') r_ou    
     WRITE(unit=3,fmt='(A)') 'r_ou = {'//TRIM(help)//&
-    '}                        outer radius'
+    '}             outer radius'
     
     
     CALL parse('mass_dust',mass_dust,input_file)
     WRITE(help,fmt='(ES15.6)') mass_dust  
     WRITE(unit=3,fmt='(A)') 'mass_dust = {'//TRIM(help)//&
-    '}                        dust mass'
+    '}        dust mass'
     
     CALL parse('t_eff',t_eff,input_file)
     WRITE(help,fmt='(ES15.6)') t_eff
     WRITE(unit=3,fmt='(A)') 't_eff = {'//TRIM(help)//&
-    '}                        effective Temperature'
+    '}            effective Temperature'
     
     CALL parse('R_star',R_star,input_file)
     WRITE(help,fmt='(ES15.6)') R_star
     WRITE(unit=3,fmt='(A)') 'R_star = {'//TRIM(help)//&
-    '}                        radius of star'
+    '}           radius of star'
     
     CALL parse('M_star',M_star,new_input_file)
     WRITE(help,fmt='(ES15.6)') M_star
     WRITE(unit=3,fmt='(A)') 'M_star = {'//TRIM(help)//&
-    '}                        stellar mass'
+    '}           stellar mass'
     
     WRITE(unit=3,fmt='(A)') ''
     n_map     = 1                          !numper of maps to calculate
     CALL parse('distance',distance,new_input_file)
     WRITE(help,fmt='(ES15.6)') distance
     WRITE(unit=3,fmt='(A)') 'distance = {'//TRIM(help)//&
-    '}                   object distance [pc]'
+    '}         object distance [pc]'
     
     CALL parse('n_bin_map',n_bin_map,new_input_file)
     WRITE(help,fmt='(I4.4)') n_bin_map
     WRITE(unit=3,fmt='(A)') 'n_bin_map = {'//TRIM(help)// &
-    '}                     half number of pixel, total pixel = 2 * n_bin_map1 + 1'
+    '}                   half number of pixel, total pixel = 2 * n_bin_map1 + 1'
     
     
     CALL parse('n_star_emi',n_star_emi,input_file)
     WRITE(help,fmt='(I10)') n_star_emi
     WRITE(unit=3,fmt='(A)') 'n_star_emi = {'//TRIM(help)// &
-    '}                     number of photons per wavelength'
+    '}            number of photons per wavelength'
     
     ALLOCATE(th_map(1:n_map))
     ALLOCATE(ph_map(1:n_map))
@@ -278,7 +278,7 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas)
     CALL parse('th_map',th_map(1),new_input_file)
     WRITE(help,fmt='(F6.2)') th_map
     WRITE(unit=3,fmt='(A)') 'th_map = {'//TRIM(help)//&
-    '}                   inclination to observer'
+    '}                    inclination to observer'
     
     CALL parse('ph_map',ph_map(1),new_input_file) 
     WRITE(help,fmt='(F6.2)') ph_map
@@ -291,7 +291,7 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas)
     CALL parse('zoom_map',zoom_map(1),new_input_file) 
     WRITE(help,fmt='(F6.2)') zoom_map(1)
     WRITE(unit=3,fmt='(A)') 'zoom_map = {'//TRIM(help)//&
-    '}                    factor to zoom inside the model >= 1 !'
+    '}                  factor to zoom inside the model >= 1 !'
     WRITE(unit=3,fmt='(A)') ''
     
     
@@ -315,12 +315,12 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas)
     CALL parse('molratio',molratio,new_input_file)
     WRITE(help,fmt='(ES15.6)') molratio
     WRITE(unit=3,fmt='(A)') 'molratio = {'//TRIM(help)//&
-    '}                        gas-dust ratio'
+    '}         gas-dust ratio'
     
     CALL parse('abundance',abundance,new_input_file)
     WRITE(help,fmt='(ES15.6)') abundance
     WRITE(unit=3,fmt='(A)') 'abundance = {'//TRIM(help)//&
-    '}                        selected molecule abundance to H'
+    '}        selected molecule abundance to H'
 
     !set the method to calculate the level populations
     ! 1 := LTE
@@ -331,28 +331,28 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas)
     CALL parse('line_mode',mode,new_input_file)
     WRITE(help,fmt='(I1)') mode
     WRITE(unit=3,fmt='(A)') 'line_mode = {'//TRIM(help)// &
-    '}                           set the method to calculate the level populations,1 := LTE  2 := FEP  3 := LVG  9 := file (TbD)'
+    '}                      set the method to calculate the level populations,1 := LTE  2 := FEP  3 := LVG  9 := file (TbD)'
     
     !tr_cat(1) = 4            !transition (tr) in molecular cat   !tbd
     CALL parse('line',tr_cat(1),new_input_file)
     WRITE(help,fmt='(I1)') tr_cat(1)
     WRITE(unit=3,fmt='(A)') 'line = {'//TRIM(help)// &
-    '}                        line transition no (see gas_input file)  '
+    '}                           line transition no (see gas_input file)  '
     WRITE(unit=3,fmt='(A)') ''
     CALL parse('gas_cat_name',gas_cat_name,new_input_file)
     WRITE(unit=3,fmt='(A)') 'gas_cat_name = {'//TRIM(gas_cat_name)// &
-    '}                     gas catalog name (in input/mol) (leiden database style)'
+    '}              gas catalog name (in input/mol) (Leiden database style)'
     
     CALL parse('i_vel_chan',i_vel_chan,new_input_file)
     WRITE(help,fmt='(I3)') i_vel_chan
     WRITE(unit=3,fmt='(A)') 'i_vel_chan = {'//TRIM(help)// &
-    '}                     (half) Number of velocity channels'
+    '}                   (half) Number of velocity channels'
     
     
     CALL parse('vel_max',vel_max,new_input_file)    
     WRITE(help,fmt='(F7.2)') vel_max
     WRITE(unit=3,fmt='(A)') 'vel_max = {'//TRIM(help)//&
-    '}                   max velocity in spectrum (in m/s)'
+    '}                  max velocity in spectrum (in m/s)'
     
     CALL InitGas(gas, mode, gas_cat_name, molratio, abundance, n_tr, tr_cat, i_vel_chan, vel_max)
     
@@ -371,7 +371,7 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas)
     
     CALL parse('dust_cat_name',dust_cat(1),input_file)
     WRITE(unit=3,fmt='(A)') 'dust_cat_name = {'//TRIM(dust_cat(1))// &
-    '}                     dust catalog name (in input/dust) (in mc3d style)'
+    '}           dust catalog name (in input/dust) (in mc3d style)'
     WRITE(unit=3,fmt='(A)') ''
     !call get_n_den_par()
     !if (n_den_par>0) then
@@ -391,7 +391,7 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas)
     CALL parse('grid_type',grid_type,input_file)  
     
     WRITE(unit=3,fmt='(A)') 'grid_type = {'//TRIM(grid_type)// &
-    '}                  possible values: spherical (OK), cylindrical, cartesian (planned)'
+    '}              possible values: spherical (OK), cylindrical (testing), cartesian (planned)'
       ! possible values: spherical (mostly mc3d style)
       !                  cylindrical (in progress, working but there are some bugs, test for yourself)
       !                  cartesian   (planed)
@@ -423,7 +423,7 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas)
     CALL parse('sf',sf,input_file) 
     WRITE(help,fmt='(F12.9)') sf
     WRITE(unit=3,fmt='(A)') 'sf = {'//TRIM(help)//&
-    '}                   stepfactor for logarithm grid'
+    '}                  stepfactor for logarithm grid'
     WRITE(unit=3,fmt='(A)') ''
     
     
@@ -453,7 +453,7 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas)
     n_dust_emi = 0
     CALL parse('flux_unit',flux_unit,new_input_file)
     WRITE(unit=3,fmt='(A)') 'flux_unit = {'//TRIM(flux_unit)// &
-    '}                  possible values: spherical (OK), cylindrical, cartesian (planned)'
+    '}                 possible values: Jy_pix, T_mb'
     
     CALL InitFluxes(fluxes,1,flux_unit, n_dust_emi, &
                     model%n_bin_map,gas%n_tr, gas%i_vel_chan)
