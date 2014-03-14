@@ -443,6 +443,13 @@ CONTAINS
         
         ! select the suited dust wavelength for each tr(ansition) for the selected line transition
         DO tr = 1, gas%n_tr
+          IF (con_c/gas%trans_freq(gas%tr_cat(tr)) .GT. MAXVAL(this%lam)) THEN
+               this%cont_map(tr) = 100 !position of the maximum wavelength in the array lam
+               print *, 'WARNING: THE CENTRAL WAVELENGTH OF THE GAS IS HIGHER THAN THE MAXIMUM WAVELENGTH PROVIDED BY THE CHOOSEN DUST-CATALOGUE'
+            ELSEIF (con_c/gas%trans_freq(gas%tr_cat(tr)) .LT. MINVAL(this%lam)) THEN
+                 this%cont_map(tr) = 1 !position of the minimum wavelength in the array lam
+                 print *, 'WARNING: THE CENTRAL WAVELENGTH OF THE GAS IS LOWER THAN THE MINIMUN WAVELENGTH PROVIDED BY THE CHOOSEN DUST-CATALOGUE'
+            ELSE
             hi1 = binary_search(con_c/gas%trans_freq(gas%tr_cat(tr)),this%lam(:))
             
             IF (this%lam(hi1+1) .gt. 2*con_c/gas%trans_freq(gas%tr_cat(tr)) - this%lam(hi1) ) THEN
@@ -450,12 +457,13 @@ CONTAINS
             ELSE
                 this%cont_map(tr) = hi1+1
             END IF
+          END IF
         END DO
-         print '(A,F11.2,A)',' wavelength dust:',this%lam(this%cont_map(1)) *1e6, ' micron'
+        print '(A,F11.2,A)',' wavelength dust:   ',this%lam(this%cont_map(1)) *1e6, ' micron'
 !~         print *, this%cont_map(1)
 !~         stop
         !print *, gas%tr_cat(1)
-        print '(A,F11.2,A)',' wavelength  gas:',con_c/gas%trans_freq(gas%tr_cat(1))*1e6, ' micron'
+        print '(A,F11.2,A)',' central wavelength:',con_c/gas%trans_freq(gas%tr_cat(1))*1e6, ' micron'
 !~         stop
         DO i_lam = 1, this%n_lam
             this%i_star_emi(i_lam) = PI * 4.0_r2 * PI * model%r_star**2 * planck(model%t_star,this%lam(i_lam))  ! [W/m]
