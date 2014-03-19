@@ -44,7 +44,7 @@ home         = '../'
 show_all = False
 
 if len(glob.glob(os.path.join(path_results,p_name+'*'))) < 1:
-    print 'results not found, maybe the path in "path_result.dat" is not correct'
+    print('results not found, maybe the path in "path_result.dat" is not correct')
     sys.exit()
     
 def main():
@@ -66,8 +66,9 @@ def main():
     
     map_in = l.load_mol3d_map(path_results+p_name+'_velo_ch_mapint.dat')
     plt.figure(p_name)
-    plt.imshow(map_in*1000,origin='lower')
-    plt.clim(vmax=np.nanmax(map_in*1000),vmin=None)
+    plt.imshow(map_in*1000,origin='lower',interpolation='None')
+    plt.clim(vmax=np.nanmax(map_in*1000)/2,vmin=None)
+    #~ plt.clim(vmax=0.1,vmin=None)
     plt.colorbar().set_label('Flux [mJy]')
     
 def oneD(file_path,i=0):
@@ -96,4 +97,4 @@ def oneD(file_path,i=0):
 main()
 plt.show()
 
-print 'bye bye'
+print('bye bye')

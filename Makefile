@@ -14,7 +14,7 @@
 #	Build fast code
 #	> make CO=fast
 #
-#	Build with Intel(R) Fortran Compiler [default = GCC gfortran]
+#	Build with Intel(R) Fortran Compiler [default = intel fortran]
 #	> make FC=ifort
 #
 #	Build parallel on n cores:
@@ -54,18 +54,17 @@ LOG=$(addprefix $(BUILD_DIR),last_build)
 #
 # compiler dependet flags
 #
-ifeq ($(FC),gcc)  # just for testing
-  CFLAGS = -Wall
+ifeq ($(FC),g95)  # just for testing
+  CFLAGS = -march=nocona -ffast-math -funroll-loops -O3
   DEPFLAGS = -I$(BUILD_DIR) -I$(BUILD_DIR)
-  #OFLAGS = -x f95-cpp-input
   OFLAGS = 
 endif
 
 ifeq ($(FC),gfortran)
-  CFLAGS = -Wall -O3
+  CFLAGS = -Wall -O2
   DEPFLAGS = -J$(BUILD_DIR) -I$(BUILD_DIR)
-  #OFLAGS = -x f95-cpp-input
-  OFLAGS = 
+  OFLAGS = -x f95-cpp-input
+  #OFLAGS = 
   ifeq ($(CO),debug)
     CFLAGS = -pg -O3 -fbounds-check -pedantic -Wall
   endif
@@ -76,7 +75,7 @@ ifeq ($(FC),gfortran)
     CFLAGS = -march=native -ffast-math -funroll-loops -O3 -fopenmp -Wall
   endif
   ifeq ($(CO),fast)
-    CFLAGS = -march=native -ffast-math -funroll-loops -O3
+    CFLAGS = -march=native -mtune=native -ffast-math -funroll-loops -O3
   endif
 endif
 #

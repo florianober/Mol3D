@@ -27,8 +27,8 @@ try:
     import pyfits as pf
     pyfits_log = True
 except:
-    print ''
-    print 'could not find pyfits. Thus it is not possible to create/manipulate fits files.'
+    print('')
+    print('could not find pyfits. Thus it is not possible to create/manipulate fits files.')
     
 
 
@@ -71,20 +71,20 @@ def main():
     
     #search for results with given p_name
     results_types = []
-    for n,l in create_plots.iteritems():
+    for n,l in create_plots.items():
         if l:
             t_file = path_results+p_name+file_names[n]
             if os.path.exists(t_file):
                 results_types.append(n)
             else:
-                print 'result not found: ' +n
+                print('result not found: ' +n)
 
     
     
     if len(results_types) == 0:
         sys.exit('no results found')
 
-    for i in xrange(len(results_types)):
+    for i in range(len(results_types)):
         t_file = path_results+p_name+file_names[results_types[i]]
 
         if results_types[i] == 'Temp_midplane':
@@ -116,8 +116,8 @@ def present_map(file_path,i=0):
         map_size = int(row[0])
         row = map_in.readline()	#empty row
         pic = np.zeros((map_size,map_size))
-        for j in xrange(map_size):
-            for k in xrange(map_size):
+        for j in range(map_size):
+            for k in range(map_size):
                 row = np.str.split(map_in.readline())
                 if j == 0 and k == 0:
                     j_min = float(row[0])
@@ -141,7 +141,7 @@ def present_map(file_path,i=0):
         if i == 0:
             fig_name = 'Intensity map'
             m_range = [-120,120,-120,120]
-            print(np.sum(pic))
+            print((np.sum(pic)))
         elif i == 2:
             fig_name = 'Velocity map ('+file_path[-6:-4]+'-plane)'
         elif i == 3:
@@ -166,17 +166,17 @@ def present_map(file_path,i=0):
         pic = np.zeros((map_size,map_size))
         row = map_in.readline()	#empty row
         map_ch = 1
-        for k in xrange(vel_ch-1):
+        for k in range(vel_ch-1):
             row = map_in.readline()	#empty row
             row = np.str.split(map_in.readline())
             ch_val = float(row[0])
             row = map_in.readline()	#empty row
-            for j in xrange(map_size**2):
+            for j in range(map_size**2):
                 row = np.str.split(map_in.readline())
                 pic[int(row[1]),int(row[0])] = row[2]
             if k == map_ch:
                 m_range =[-120,120,-120,120]
-                print( np.sum(pic))
+                print(( np.sum(pic)))
                 l.plot_image(pic**0.1,num=file_path,color_loc=True,map_range=m_range,fig_title='%3.0f m/s' %ch_val)
                 #pic2 = rebin(pic,(100,100))
                 #l.plot_image(pic2**0.4,num='map2 '+str(i),color_loc=True,map_range=m_range,fig_title='%3.0f m/s' %ch_val)

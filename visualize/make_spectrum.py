@@ -37,10 +37,10 @@ int_map      = '_velo_ch_mapint.dat'
 
     
 def main():
-    print pname
+    print(pname)
     
     map_in,vch = l.load_mol3d_fullvchmap(path_mol3d+pname+ch_map)
-    print  'channel map loaded'
+    print('channel map loaded')
     
     # plot spectrum of the hole map
     no_pix = map_in.shape[2]*map_in.shape[1]

@@ -445,10 +445,12 @@ CONTAINS
         DO tr = 1, gas%n_tr
           IF (con_c/gas%trans_freq(gas%tr_cat(tr)) .GT. MAXVAL(this%lam)) THEN
                this%cont_map(tr) = MAXLOC(this%lam, 1) !position of the maximum wavelength in the array lam
-               print *, 'WARNING: the central wavelength of the gas is higher than the maximum wavelength provided by the choosen dust-catalogue'
+               print *, 'WARNING: the central wavelength of the gas is higher than the maximum &
+                                  wavelength provided by the choosen dust-catalogue'
             ELSEIF (con_c/gas%trans_freq(gas%tr_cat(tr)) .LT. MINVAL(this%lam)) THEN
                  this%cont_map(tr) = MINLOC(this%lam, 1) !position of the minimum wavelength in the array lam
-                 print *, 'WARNING: the central wavelength of the gas is lower than the minimum wavelength provided by the choosen dust-catalogue'
+                 print *, 'WARNING: the central wavelength of the gas is lower than the minimum &
+                                    wavelength provided by the choosen dust-catalogue'
             ELSE
             hi1 = binary_search(con_c/gas%trans_freq(gas%tr_cat(tr)),this%lam(:))
             
