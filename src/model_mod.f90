@@ -105,7 +105,7 @@ contains
         P_z  = abs(caco(3))
 
         IF ( (P_xy >= model%r_in) .and. (P_xy < model%r_ou) ) THEN
-            P_h     = 20.0_r2 * (P_xy/100.0_r2)**1.125_r2
+            P_h     = 10.0_r2 * (P_xy/100.0_r2)**1.125_r2
             density = (P_xy/100.0_r2)**(-2.625_r2)  *  exp( -0.5_r2 * (P_z/P_h)**2 )
         ELSE
             density = 0.0_r2

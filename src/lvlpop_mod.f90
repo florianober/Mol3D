@@ -242,12 +242,12 @@ CONTAINS
         END DO
         IF (i == max_iteration +1 ) THEN
             print *, 'Warning: maximum iteration needed in cell:', i_cell
-            print *, 'iter:',  i, i_cell
+!~             print *, 'iter:',  i, i_cell
 !~             print *,MAXVAL(abs(grid%lvl_pop(i_cell,:)-old_pop)/old_pop)
-            print '(ES15.6E3)', grid%lvl_pop(i_cell,:)
-            print *,''
-            print '(ES15.6E3)', old_pop
-            stop
+!~             print '(ES15.6E3)', grid%lvl_pop(i_cell,:)
+!~             print *,''
+!~             print '(ES15.6E3)', old_pop
+!~             stop
         END IF
     END DO
     END SUBROUTINE pop_LVG

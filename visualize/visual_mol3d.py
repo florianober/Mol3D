@@ -65,11 +65,29 @@ def main():
     # present velocity channel integrated map
     
     map_in = l.load_mol3d_map(path_results+p_name+'_velo_ch_mapint.dat')
+    
+    input_file = open(path_results+p_name+'_input_file.dat',"r")
+    full = input_file.readlines()
+    input_file.close()
+    
+    r_ou = 200  # standard value
+    dist = 140  # standard value
+    
+    # search for key in input_file  
+    for line in full:
+        if 'r_ou' in line:
+            r_ou = float(line.partition('{')[-1].rpartition('}')[0])
+        if 'distance' in line:
+            dist = float(line.partition('{')[-1].rpartition('}')[0])
+    
+    # calculate arcseconds for a disk with given extension and distance
+    arcs = r_ou / dist
+    extent = [-arcs,arcs,-arcs,arcs]
     plt.figure(p_name)
-    plt.imshow(map_in*1000,origin='lower',interpolation='None')
+    plt.imshow(map_in*1000,origin='lower',interpolation='None',extent=extent)
     plt.clim(vmax=np.nanmax(map_in*1000)/2,vmin=None)
-    #~ plt.clim(vmax=0.1,vmin=None)
-    plt.colorbar().set_label('Flux [mJy]')
+    #~ plt.clim(vmax=0.3,vmin=None)
+    plt.colorbar().set_label('Flux [mJy/px]')
     
 def oneD(file_path,i=0):
 
@@ -84,6 +102,7 @@ def oneD(file_path,i=0):
             maxi = 1
     elif i == 1:
             plt.ylim(0,1.1)
+            plt.xlim(np.min(pic[:,0]),np.max(pic[:,0]))
             plt.xlabel('velocity [m/s]')
             plt.ylabel('normalized intensity')
             title='velocity spectrum'
