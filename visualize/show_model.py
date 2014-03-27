@@ -55,8 +55,8 @@ def make_model(path_results,p_name):
     
     # dust distribution
     
-    #~ z = model[:,4]
-    #~ create_plot(x,y,np.log10(z*1e-6),'Dust number density distribution')
+    z = model[:,4]
+    create_plot(x,y,np.log10(z*1e-6),'Dust number density distribution')
     
     # H2 distribution
     #~ 
