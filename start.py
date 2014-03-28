@@ -56,8 +56,10 @@ def set_input_file(paralist):
     #~ print('this will be implemented soon')
     
     if paralist == 'dummy':
+        # just use the unchanged input file -> "input/input.dat"
         pass
     elif isinstance(paralist,dict):
+        # write a new input file based on the parameters given in 'paralist'
         pass
     pass
 
@@ -66,7 +68,7 @@ def start_mol3d(vis):
     t1 = time.time()
     os.chdir(path_home)
     # no of threads
-    N = 4
+    N = 1
     print('')
     print('#        welcome         #')
     print('--------------------------')
@@ -79,7 +81,7 @@ def start_mol3d(vis):
     else:
         sys.exit('could not find the executable, maybe Mol3d is not compiled (correctly)?')
     
-    arr = ['testrun','testrun2']
+    arr = ['testrun']
     my_threads = [worker(qu) for i in range(N)] 
     for thread in my_threads: 
         thread.setDaemon(True) 
