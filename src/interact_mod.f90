@@ -96,9 +96,7 @@ contains
   !                     interaction in immediate reemission scheme
   ! ---
   subroutine interact_temp(basics,grid,dust,rand_nr,fluxes,simu_var,t_dust, i_star_abs)
-!~     use start_mod
-!~     use scatter_mod
-!~     use immediate_mod
+
     
     IMPLICIT NONE
     !--------------------------------------------------------------------------!

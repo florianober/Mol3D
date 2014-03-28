@@ -29,18 +29,31 @@ CONTAINS
   ! ################################################################################################
   ! check: is current position of photon stil inside the model space?
 !  ! ---
-    FUNCTION check_inside(caco,model) result(check_inside_result)
+    FUNCTION check_inside(caco,grid,model) result(check_inside_result)
     
     IMPLICIT NONE
     !------------------------------------------------------------------------!
-        
+    TYPE(Grid_TYP), INTENT(IN)                  :: grid
     TYPE(Model_TYP), INTENT(IN)                 :: model
     
-    REAL(kind=r2), dimension(:), intent(in)   :: caco
+    REAL(kind=r2), dimension(3), intent(in)     :: caco
     
-    LOGICAL                                      :: check_inside_result   
+    LOGICAL                                     :: check_inside_result   
     !------------------------------------------------------------------------!
-    check_inside_result = (norm(caco) <= model%r_ou)
+    SELECT CASE(GetGridName(grid))
+        
+        CASE('spherical')
+            check_inside_result = (norm(caco) <= model%r_ou)
+            
+        CASE('cylindrical')
+            check_inside_result = (sqrt( dot_product( caco(1:2), caco(1:2) ) ) <= model%r_ou .and. abs(caco(3)) <= model%r_ou )
+        
+        CASE('cartesian')
+            check_inside_result = (all(abs(caco) <= model%r_ou))
+        CASE DEFAULT
+            print *, 'selected coordinate system not found, set_boundaries'
+            stop
+    END SELECT
     
     END FUNCTION check_inside
 

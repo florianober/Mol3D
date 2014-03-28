@@ -329,7 +329,6 @@ CONTAINS
             
         CASE('cylindrical')
             get_cell_nr_result = get_cell_nr_cy(this,caco)
-    
         CASE('cartesian')
             print *, 'TbD, not finished yet, cell number'
             stop
@@ -361,7 +360,7 @@ CONTAINS
         REAL(kind=r2)  :: h_r, h_ph, d_ph
         !------------------------------------------------------------------------!
         
-        
+!~         print *,'starting'
         h_r  = sqrt(caco(1)**2+caco(2)**2)
         h_ph = atan3(caco(2),caco(1))
 !~         print *, h_r, h_ph
@@ -383,7 +382,7 @@ CONTAINS
             !stop
         END IF
 
-        
+!~         print *,'r done'
         ! 1.2 get i_ph
         ! --
         d_ph = PI*2.0_r2/this%n(2)
@@ -392,28 +391,20 @@ CONTAINS
         IF  ( h_ph .ge. PI*2.0_r2 ) THEN
             i_ph = this%n(2)
         END IF
-        
+!~         print *,'phi done'
         ! 1.3 get i_z
         ! --
-        
-        !d_z = this%co_mx_c(this%n(3))*2.0_r2/this%n(3)
-
-        !print *,this%co_mx_c(37)
-        
-!~ 		IF (caco(3) == 0) THEN
-!~ 			print *, caco
-!~ 			print *, h_r
-!~ 		END IF	
-        !print *,i_z
-        !i_z = int((caco(3)+ this%co_mx_c(this%n(3)))/d_z)+1 
-        !stop
+!~         i_z = 0
         IF ( abs(caco(3)) >=  this%co_mx_c(this%n(3)) ) THEN
             i_z = this%n(3)
         ELSE
             i_z = binary_search(caco(3),this%co_mx_c )
         END IF
+!~         print *,'z done'
+        
+        
 !~         print *, i_r, i_ph, i_z
-
+        
         get_cell_nr_result = this%cell_idx2nr(i_r,i_ph,i_z)
     END FUNCTION get_cell_nr_cy
     

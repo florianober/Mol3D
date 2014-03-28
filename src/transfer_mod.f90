@@ -59,18 +59,22 @@ contains
         tau_end = -log(1.0_r2 - rndx)
         !print *, 'tau', tau_end,'rndx', rndx
         ! 2. go to next point of interaction
-        !print *, 'dir',simu_var%dir_xyz
-        !print *, 'pos',simu_var%pos_xyz
+!~         print *,'now'
         DO
             ! 2.1. inside the dust sublimation radius: skip
             IF (simu_var%nr_cell==0) THEN
-                !print *,'here'
-                CALL path_skip( grid, simu_var )
+!~                 print *, 'here?'
+                CALL path_skip( grid, simu_var,rand_nr)
+!~                 print *, 'here? huch'
                 simu_var%pos_xyz = simu_var%pos_xyz_new
                 simu_var%nr_cell = simu_var%nr_cell_new
-                !print *, simu_var%pos_xyz
+                IF (check_inside(simu_var%pos_xyz_new(:),grid, model) ) THEN
+                    kill_photon = .True.
+                    exit
+                END IF
+
+        
             END IF
-            !print *, 'pos',simu_var%pos_xyz
             ! 2.2. determine: - geometric path length in current cell (d_l [ref_unit]);
             !                 - new entry point in neighbouring cell
             !                 - new cell number
@@ -123,7 +127,7 @@ contains
             ELSE
                 !print *, 'lower',d_tau, simu_var%nr_cell
                 ! optical depth has not yet been reached
-                IF ( check_inside(simu_var%pos_xyz_new(:), model) ) THEN
+                IF ( check_inside(simu_var%pos_xyz_new(:),grid, model) ) THEN
                     ! photon still inside model space
                     ! ---
                     ! a) store information about (fractional) path through last cell
@@ -152,37 +156,107 @@ contains
                 END IF
             END IF
         END DO
-
+!~         print *,'now_let_go'
     end subroutine next_pos_const
   
   
   ! ################################################################################################
   ! determine geometrical distance between given point and next cell boundary
   ! ---
-  subroutine path_skip( grid, simu_var )
+  SUBROUTINE path_skip( grid,simu_var,rand_nr)
+    ! steering routine
+    IMPLICIT NONE
+    !--------------------------------------------------------------------------!
+
+    TYPE(Grid_TYP),INTENT(IN)                        :: grid
+    TYPE(Simu_TYP),INTENT(INOUT)                     :: simu_var
+    TYPE(Randgen_TYP),INTENT(INOUT)                  :: rand_nr
+    !--------------------------------------------------------------------------!
+    
+    SELECT CASE(GetGridName(grid))
+        
+    CASE('spherical')
+        CALL path_skip_sp( grid,simu_var)
+    CASE('cylindrical')
+        CALL path_skip_cy( grid,simu_var,rand_nr)
+
+    CASE('cartesian')
+        print *, 'TbD, not finished yet, path'
+        stop
+    CASE DEFAULT
+        print *, 'selected coordinate system not found, path'
+        stop
+    END SELECT
+
+  END SUBROUTINE path_skip
+  
+  SUBROUTINE path_skip_cy( grid, simu_var,rand_nr)
   
     IMPLICIT NONE
     !--------------------------------------------------------------------------!
-    !TYPE(Basic_TYP)                                  :: basics
-    !TYPE(Randgen_TYP),INTENT(INOUT)                  :: rand_nr
-    !TYPE(Fluxes_TYP),INTENT(INOUT)                   :: fluxes
+
     TYPE(Grid_TYP),INTENT(IN)                        :: grid
-    !TYPE(Model_TYP)                                  :: model
-    !TYPE(Dust_TYP)                                   :: dust
-    
     TYPE(Simu_TYP),INTENT(INOUT)                     :: simu_var
+    TYPE(Randgen_TYP),INTENT(INOUT)                  :: rand_nr
     !--------------------------------------------------------------------------!
-!~     real(kind=r2), dimension(1:3), intent(in)        :: pos_xyz
-!~     real(kind=r2), dimension(1:3), intent(out)       :: pos_xyz_new
-!~     real(kind=r2), dimension(1:3), intent(inout)     :: dir_xyz
-!~     integer,                     intent(out)          :: nr_cell_new
-!~     integer,                     intent(in)           :: nr_cell
+!~     integer :: i_r, i_th, i_ph
+    
+    real(kind=r2) :: d_l1,d_l2,d_l
+    real(kind=r2) :: a,b,c, rndx
+!~     real(kind=r2) :: hd_r1, hd1, hd2, hd3, hd_th, hd_ph
+    real(kind=r2), dimension(1:3) :: pos_xyz,pos_xyz_new, dir_xyz
+    !--------------------------------------------------------------------------!
+    ! ---
+    ! starting point: pos_xyz
+    ! direction     : dir_xyz 
+    ! cell number   : nr_cell
+    ! ---
+    dir_xyz = simu_var%dir_xyz
+    pos_xyz = simu_var%pos_xyz
+    
+    a = sum(dir_xyz(1:2)**2)
+    
+    IF (a .lt. 1.0e-9) THEN
+        d_l1 = grid%co_mx_a(grid%n(1))+1.1_r2
+    ELSE
+        b = sum(dir_xyz(1:2)*pos_xyz(1:2))
+        c = sum(pos_xyz(1:2)**2)-grid%co_mx_a(0)**2
+        
+        d_l1 =  -b/a + ((b/a)**2-c/a)**0.5
+    END IF
+
+    d_l = d_l1
+    d_l = d_l +epsilon(1.0_r2)*1.0e6_r2*d_l
+    
+    pos_xyz_new    = pos_xyz + d_l * dir_xyz
+    simu_var%nr_cell_new = get_cell_nr( grid, pos_xyz_new)
+!~     IF ( ((pos_xyz_new(1)**2+pos_xyz_new(2)**2)**0.5 .lt. 2.0_r2)) THEN
+!~         print *, 'i_cell is still zero in skip path cy'
+!~         print *, ((pos_xyz_new(1)**2+pos_xyz_new(2)**2)**0.5 .lt. 2.0_r2)
+!~         print *, (pos_xyz_new(1)**2+pos_xyz_new(2)**2)**0.5
+!~         print *, d_l
+!~         print *, pos_xyz
+!~         print *, pos_xyz_new
+!~     END IF
+    
+    simu_var%pos_xyz_new = pos_xyz_new
+  END SUBROUTINE path_skip_cy
+  
+  subroutine path_skip_sp( grid, simu_var )
+  
+    IMPLICIT NONE
+    !--------------------------------------------------------------------------!
+
+    TYPE(Grid_TYP),INTENT(IN)                        :: grid
+    TYPE(Simu_TYP),INTENT(INOUT)                     :: simu_var
     !--------------------------------------------------------------------------!
     integer :: i_r, i_th, i_ph
     
     real(kind=r2) :: d_l
     real(kind=r2) :: hd_r1, hd1, hd2, hd3, hd_th, hd_ph
     real(kind=r2), dimension(1:3) :: p0_vec, d_vec
+    !--------------------------------------------------------------------------!
+    
     ! ---
     ! starting point: pos_xyz
     ! direction     : dir_xyz 
@@ -235,7 +309,7 @@ contains
 
     simu_var%nr_cell_new = grid%cell_idx2nr( i_r, i_th, i_ph )
     !print *, simu_var%pos_xyz
-  end subroutine path_skip
+  end subroutine path_skip_sp
 
 
   ! ################################################################################################
@@ -390,8 +464,8 @@ contains
             loca = i 
         END IF
     END DO
-
-    nr_cell_new = get_cell_nr(grid,d_l*1.00001_r2*dir_xyz + pos_xyz)
+    d_l = d_l + 1.0e6_r2*epsilon(d_l)
+    nr_cell_new = get_cell_nr(grid,d_l*dir_xyz + pos_xyz)
     pos_xyz_new = d_l*dir_xyz + pos_xyz
     
     

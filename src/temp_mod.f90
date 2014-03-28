@@ -262,12 +262,11 @@ CONTAINS
         seed = 1
 !~         !$ seed = omp_get_thread_num()+1
         !print *, 'here'
-        CALL InitRandgen(rand_nr,-seed,'RAN2')
+        CALL InitRandgen(rand_nr,seed,'RAN2')
         !--------------------------------------------------------------------------! 
         
         DO i_lam=1,dust%n_lam
             ! start photons with this wavelength?
-            !print *,dust%doRT(i_lam)
             IF (dust%doRT(i_lam)) THEN
             ! show progress
 !~                 !$OMP MASTER
@@ -281,42 +280,27 @@ CONTAINS
                 DO i_phot=1,model%n_star_emi
                     ! initiate simu_type
                     CALL InitSimu(simu_var, 1, 'SimulationVars',dust%n_dust,dust%n_lam)
-                    !print *, 'hello'
                     ! 1. start photon (from primary source only)
                     CALL start_prim(basics, rand_nr, fluxes, dust, simu_var, i_lam)
-                    !print *, simu_var%pos_xyz
+
                     ! 2. determine & go to next point of interaction
-                    !print *,'phot',i_phot
                     CALL next_pos_const(model, rand_nr, grid, dust, simu_var, grd_d_l)
-                    !print *, simu_var%nr_cell
+
                     ! 3. transfer through model space
                     !    if still inside model space: interaction
                     !                                 + go to next position
                     !                           else: observe photon leaving the model space
                     simu_var%n_interact = 0
-!~                     CALL RAN2(rand_nr,rndx)
-!~                     !$ print *, rndx, omp_get_thread_num()
-                    !print *, 'do start'
                     DO
-                        !print *,simu_var%inside , simu_var%n_interact
                         IF (simu_var%inside .and. (simu_var%n_interact < n_interact_max)) THEN
                             simu_var%n_interact = simu_var%n_interact +1
-                            !print *,simu_var%nr_cell
+!~                             print *,simu_var%nr_cell
                             CALL interact(basics,grid, dust, rand_nr, fluxes, simu_var, t_dust, i_star_abs)
-                            !print *,simu_var%dir_xyz
-                            !print *, 'before', simu_var%pos_xyz
                             CALL next_pos_const(model, rand_nr, grid, dust, simu_var, grd_d_l)
-                            !print *, 'after', simu_var%pos_xyz
-                            !print *, get_cell_nr(grid,simu_var%pos_xyz)
                             cycle
-
-
                         ELSE 
                             IF (simu_var%inside) THEN
-                            kill_photon_count = kill_photon_count +1 
-!~                             ELSE
-!~                                 print *,"here"
-!~                             END IF
+                                kill_photon_count = kill_photon_count +1 
                             END IF
                             EXIT
                         END IF
