@@ -385,10 +385,11 @@ CONTAINS
         !dz  = 2.0_r2*model%r_ou / real(grid%n(3), kind=r2)
         dth = 2.0_r2*PI / real(grid%n(2), kind=r2)
         
-        grid%cell_minA(i_cell) = MIN( 0.5* dth *  (grid%co_mx_a(i_r)**2-grid%co_mx_a(i_r-1)**2), &
-                                    ( dth * grid%co_mx_a(i_r-1) * dz), &
-                                    ( (grid%co_mx_a(i_r)-grid%co_mx_a(i_r-1))*dz))
-        grid%cell_minA(i_cell) = grid%cell_minA(i_cell)
+        grid%cell_minA(i_cell) = ( 0.5* dth *  (grid%co_mx_a(i_r)**2-grid%co_mx_a(i_r-1)**2)+ &
+                                    ( dth * grid%co_mx_a(i_r-1) * dz)+ &
+                                    ( (grid%co_mx_a(i_r)-grid%co_mx_a(i_r-1))*dz)) /3.0_r2
+                                    
+!~         grid%cell_minA(i_cell) = grid%cell_minA(i_cell)*1.0e3
         ! volume of individual cells [m^3]
         
         grid%cell_vol(i_cell) = 0.5_r2 * dz * dth * &
@@ -415,15 +416,15 @@ CONTAINS
         
         i_cell = grid%cell_idx2nr(i_r,i_th,i_ph)
         
-        grid%cell_minA(i_cell) = MIN( &
+        grid%cell_minA(i_cell) = ( &
                                 grid%co_mx_a(i_r-1)**2.0_r2 * &
                                 (grid%co_mx_c(i_ph) - grid%co_mx_c(i_ph-1) ) * &
-                                abs(grid%co_mx_b(i_th) - grid%co_mx_b(i_th-1) ) , &
+                                abs(grid%co_mx_b(i_th) - grid%co_mx_b(i_th-1) ) + &
                                 (grid%co_mx_a(i_r)**2.0_r2-grid%co_mx_a(i_r-1)**2.0_r2 ) * &
-                                abs(grid%co_mx_b(i_th) - grid%co_mx_b(i_th-1)) , &
+                                abs(grid%co_mx_b(i_th) - grid%co_mx_b(i_th-1)) + &
                                 (grid%co_mx_a(i_r)**2.0_r2-grid%co_mx_a(i_r-1)**2.0_r2 )* &
-                                (grid%co_mx_c(i_ph) - grid%co_mx_c(i_ph-1) ) )
-                               
+                                (grid%co_mx_c(i_ph) - grid%co_mx_c(i_ph-1) ) )/3.0_r2
+!~         grid%cell_minA(i_cell) = grid%cell_minA(i_cell)*5.0e2                       
         ! volume of individual cells [m^3]
         
         grid%cell_vol(i_cell) = &
