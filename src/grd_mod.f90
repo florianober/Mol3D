@@ -94,8 +94,6 @@ CONTAINS
         ! 1. set boundaries of each cell for the selected coordinate system
 
         Call set_boundaries(grid, model,basics)
-        
-        
         ! ---
         ! 2. - set cell numbering
         !    - calculate cell volumes
@@ -415,7 +413,6 @@ CONTAINS
         !------------------------------------------------------------------------!
         
         i_cell = grid%cell_idx2nr(i_r,i_th,i_ph)
-        
         grid%cell_minA(i_cell) = ( &
                                 grid%co_mx_a(i_r-1)**2.0_r2 * &
                                 (grid%co_mx_c(i_ph) - grid%co_mx_c(i_ph-1) ) * &
@@ -424,7 +421,8 @@ CONTAINS
                                 abs(grid%co_mx_b(i_th) - grid%co_mx_b(i_th-1)) + &
                                 (grid%co_mx_a(i_r)**2.0_r2-grid%co_mx_a(i_r-1)**2.0_r2 )* &
                                 (grid%co_mx_c(i_ph) - grid%co_mx_c(i_ph-1) ) )/3.0_r2
-!~         grid%cell_minA(i_cell) = grid%cell_minA(i_cell)*5.0e2                       
+!~         grid%cell_minA(i_cell) = grid%cell_minA(i_cell)*5.0e2 
+!~         print *, grid%co_mx_a(i_r-1)
         ! volume of individual cells [m^3]
         
         grid%cell_vol(i_cell) = &
@@ -548,47 +546,64 @@ CONTAINS
         INTEGER                                     :: i_r
         INTEGER                                     :: i_th
         INTEGER                                     :: i_ph
+        INTEGER                                     :: i
         
         REAL(kind=r2)                               :: dr1
         REAL(kind=r2)                               :: dth
         REAL(kind=r2)                               :: dph
-        !------------------------------------------------------------------------!        
-        ! ---
-        ! 1.1. rho
-        ! co_mx_a( 0 ): r_in
-        grid%co_mx_a(0) = model%r_in
+        REAL(kind=r2)                               :: trash
+        
+        Character(256)                              :: waste
+        !------------------------------------------------------------------------!
+        SELECT CASE(GetGridType(grid))
+        
+        CASE(1)
+            ! ---
+            ! 1.1. rho
+            ! co_mx_a( 0 ): r_in
+            grid%co_mx_a(0) = model%r_in
 
-        ! dr1: radial extension of first cell
-        dr1 = (model%r_ou - model%r_in) * (grid%sf-1.0_r2)/ (grid%sf**grid%n(1) - 1.0_r2)
+            ! dr1: radial extension of first cell
+            dr1 = (model%r_ou - model%r_in) * (grid%sf-1.0_r2)/ (grid%sf**grid%n(1) - 1.0_r2)
 
-        ! set outer ring radii:
-        ! co_mx_a( 1 ): r_in + dr1
-        ! co_mx_a(n(1)): r_ou
-        do i_r=1, grid%n(1)
-            grid%co_mx_a(i_r) = grid%co_mx_a(0) + dr1 * (grid%sf**i_r - 1.0_r2) / (grid%sf-1.0_r2)
-        end do
+            ! set outer ring radii:
+            ! co_mx_a( 1 ): r_in + dr1
+            ! co_mx_a(n(1)): r_ou
+            do i_r=1, grid%n(1)
+                grid%co_mx_a(i_r) = grid%co_mx_a(0) + dr1 * (grid%sf**i_r - 1.0_r2) / (grid%sf-1.0_r2)
+            end do
 
-        ! ---
-        ! 1.2. theta
-        ! co_mx_b(  0 ) = -PI/2 (-90°)
-        ! co_mx_b(n(2)) = +PI/2 (+90°)
-        grid%co_mx_b(0) = -PI/2.0_r2
+            ! ---
+            ! 1.2. theta
+            ! co_mx_b(  0 ) = -PI/2 (-90°)
+            ! co_mx_b(n(2)) = +PI/2 (+90°)
+            grid%co_mx_b(0) = -PI/2.0_r2
 
-        dth = PI / real(grid%n(2), kind=r2)
-        do i_th=1, grid%n(2)
-            grid%co_mx_b(i_th) = grid%co_mx_b(0) +  dth * real(i_th, kind=r2)
-        end do
-    
-        ! ---
-        ! 1.3 phi
-        ! co_mx_c(  0 ) = 0    (  0°)
-        ! co_mx_c(n(3)) = 2xPI (360°)
-        grid%co_mx_c(0) = 0.0_r2
-    
-        dph = 2.0_r2*PI / real(grid%n(3), kind=r2)
-        do i_ph=1, grid%n(3)
-            grid%co_mx_c(i_ph) =  grid%co_mx_c(0) + dph * real(i_ph, kind=r2)
-        end do
+            dth = PI / real(grid%n(2), kind=r2)
+            do i_th=1, grid%n(2)
+                grid%co_mx_b(i_th) = grid%co_mx_b(0) +  dth * real(i_th, kind=r2)
+            end do
+        
+            ! ---
+            ! 1.3 phi
+            ! co_mx_c(  0 ) = 0    (  0°)
+            ! co_mx_c(n(3)) = 2xPI (360°)
+            grid%co_mx_c(0) = 0.0_r2
+        
+            dph = 2.0_r2*PI / real(grid%n(3), kind=r2)
+            do i_ph=1, grid%n(3)
+                grid%co_mx_c(i_ph) =  grid%co_mx_c(0) + dph * real(i_ph, kind=r2)
+            end do
+            
+                    
+        CASE(2)
+            ! user given spherical grid, here interface to PLUTO code
+            ! read grid from file
+            ! here we have to reset the given modelparameter
+            ! let's discuss this later
+            
+            ! nothing to do here, the boundaries are set allready
+        END SELECT
     
     END SUBROUTINE set_boundaries_sp
     

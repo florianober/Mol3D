@@ -124,8 +124,13 @@ CONTAINS
         
         REAL(kind=r2)         :: sf
         REAL(kind=r2)         :: r_in
+        REAL(kind=r2)         :: trash
+        REAL(kind=r2),DIMENSION(1:2)         :: d_angle
             
         INTEGER               :: ut
+        INTEGER,DIMENSION(1:3)  :: n
+        INTEGER               :: i
+        INTEGER               :: i_abc
         INTEGER               :: n_a
         INTEGER               :: n_b
         INTEGER               :: n_c
@@ -134,6 +139,7 @@ CONTAINS
         INTEGER               :: egy_lvl       !from gas type
         
         CHARACTER(LEN=*)      :: un
+        CHARACTER(LEN=256)    :: waste
         
         !------------------------------------------------------------------------!
         INTENT(IN)            :: ut, un, model, n_a, sf, n_b, n_c, n_dust, n_lam, egy_lvl
@@ -142,17 +148,112 @@ CONTAINS
         CALL InitCommon(this%grdtype,ut,un)
 
         r_in       = model%r_in  !no use yet! ?
-        this%n(1)   = n_a
-        this%sf     = sf
-        this%n(2)   = n_b
-        this%n(3)   = n_c
+        SELECT CASE(GetGridType(this))
         
+        CASE(1)
+            this%n(1)   = n_a
+            this%sf     = sf
+            this%n(2)   = n_b
+            this%n(3)   = n_c
+            
+            ALLOCATE( &
+                this%co_mx_a(  0:this%n(1) ), &
+                this%co_mx_b( 0:this%n(2) ), &
+                this%co_mx_c( 0:this%n(3) ))
+            this%co_mx_a(:)           = 0.0_r2
+            this%co_mx_b(:)           = 0.0_r2
+            this%co_mx_c(:)           = 0.0_r2
+        
+        CASE(2)
+            ! interface to Pluto data
+            !
+            open(unit=1, file="input/grid/pluto_disk.dat", &
+            action="read", status="unknown", form="formatted")
+            
+            DO i = 1,6
+                read(unit=1,fmt=*) waste
+            END DO
+            read(unit=1,fmt=*) n(1)
+            this%n(1) = n(1)
+            ALLOCATE( this%co_mx_a(  0:this%n(1) ))
+            this%co_mx_a(:)           = 0.0_r2
+            
+            read(unit=1,fmt=*) n(2)
+            read(unit=1,fmt=*) n(3)
+            DO i = 1,14
+                read(unit=1,fmt=*) waste
+            END DO
+            
+            ! make r boundaries
+            DO i_abc = 0,this%n(1)-1
+                read(unit=1,fmt=*) i, trash, this%co_mx_a(i_abc)
+            END DO
+            
+            ! transform cm to AU
+            this%co_mx_a(:) = this%co_mx_a(:)/con_au/100.0_r2
+            ! we assume a exponential increasing this, therefore we can calculate 
+            ! the effective outer boundary == r_ou
+            ! 
+            this%co_mx_a(this%n(1)) = exp((log(this%co_mx_a(1))-log(this%co_mx_a(0)))*(this%n(1)+1)+ &
+                                       log(this%co_mx_a(0)))
+            ! make th boundaries
+            read(unit=1,fmt=*) waste
+            read(unit=1,fmt=*) waste
+            
+
+            DO i_abc = 1,2
+                read(unit=1,fmt=*) i, trash, d_angle(i_abc)
+            END DO
+            
+            ! calculate no of th angles
+            !
+            this%n(2) = anint(PI/abs(d_angle(1)-d_angle(2)))
+            ALLOCATE( this%co_mx_b(  0:this%n(2) ))
+            this%co_mx_b(:)           = 0.0_r2
+            
+            this%co_mx_b(0) = -PI/2.0_r2
+            DO i_abc=1, this%n(2)
+                this%co_mx_b(i_abc) = this%co_mx_b(0) +  PI / real(this%n(2), kind=r2) * real(i_abc, kind=r2)
+            end do
+
+            DO i_abc = 1,n(2)-2
+                read(unit=1,fmt=*) waste
+            END DO
+            read(unit=1,fmt=*) waste
+            read(unit=1,fmt=*) waste
+
+            ! make ph boundaries
+            d_angle = 0
+            IF (n(3) > 1) THEN
+                DO i_abc = 1,2
+                    read(unit=1,fmt=*) i, trash, d_angle(i_abc)
+                END DO
+                
+            ELSE
+                read(unit=1,fmt=*) i, trash, d_angle(1)
+                d_angle(2) = 2.0*PI
+            END IF
+            
+            
+            ! calculate no of ph angles
+            !
+            this%n(3) = anint(2.0*PI/abs(d_angle(1)-d_angle(2)))
+            ALLOCATE( this%co_mx_c(  0:this%n(3) ))
+            this%co_mx_c(:)           = 0.0_r2
+            DO i_abc=1, this%n(3)
+                this%co_mx_c(i_abc) = this%co_mx_c(0) +  2.0*PI / real(this%n(3), kind=r2) * real(i_abc, kind=r2)
+            end do
+
+            close(unit=1)
+            ! for now we don't set the sf
+!~             print *, this%co_mx_c
+            this%sf     = 1.0
+
+        END SELECT
         this%n_cell = this%n(1) * this%n(2) * this%n(3)
         print *, "Number of ESCs: ", this%n_cell
+
         ALLOCATE( &
-            this%co_mx_a(  0:this%n(1) ), &
-            this%co_mx_b( 0:this%n(2) ), &
-            this%co_mx_c( 0:this%n(3) ), &
             this%ddust( 1:n_dust), &
             this%cell_vol( 0:this%n_cell ), &
             this%cell_minA( 0:this%n_cell ), &
@@ -177,9 +278,6 @@ CONTAINS
             this%lvl_pop( 0:this%n_cell, 1:egy_lvl ) )
             
         this%nh_n_dust = n_dust
-        this%co_mx_a(:)           = 0.0_r2
-        this%co_mx_b(:)           = 0.0_r2
-        this%co_mx_c(:)           = 0.0_r2
         this%cell_vol(:)          = 0.0_r2
         this%cell_minA(:)         = 0.0_r2
         this%cell_gauss_a(:)      = 0.0
@@ -363,8 +461,9 @@ CONTAINS
 !~         print *,'starting'
         h_r  = sqrt(caco(1)**2+caco(2)**2)
         h_ph = atan3(caco(2),caco(1))
-!~         print *, h_r, h_ph
+
         ! 1.1 get i_r
+        
         ! --
         !dr1 = (this%co_mx_a(this%n(1)) - this%co_mx_a(0) ) * (this%sf-1.0_r2)/ (this%sf**this%n(1) - 1.0_r2)
         !i_r = floor( log(1.0_r2 + (this%sf-1.0_r2)*(h_r-this%co_mx_a(0))/dr1) / log(this%sf) )  + 1
@@ -382,7 +481,7 @@ CONTAINS
             !stop
         END IF
 
-!~         print *,'r done'
+
         ! 1.2 get i_ph
         ! --
         d_ph = PI*2.0_r2/this%n(2)
@@ -391,19 +490,17 @@ CONTAINS
         IF  ( h_ph .ge. PI*2.0_r2 ) THEN
             i_ph = this%n(2)
         END IF
-!~         print *,'phi done'
+
+
         ! 1.3 get i_z
         ! --
-!~         i_z = 0
+
         IF ( abs(caco(3)) >=  this%co_mx_c(this%n(3)) ) THEN
             i_z = this%n(3)
         ELSE
             i_z = binary_search(caco(3),this%co_mx_c )
         END IF
-!~         print *,'z done'
-        
-        
-!~         print *, i_r, i_ph, i_z
+
         
         get_cell_nr_result = this%cell_idx2nr(i_r,i_ph,i_z)
     END FUNCTION get_cell_nr_cy
@@ -433,76 +530,24 @@ CONTAINS
         spco = ca2sp(caco)
         ! ---
         ! theta
-!         p_th = 0
-!         
-!         do
-!             if (this%co_mx_b(p_th) > spco(2)) then
-!                 i_th = p_th
-!                 !print *, this%co_mx_th(p_th)
-!                 !print *, 'here'
-!                 exit
-!             else if (p_th >= this%n(2)) then
-!                 ! in the case of rounding errors
-!                 ! tbd: check, if this can be avoided
-!                 i_th = this%n(2)
-!                 exit
-!             else
-!                 p_th = p_th +1
-!                 cycle
-!             end if
-!         end do
+
         IF (this%n(2) == 1) THEN
             i_th = 1
         ELSE
             i_th = binary_search(spco(2),this%co_mx_b)
         END IF
-        
-        !IF (i_th /= test_ph) THEN
-        !    print *, i_th , test_ph
-        !END IF
-        
-        
+        ! ---
         ! phi
-!~         p_ph = 0
-!~         do
-!~             if (this%co_mx_c(p_ph) >= spco(3) ) then
-!~                 i_ph = p_ph
-!~                 exit
-!~             else if (p_ph >= this%n(3)) then
-!~                 ! in the case of rounding errors
-!~                 ! tbd: check, if this can be avoided
-!~                 i_ph = this%n(3)
-!~                 exit
-!~             else
-!~                 p_ph = p_ph +1
-!~                 cycle
-!~             end if
-!~         end do
         
         IF (this%n(3) == 1) THEN
             i_ph = 1
         ELSE
             i_ph = binary_search(spco(3),this%co_mx_c)
         END IF
-
-    !    ! r
-
-!        p_r = 0
-!        do
-!            if (p_r == this%n(1)) then
-!                i_r = p_r
-!                exit
-!            end if
-!            
-!            if (this%co_mx_a(p_r) >= spco(1)) then
-!                i_r = p_r
-!                exit
-!            else
-!                p_r = p_r +1
-!                cycle
-!            end if
-!        end do
- 
+        
+        
+        ! ---
+        ! r
         IF (this%n(1) == 1) THEN
             i_r = 1
         ELSE IF (spco(1) .gt. this%co_mx_a(this%n(1))) THEN
@@ -513,13 +558,6 @@ CONTAINS
             !stop
         END IF
         
-        !IF (i_r /= test_ph) THEN
-        !    print *, i_r , test_ph
-        !END IF
-        
-!~         IF ( spco(1) > this%co_mx_a(this%n(1)) )   THEN
-!~             print *, i_r, 'i_r bigger'
-!~         END IF
         get_cell_nr_result = this%cell_idx2nr( i_r, i_th, i_ph )
 
     END FUNCTION get_cell_nr_sp

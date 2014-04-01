@@ -48,7 +48,7 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas)
     CHARACTER(len=256)                               :: r_path
     CHARACTER(len=256)                               :: flux_unit
     CHARACTER(len=4)                                 :: ref_u_str
-    CHARACTER(len=32)                                :: grid_type
+    CHARACTER(len=32)                                :: grid_name
     CHARACTER(len=8), ALLOCATABLE, DIMENSION(:)      :: dust_cat
     REAL(kind=r2)                                    :: ref_u
     REAL(kind=r2)                                    :: r_in
@@ -90,6 +90,7 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas)
     INTEGER                                          :: aniso
     INTEGER                                          :: n_scatt_th
     INTEGER                                          :: n_tem
+    INTEGER                                          :: grid_type
     INTEGER                                          :: nrndpt  !! resolution of scattering distribution"
     
     INTEGER                                          :: num_core !number of cores used in parallel part
@@ -388,9 +389,9 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas)
 
     !grid_type = 'cylindrical'   
     !grid_type = 'spherical'
-    CALL parse('grid_type',grid_type,input_file)  
+    CALL parse('grid_name',grid_name,input_file)  
     
-    WRITE(unit=3,fmt='(A)') 'grid_type = {'//TRIM(grid_type)// &
+    WRITE(unit=3,fmt='(A)') 'grid_name = {'//TRIM(grid_name)// &
     '}              possible values: spherical (OK), cylindrical (testing), cartesian (planned)'
       ! possible values: spherical (mostly mc3d style)
       !                  cylindrical (in progress, working but there are some bugs, test for yourself)
@@ -427,6 +428,13 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas)
     WRITE(unit=3,fmt='(A)') ''
     
     
+    ! give the type of the specified grid 
+    ! 1 == analytical version (prefered)
+    ! 2 == user input version, under construction
+    !
+!~     grid_type = 1
+    grid_type = 2
+    
 !   Some examples here:
 !~     SELECT CASE(grid_type)
     
@@ -443,7 +451,7 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas)
 !~         n_c  = 1
     
 !~     END SELECT
-    CALL InitGrid(grid,1,grid_type, model, n_a, sf, n_b, n_c,dust%n_dust, & 
+    CALL InitGrid(grid,grid_type,grid_name, model, n_a, sf, n_b, n_c,dust%n_dust, & 
                   dust%n_lam,gas%egy_lvl)
     !--------------------------------------------------------------------------! 
     
