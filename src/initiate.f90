@@ -355,7 +355,7 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas)
     
     
     CALL parse('vel_max',vel_max,new_input_file)    
-    WRITE(help,fmt='(F7.2)') vel_max
+    WRITE(help,fmt='(F8.2)') vel_max
     WRITE(unit=3,fmt='(A)') 'vel_max = {'//TRIM(help)//&
     '}                  max velocity in spectrum (in m/s)'
     

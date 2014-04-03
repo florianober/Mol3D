@@ -9,14 +9,14 @@
 #                                                                                #
 # author: Florian Ober                                                           #
 # email : fober@astrophysik.uni-kiel.de                                          #    
-# date  : Nov 2013                                                               #
+# date  : Apr 2014                                                               #
 ##################################################################################
 
 
 proname = {example}                       project name
 r_path = {results/}                       define results path, it is recommend to change this path 
 
-num_core    = {003}                       number of cores used (raytracing, temperature calculation (TbD))
+num_core    = {001}                       number of cores used (raytracing, temperature calculation (TbD))
 old_model   = {F}                         use results from earlier calculations 
 old_proname = {oldproname}                the project name of the older calculation 
 
@@ -46,7 +46,8 @@ vel_max = {4000.0}                        max velocity in spectrum (in m/s)
 
 gas_cat_name = {co.dat}                   gas catalog name (in input/mol) (leiden databaase style)
 dust_cat_name = {mrn---v4}                dust catalog name (in input/dust) (in mc3d style)
-grid_type = {spherical}                   possible values: spherical (OK), cylindrical (testing), cartesian (planned)
+grid_name = {spherical}                   possible values: spherical (OK), cylindrical (testing), cartesian (planned)
+grid_type = {1}                           default = 1. 2 and higher values for user defined grids
 
 n_a = {100}                               
 n_b = {101}
@@ -54,9 +55,3 @@ n_c = {1}
 sf = {1.03}
 
 flux_unit = {Jy_pix}                       possible values: Jy_pix, T_mb
-
-
-
-
-
-

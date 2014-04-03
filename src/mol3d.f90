@@ -75,8 +75,8 @@ program mol3d
     !--------------------------------------------------------------------------!
     ! 4. provide some extra visualisations, obsolent now, but maybe still useful
     !--------------------------------------------------------------------------!
-!~         CALL vis_plane(grid, basics, 1,'densH2',801)
-!~         CALL vis_plane(grid, basics, 2,'densH2',801)
+        CALL vis_plane(grid, basics, 1,'densH2',801)
+        CALL vis_plane(grid, basics, 2,'densH2',801)
 !~         CALL vis_plane(grid, basics, 1,'temp',801)
 !~         CALL vis_plane(grid, basics, 1,'velo',801)
 !~         CALL vis_plane(grid, basics, 2,'temp',801)
