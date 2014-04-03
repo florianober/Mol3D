@@ -123,7 +123,6 @@ CONTAINS
         TYPE(Model_TYP)       :: model  
         
         REAL(kind=r2)         :: sf
-        REAL(kind=r2)         :: r_in
         REAL(kind=r2)         :: trash
         REAL(kind=r2),DIMENSION(1:2)         :: d_angle
             
@@ -146,114 +145,117 @@ CONTAINS
         INTENT(INOUT)         :: this
         !------------------------------------------------------------------------!
         CALL InitCommon(this%grdtype,ut,un)
-
-        r_in       = model%r_in  !no use yet! ?
-        SELECT CASE(GetGridType(this))
+        SELECT CASE(GetGridname(this))
         
-        CASE(1)
-            this%n(1)   = n_a
-            this%sf     = sf
-            this%n(2)   = n_b
-            this%n(3)   = n_c
-            
-            ALLOCATE( &
-                this%co_mx_a(  0:this%n(1) ), &
-                this%co_mx_b( 0:this%n(2) ), &
-                this%co_mx_c( 0:this%n(3) ))
-            this%co_mx_a(:)           = 0.0_r2
-            this%co_mx_b(:)           = 0.0_r2
-            this%co_mx_c(:)           = 0.0_r2
+        CASE('spherical')
+            print *, 'using a spherical grid'
         
-        CASE(2)
-            ! interface to Pluto data
-            !
-            open(unit=1, file="input/grid/pluto_disk.dat", &
-            action="read", status="unknown", form="formatted")
+            SELECT CASE(GetGridType(this))
             
-            DO i = 1,6
-                read(unit=1,fmt=*) waste
-            END DO
-            read(unit=1,fmt=*) n(1)
-            this%n(1) = n(1)
-            ALLOCATE( this%co_mx_a(  0:this%n(1) ))
-            this%co_mx_a(:)           = 0.0_r2
+            CASE(1,2)
+                ! case 1 logarithm r spaced grid
+                ! case 2 linear r spaced grid
+                ! we can use the same definitions
+                this%n(1)   = n_a
+                this%sf     = sf
+                this%n(2)   = n_b
+                this%n(3)   = n_c
             
-            read(unit=1,fmt=*) n(2)
-            read(unit=1,fmt=*) n(3)
-            DO i = 1,14
-                read(unit=1,fmt=*) waste
-            END DO
-            
-            ! make r boundaries
-            DO i_abc = 0,this%n(1)-1
-                read(unit=1,fmt=*) i, trash, this%co_mx_a(i_abc)
-            END DO
-            
-            ! transform cm to AU
-            this%co_mx_a(:) = this%co_mx_a(:)/con_au/100.0_r2
-            ! we assume a exponential increasing this, therefore we can calculate 
-            ! the effective outer boundary == r_ou
-            ! 
-            this%co_mx_a(this%n(1)) = exp((log(this%co_mx_a(1))-log(this%co_mx_a(0)))*(this%n(1)+1)+ &
-                                       log(this%co_mx_a(0)))
-            ! make th boundaries
-            read(unit=1,fmt=*) waste
-            read(unit=1,fmt=*) waste
-            
-
-            DO i_abc = 1,2
-                read(unit=1,fmt=*) i, trash, d_angle(i_abc)
-            END DO
-            
-            ! calculate no of th angles
-            !
-            this%n(2) = anint(PI/abs(d_angle(1)-d_angle(2)))
-            ALLOCATE( this%co_mx_b(  0:this%n(2) ))
-            this%co_mx_b(:)           = 0.0_r2
-            
-            this%co_mx_b(0) = -PI/2.0_r2
-            DO i_abc=1, this%n(2)
-                this%co_mx_b(i_abc) = this%co_mx_b(0) +  PI / real(this%n(2), kind=r2) * real(i_abc, kind=r2)
-            end do
-
-            DO i_abc = 1,n(2)-2
-                read(unit=1,fmt=*) waste
-            END DO
-            read(unit=1,fmt=*) waste
-            read(unit=1,fmt=*) waste
-
-            ! make ph boundaries
-            d_angle = 0
-            IF (n(3) > 1) THEN
-                DO i_abc = 1,2
-                    read(unit=1,fmt=*) i, trash, d_angle(i_abc)
-                END DO
+            CASE(3)
+                ! interface to Pluto data
+                ! 
+                ! was a test and is working, but not in use
+                open(unit=1, file="input/grid/pluto_disk.dat", &
+                action="read", status="unknown", form="formatted")
                 
-            ELSE
-                read(unit=1,fmt=*) i, trash, d_angle(1)
-                d_angle(2) = 2.0*PI
-            END IF
+                DO i = 1,6
+                    read(unit=1,fmt=*) waste
+                END DO
+                read(unit=1,fmt=*) n(1)
+                this%n(1) = n(1)
+                read(unit=1,fmt=*) n(2)
+                read(unit=1,fmt=*) n(3)
+                DO i = 1,14
+                    read(unit=1,fmt=*) waste
+                END DO
+                DO i_abc = 1,this%n(1)+2
+                    read(unit=1,fmt=*) waste
+                END DO
+                ! calculate no of th angles
+                !
+                
+                IF (n(2) >1 ) THEN
+                    DO i_abc = 1, 2
+                        read(unit=1,fmt=*) i, trash, d_angle(i_abc)
+                    END DO
+                    
+                    DO i_abc = 1, n(2)-2
+                        read(unit=1,fmt=*) waste
+                    END DO
+                    read(unit=1,fmt=*) waste
+                    read(unit=1,fmt=*) waste
+                    
+                ELSE
+                    read(unit=1,fmt=*) i, trash, d_angle(1)
+                    d_angle(2) = PI
+                    read(unit=1,fmt=*) waste
+                    read(unit=1,fmt=*) waste
+                END IF
+                ! make sure, this%n(2) is odd!
+                this%n(2) = anint(PI/abs(d_angle(2)-d_angle(1)))
+                
+                
+                ! calculate no of ph angles
+                IF (n(3) >1 ) THEN
+                    DO i_abc = 1, 2
+                        read(unit=1,fmt=*) i, trash, d_angle(i_abc)
+                    END DO
+                ELSE
+                    read(unit=1,fmt=*) i, trash, d_angle(1)
+                    d_angle(2) = 2.0*PI
+                END IF
+                ! make sure, this%n(3) is even or 1
+                this%n(3) = anint(2.0*PI/abs(d_angle(2)-d_angle(1)))
+                
+                close(unit=1)
+                this%sf     = 1.0
+                
+            CASE DEFAULT
+                print *, 'selected coordinate type not found. try grid_type = [1,2]'
+                stop
+            END SELECT
             
+        CASE('cylindrical')
+            print *, 'using a cylindrical grid'
+            SELECT CASE(GetGridType(this))
+            CASE(1)
+                this%n(1)   = n_a
+                this%sf     = sf
+                this%n(2)   = n_b
+                this%n(3)   = n_c
+            CASE DEFAULT
+                print *, 'selected coordinate type not found. try grid_type = [1]'
+                stop
+            END SELECT 
             
-            ! calculate no of ph angles
-            !
-            this%n(3) = anint(2.0*PI/abs(d_angle(1)-d_angle(2)))
-            ALLOCATE( this%co_mx_c(  0:this%n(3) ))
-            this%co_mx_c(:)           = 0.0_r2
-            DO i_abc=1, this%n(3)
-                this%co_mx_c(i_abc) = this%co_mx_c(0) +  2.0*PI / real(this%n(3), kind=r2) * real(i_abc, kind=r2)
-            end do
-
-            close(unit=1)
-            ! for now we don't set the sf
-!~             print *, this%co_mx_c
-            this%sf     = 1.0
-
+        CASE('cartesian')
+            print *, 'TbD,..initiate grid, cartesian grid is not implemented yet'
+            stop
+        CASE DEFAULT
+            print *, 'selected coordinate system not found.'
+            stop
         END SELECT
+        
+        ! calculate and show final no of cell
         this%n_cell = this%n(1) * this%n(2) * this%n(3)
         print *, "Number of ESCs: ", this%n_cell
-
+        
+        ! now allocate all grid dependend properties and intitiate them to zero
+        
         ALLOCATE( &
+            this%co_mx_a(  0:this%n(1) ), &
+            this%co_mx_b( 0:this%n(2) ), &
+            this%co_mx_c( 0:this%n(3) ), &
             this%ddust( 1:n_dust), &
             this%cell_vol( 0:this%n_cell ), &
             this%cell_minA( 0:this%n_cell ), &
@@ -278,6 +280,9 @@ CONTAINS
             this%lvl_pop( 0:this%n_cell, 1:egy_lvl ) )
             
         this%nh_n_dust = n_dust
+        this%co_mx_a(:)           = 0.0_r2
+        this%co_mx_b(:)           = 0.0_r2
+        this%co_mx_c(:)           = 0.0_r2
         this%cell_vol(:)          = 0.0_r2
         this%cell_minA(:)         = 0.0_r2
         this%cell_gauss_a(:)      = 0.0

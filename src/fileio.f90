@@ -136,7 +136,7 @@ CONTAINS
         INTEGER                                      :: plane, pix
         
         CHARACTER(len=*), INTENT(IN)                 :: typename
-        REAL(kind=r1),DIMENSION(:,:),POINTER         :: visarr
+        REAL(kind=r2),DIMENSION(:,:),POINTER         :: visarr
         REAL(kind=r2),DIMENSION(1:3)                 :: caco
         REAL(kind=r2)                                :: dxy
                 
@@ -154,7 +154,7 @@ CONTAINS
 !~             visarr => grid%grd_dust_density
             print *,'visualize dust density distribution'
         ELSE IF ( typename == 'densH2')  THEN
-!~             visarr => grid%grd_col_density
+            visarr => grid%grd_col_density
             print *,'visualize H2 density distribution'   
             !TbD!!!!
 !~         ELSE IF ( typename == 'densmol')  THEN
@@ -164,7 +164,7 @@ CONTAINS
         ELSE IF ( typename == 'temp' ) THEN
             print *,'visualize temperature distribution'
 !~             h_array = REAL(grid%t_dust, kind=r2)
-            visarr  => grid%t_dust
+!~             visarr  => grid%t_dust
 !~             EXIT
 !~         ELSE IF ( typename == 'velo' ) THEN
 !~             print *,'visualize velocity distribution'

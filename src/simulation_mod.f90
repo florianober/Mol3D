@@ -74,10 +74,9 @@ CONTAINS
     ! --- calculate or set temperature
     print *,' setting temperature distribution'
     CALL set_temperature(basics, grid, model, dust, gas, fluxes)
-    
     ! --- save all results for later use
     CALL save_model(grid, basics)
-    
+!~     stop
     
     ! --- calculate level populations
     print *,' calculation of level populations'

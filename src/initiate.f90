@@ -99,6 +99,7 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas)
     LOGICAL                                          :: project_2D
     LOGICAL                                          :: calc_tmp
     LOGICAL                                          :: old_model
+    LOGICAL                                          :: pluto_data
     LOGICAL                                          :: do_raytr
     !--------------------------------------------------------------------------!
     INTENT(INOUT)                                    :: basics, &
@@ -214,9 +215,12 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas)
     WRITE(unit=3,fmt='(A)') 'do_raytr = {'//TRIM(help)//'}'
     WRITE(unit=3,fmt='(A)') '' 
     
+    pluto_data = .True.
+    
+    
     CALL InitBasic(basics,simu_type,'Reemission map',proname,r_path, concept_ps, calc_tmp, old_proname, &
                     old_model, &
-                    project_2D, do_raytr,n_tem, t_dust_min, t_dust_max, num_core)
+                    project_2D, do_raytr,n_tem, t_dust_min, t_dust_max, num_core, pluto_data)
     !--------------------------------------------------------------------------! 
     
     print *, "Code initialization [level 2] Model Setup"
@@ -407,7 +411,12 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas)
       ! n(3) = n_ph : number of point in oh direction, must be 1 or even
       ! sf   = step factor for logarithmic r scale
       ! ..
-      
+    
+    CALL parse('grid_type',grid_type,input_file)
+    WRITE(help,fmt='(I1)') grid_type
+    WRITE(unit=3,fmt='(A)') 'grid_type = {'//TRIM(help)// &
+    '}                      default = 1. 2 and higher values for user defined grids'
+    
     CALL parse('n_a',n_a,input_file)
     WRITE(help,fmt='(I4)') n_a
     WRITE(unit=3,fmt='(A)') 'n_a = {'//TRIM(help)// &
@@ -432,19 +441,19 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas)
     ! 1 == analytical version (prefered)
     ! 2 == user input version, under construction
     !
-!~     grid_type = 1
-    grid_type = 2
     
 !   Some examples here:
 !~     SELECT CASE(grid_type)
     
 !~     CASE('cylindrical')
+!~         grid_type = 1
 !~         n_a  = 100
 !~         sf   = 1.00001
 !~         n_b  = 70          
 !~         n_c  = 101   
 !~         
 !~     CASE('spherical')
+!~         grid_type = 1
 !~         n_a  = 300
 !~         sf   = 1.01
 !~         n_b  = 257

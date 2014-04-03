@@ -68,7 +68,7 @@ CONTAINS
         
         TYPE(Grid_TYP), INTENT(INOUT)               :: grid
         TYPE(Basic_TYP), INTENT(IN)                 :: basics
-        TYPE(Model_TYP), INTENT(IN)                 :: model
+        TYPE(Model_TYP), INTENT(INOUT)              :: model
         TYPE(Dust_TYP), INTENT(IN)                  :: dust
         TYPE(Gas_TYP), INTENT(INOUT)                :: gas
         
@@ -86,6 +86,7 @@ CONTAINS
         REAL(kind=r1)                               :: hd2
 
         REAL(kind=r2), DIMENSION(:), ALLOCATABLE    :: hd_arr1
+        REAL(kind=r2), DIMENSION(1:3)               :: moco
         
         LOGICAL                                     :: mass_dens
         !------------------------------------------------------------------------!
@@ -117,12 +118,23 @@ CONTAINS
                     grid%cell_nr2idx(2,i_cell) = i_b
                     grid%cell_nr2idx(3,i_cell) = i_c
                     
+                    
                     ! find cell volume and min A cell-Wall
                     CALL calc_cell_properties(grid,model,i_a,i_b,i_c)
+                    ! calculate midpoint coordinate
+                    moco(1) = ( grid%co_mx_a( i_a ) + grid%co_mx_a( i_a  -1) ) / 2.0_r2
+                    moco(2) = ( grid%co_mx_b(i_b) + grid%co_mx_b(i_b -1) ) / 2.0_r2
+                    moco(3) = ( grid%co_mx_c(i_c) + grid%co_mx_c(i_c -1) ) / 2.0_r2
+                        
+                    ! get cartesian coordinate from moco
+                    grid%cellmidcaco(i_cell,:) = mo2ca(grid, moco)
+                    
                 end do
             end do
         end do
+        
         grid%cell_minA(0) = model%r_in**2*PI
+        
 !    ! fill grid with disk properties,e.g. temp, density, velocity...
         CALL set_grid_properties(basics,grid,gas,model)   
     ! verification: maximum cell number (i.e., total number of cells) = total number of cells
@@ -445,7 +457,7 @@ CONTAINS
         !------------------------------------------------------------------------!
         
         TYPE(Grid_TYP), INTENT(INOUT)               :: grid
-        TYPE(Model_TYP), INTENT(IN)                 :: model
+        TYPE(Model_TYP), INTENT(INOUT)              :: model
         TYPE(Basic_TYP), INTENT(IN)                 :: basics
         !------------------------------------------------------------------------!
         
@@ -522,8 +534,8 @@ CONTAINS
         !      -> we use sf too, but not the user given value but a fixed one
         
 !~         grid%co_mx_c(grid%n(3)*0.5) = 0.0_r2
-        sf = 1.08_r2
-!~         sf = grid%sf
+!~         sf = 1.08_r2
+        sf = grid%sf+0.01
         !dz = 2.0_r2*model%r_ou / real(grid%n(3), kind=r2)
         dz = model%r_ou * (sf-1.0_r2)/ (sf**((grid%n(3)-1)*0.5) - 1.0_r2)
         do i_z=1, int(grid%n(3)*0.5)
@@ -541,11 +553,12 @@ CONTAINS
         !------------------------------------------------------------------------!
         
         TYPE(Grid_TYP), INTENT(INOUT)               :: grid
-        TYPE(Model_TYP), INTENT(IN)                 :: model
+        TYPE(Model_TYP), INTENT(INOUT)              :: model
         !------------------------------------------------------------------------!
         INTEGER                                     :: i_r
         INTEGER                                     :: i_th
         INTEGER                                     :: i_ph
+        INTEGER                                     :: i_abc
         INTEGER                                     :: i
         
         REAL(kind=r2)                               :: dr1
@@ -595,14 +608,100 @@ CONTAINS
                 grid%co_mx_c(i_ph) =  grid%co_mx_c(0) + dph * real(i_ph, kind=r2)
             end do
             
-                    
         CASE(2)
+            ! here we have a linear spherical grid
+            ! this is motivated by a given density distribution from the pluto code
+            !
+            ! ---
+            ! 1.1. rho
+            ! co_mx_a( 0 ): r_in
+            grid%co_mx_a(0) = model%r_in
+
+            ! dr1: radial extension
+            dr1 = (model%r_ou - model%r_in) / real(grid%n(1), kind=r2)
+
+            ! set outer ring radii:
+            ! co_mx_a( 1 ): r_in + dr1
+            ! co_mx_a(n(1)): r_ou
+            do i_r=1, grid%n(1)
+                grid%co_mx_a(i_r) = grid%co_mx_a(0) + dr1 * real(i_r, kind=r2)
+            end do
+            
+            ! ---
+            ! 1.2. theta
+            ! co_mx_b(  0 ) = -PI/2 (-90°)
+            ! co_mx_b(n(2)) = +PI/2 (+90°)
+            grid%co_mx_b(0) = -PI/2.0_r2
+
+            dth = PI / real(grid%n(2), kind=r2)
+            do i_th=1, grid%n(2)
+                grid%co_mx_b(i_th) = grid%co_mx_b(0) +  dth * real(i_th, kind=r2)
+            end do
+            
+            ! ---
+            ! 1.3 phi
+            ! co_mx_c(  0 ) = 0    (  0°)
+            ! co_mx_c(n(3)) = 2xPI (360°)
+            grid%co_mx_c(0) = 0.0_r2
+        
+            dph = 2.0_r2*PI / real(grid%n(3), kind=r2)
+            do i_ph=1, grid%n(3)
+                grid%co_mx_c(i_ph) =  grid%co_mx_c(0) + dph * real(i_ph, kind=r2)
+            end do
+        
+        CASE(3)
+            ! This is an old and very rubbish implemented version. it should work, but...;)
+            !
             ! user given spherical grid, here interface to PLUTO code
-            ! read grid from file
+            ! read grid from file, as ph and th are linear spaced, the no of cells are
+            ! allready calculated und we have just du space them evenly
+            ! the r cells are taken from the input file
             ! here we have to reset the given modelparameter
             ! let's discuss this later
+            open(unit=1, file="input/grid/pluto_disk.dat", &
+                action="read", status="unknown", form="formatted")
+
+            DO i = 1,23
+                read(unit=1,fmt=*) waste
+            END DO
             
-            ! nothing to do here, the boundaries are set allready
+            ! make r boundaries
+            DO i_abc = 0,grid%n(1)-1
+                read(unit=1,fmt=*) i, trash, grid%co_mx_a(i_abc)
+            END DO
+            ! transform cm to AU
+            grid%co_mx_a(:) = grid%co_mx_a(:)/con_au/100.0_r2
+            
+            ! we assume an exponential increasing r coordinate, therefore we can calculate 
+            ! the effective outer boundary == r_ou
+            ! 
+            grid%co_mx_a(grid%n(1)) = exp((log(grid%co_mx_a(1))-log(grid%co_mx_a(0)))*(grid%n(1)+1)+ &
+                                       log(grid%co_mx_a(0)))
+            
+            ! now adjust the innercoordinate to the user given inner rim
+            ! please be aware, that this includes the assumption, that the given PLUTO disk 
+            ! model is somehow scalable (self similar)
+            grid%co_mx_a = grid%co_mx_a * model%r_in/grid%co_mx_a(0)
+            
+            ! now adjust the outer radius the given one
+            
+            model%r_ou = grid%co_mx_a(grid%n(1))
+            print *, model%r_ou
+            
+            ! make th boundaries
+            grid%co_mx_b(0) = -PI/2.0_r2
+            
+            DO i_abc=1, grid%n(2)
+                grid%co_mx_b(i_abc) = grid%co_mx_b(0) +  PI / real(grid%n(2), kind=r2) * real(i_abc, kind=r2)
+            end do
+
+            ! make ph boundaries
+            grid%co_mx_c(0) = 0.0
+            DO i_abc=1, grid%n(3)
+                grid%co_mx_c(i_abc) = grid%co_mx_c(0) +  2.0*PI / real(grid%n(3), kind=r2) * real(i_abc, kind=r2)
+            end do
+
+            close(unit=1)
         END SELECT
     
     END SUBROUTINE set_boundaries_sp
@@ -625,27 +724,30 @@ CONTAINS
         TYPE(Basic_TYP), INTENT(IN)                 :: basics
         !------------------------------------------------------------------------!
         
-        INTEGER                                     :: i_a
-        INTEGER                                     :: i_b 
-        INTEGER                                     :: i_c 
-        INTEGER                                     :: i_cell, i_cell_in
+        INTEGER                                     :: i_cell, i_cell_in, i
+        INTEGER                                     :: i_in, i_r, i_th, i_ph
         INTEGER                                     :: io
+        INTEGER,DIMENSION(1:3)                      :: pluto_n
         
-
         
-        REAL(kind=r2), DIMENSION(1:3)               :: caco
-        REAL(kind=r2), DIMENSION(1:3)               :: moco
+        REAL(kind=r2),DIMENSION(:),ALLOCATABLE      :: pluto_r
+        REAL(kind=r2),DIMENSION(:),ALLOCATABLE      :: pluto_ph
+        REAL(kind=r2),DIMENSION(:),ALLOCATABLE      :: pluto_th
+        
         REAL(kind=r2), DIMENSION(10)                :: line
+        REAL(kind=r2), DIMENSION(3)                 :: caco, moco
         REAL(kind=r2)                               :: R_gap_in, R_gap_ou
+        REAL(kind=r2)                               :: value_in
         REAL(kind=r1)                               :: P_xy, P_z
         CHARACTER(len=256)                          :: filename
         CHARACTER(len=256)                          :: waste
+        
         !------------------------------------------------------------------------!
         ! ---
 
         CALL parse('R_gap_in',R_gap_in,'input/additional.dat')
         CALL parse('R_gap_ou',R_gap_ou,'input/additional.dat')
-
+            
         IF (basics%old_model) THEN
         
             print '(2A)', '  loading model parameter from: ', TRIM(basics%pronam_old)
@@ -654,95 +756,148 @@ CONTAINS
             OPEN(unit=1, file=TRIM(filename), &
                 action="read", status="unknown", form="formatted")
             READ(unit=1,fmt=*) waste
+            
+            DO i_cell = 1, grid%n_cell
+                READ(unit=1,fmt=*,iostat=io) i_cell_in, line
+                IF (io < 0 .or. i_cell_in /= i_cell) THEN
+                    PRINT *,'ERROR in model file ('//TRIM(filename)//') cell not found',i_cell
+                    STOP
+                END IF
+                
+                ! set dust density and H2, the observed molecules can be set by the model module
+                grid%grd_dust_density(i_cell,1) = line(4)
+                
+                grid%grd_col_density(i_cell,1:3) = line(6:8)
+                
+                ! set temperature
+                grid%t_dust(i_cell,1) = line(9)
+                grid%t_gas(i_cell)    = line(10)
+
+            END DO
+            CLOSE(unit=1)
+        ELSE IF (basics%pluto_data) THEN
+            OPEN(unit=1, file="input/grid/sp1_reduced.dat", &
+                action="read", status="unknown", form="formatted")
+            ! read density from provided file
+            ! first read header
+            DO i = 1,4
+                READ(unit=1,fmt=*,iostat=io) waste
+            END DO
+            READ(unit=1,fmt=*,iostat=io) pluto_n(1)
+            READ(unit=1,fmt=*,iostat=io) waste
+            READ(unit=1,fmt=*,iostat=io) pluto_n(2)
+            READ(unit=1,fmt=*,iostat=io) pluto_n(3)
+            
+            ALLOCATE( pluto_r(1:pluto_n(1)), pluto_th(1:pluto_n(2)),pluto_ph(1:pluto_n(3)))
+            
+            
+            DO i = 1,3
+                READ(unit=1,fmt=*,iostat=io) waste
+            END DO
+            
+            ! read r coordinates
+            DO i = 1,pluto_n(1)
+                READ(unit=1,fmt=*,iostat=io) i_in, pluto_r(i)
+            END DO
+            
+            DO i = 1,2
+                READ(unit=1,fmt=*,iostat=io) waste
+            END DO
+            
+            ! read th coordinates and correct for mc3d grid with pi/2
+            DO i = 1,pluto_n(2)
+                READ(unit=1,fmt=*,iostat=io) i_in, pluto_th(i)
+            END DO
+            pluto_th = pluto_th - PI/2.0
+            DO i = 1,2
+                READ(unit=1,fmt=*,iostat=io) waste
+            END DO
+            
+            !read ph coordinates
+            DO i = 1,pluto_n(3)
+                READ(unit=1,fmt=*,iostat=io) i_in, pluto_ph(i)
+            END DO
+            ! now read density distribution
+            
+            DO i = 1,3
+                READ(unit=1,fmt=*,iostat=io) waste
+            END DO
+            
+            DO i = 1,pluto_n(1)*pluto_n(2)*pluto_n(3)
+                
+                READ(unit=1,fmt=*,iostat=io) i_r, i_th, i_ph, value_in
+
+                moco = (/pluto_r(i_r),pluto_th(i_th),pluto_ph(i_ph)/)
+                i_cell = get_cell_nr(grid,mo2ca(grid,moco))
+                    
+!~                 IF (i_ph == 1) THEN    
+                
+                grid%grd_dust_density(i_cell,:) = value_in
+                grid%grd_col_density(i_cell,:) = value_in
+!~                 END IF
+                
+            END DO
+            
+            DEALLOCATE(pluto_r,pluto_th,pluto_ph)
+            CLOSE(unit=1)
+        ELSE 
+            DO i_cell = 1, grid%n_cell
+                ! number of particles / cell / species;
+                ! assumption:  density in each cell is constant and equal to the value in the cell center
+                
+                P_xy = sqrt(grid%cellmidcaco(i_cell,1)**2+grid%cellmidcaco(i_cell,2)**2)
+                P_z  = abs(grid%cellmidcaco(i_cell,3))
+                ! density at midpoint coordinate (number of particles / m^3)
+                ! here, we set the density distribution for dust and H2 
+                ! tbd: This is the same distribution for all elements, this should be generalized
+                !      in future
+                !
+                ! set the density for the dust component
+                !###########################################################################
+                ! add your custom density distribution here
+                !
+                IF (P_xy .lt. R_gap_in .or. P_xy .gt. R_gap_ou) THEN
+                    grid%grd_dust_density(i_cell,:)    = get_den(model,grid%cellmidcaco(i_cell,:))
+                    
+                    ! set the density for all other elements (H, He,...)
+                    grid%grd_col_density(i_cell,:)     = get_den(model,grid%cellmidcaco(i_cell,:))
+                END IF
+                !###########################################################################
+            END DO
         END IF
+
         
+        ! now do loop over all cells and calculate remaining things
+        ! here we set the molecule density with respect to the input dust density 
+        DO i_cell = 1, grid%n_cell
 
-
-        i_cell = 0
-        do i_a=1, grid%n(1)
-            do i_b=1, grid%n(2)
-                do i_c=1, grid%n(3)
-                    i_cell = i_cell + 1
-
-                    ! number of particles / cell / species;
-                    ! assumption:  density in each cell is constant and equal to the value in the cell center
-
-                    ! midpoint coordinate
-                    moco(1) = ( grid%co_mx_a( i_a ) + grid%co_mx_a( i_a  -1) ) / 2.0_r2
-                    moco(2) = ( grid%co_mx_b(i_b) + grid%co_mx_b(i_b -1) ) / 2.0_r2
-                    moco(3) = ( grid%co_mx_c(i_c) + grid%co_mx_c(i_c -1) ) / 2.0_r2
-                    
-                    caco = mo2ca(grid, moco)
-                    P_xy = sqrt(caco(1)**2+caco(2)**2)
-                    P_z  = abs(caco(3))
-                    grid%cellmidcaco(i_cell,:) = caco
-                    
-                    IF (basics%old_model) THEN
-
-                        READ(unit=1,fmt=*,iostat=io) i_cell_in, line
-!~                         print *, i_cell_in, i_cell
-                        IF (io < 0 .or. i_cell_in /= i_cell) THEN
-                            PRINT *,'ERROR in model file ('//TRIM(filename)//') cell not found',i_cell
-                            STOP
-                        END IF
-                        
-                        ! set dust density, all other molecules can be set by the model_mod module
-                        grid%grd_dust_density(i_cell,1) = line(4)
-                        
-                        grid%grd_col_density(i_cell,1:3) = line(6:8)
-                        
-                        ! set temperature
-                        grid%t_dust(i_cell,1) = line(9)
-                        grid%t_gas(i_cell)    = line(10)
-                        
-
-                    ELSE
-                        ! density at midpoint coordinate (number of particles / m^3)
-                        ! here, we set the density distribution for dust and H2 
-                        ! tbd: This is the same distribution for all elements, this should be generalized
-                        !      in future
-                        !
-                        ! set the density for the dust component
-                        !###########################################################################
-                        ! add your custom density distribution here
-                        !
-                        IF (P_xy .lt. R_gap_in .or. P_xy .gt. R_gap_ou) THEN
-                            grid%grd_dust_density(i_cell,:)    = get_den(model,caco(:))
-                            
-                            ! set the density for all other elements (H, He,...)
-                            grid%grd_col_density(i_cell,:)     = get_den(model,caco(:))
-                        END IF
-                        !###########################################################################
-                    END IF
-                    
-                    ! set the density for the selected molecule
-                    ! don't load this from the old model, so we are able to distribute the molecules
-                    ! in the way we want
+            ! number of particles / cell / species;
+            ! assumption:  density in each cell is constant and equal to the value in the cell center
+            P_xy = sqrt(grid%cellmidcaco(i_cell,1)**2+grid%cellmidcaco(i_cell,2)**2)
+            P_z  = abs(grid%cellmidcaco(i_cell,3))
+            
+            ! set the density for the selected molecule
+            ! don't load this from the old model, so we are able to distribute the molecules
+            ! in the way we want
 !~                     IF (P_z .gt. P_xy**1.8/1000. .and. P_z .lt. P_xy**1.2/5.) THEN
-                        grid%grd_mol_density(i_cell)   = grid%grd_col_density(i_cell,1)*gas%mol_abund
+            grid%grd_mol_density(i_cell)   = grid%grd_col_density(i_cell,1)*gas%mol_abund
 !~                     ELSE
 !~                         grid%grd_mol_density(i_cell)   = 0.0
 !~                     END IF
-                    ! resulting number of particles/molecules
 
-                    grid%Nv(i_cell,:)     = grid%grd_dust_density(i_cell,:) * REAL(grid%cell_vol(i_cell),kind=r2)
-                    grid%Nv_mol(i_cell)   = grid%grd_mol_density(i_cell)    * REAL(grid%cell_vol(i_cell),kind=r2)
-                    grid%Nv_col(i_cell,:) = grid%grd_col_density(i_cell,:)  * REAL(grid%cell_vol(i_cell),kind=r2)
-                    ! set velocity, in a future release we should generalize this as well somehow
-                    ! 
-                    grid%velo(i_cell,:)  = Get_velo(caco,model%kep_const)
-                    
-                    
-                    grid%absvelo(i_cell) = norm(REAL(grid%velo(i_cell,:),kind=r2))
-                    
-                end do
-            end do
-        end do
-        
-        IF (basics%old_model) THEN
-            CLOSE(unit=1)
-        END IF
-        
+
+            ! resulting number of particles/molecules
+
+            grid%Nv(i_cell,:)     = grid%grd_dust_density(i_cell,:) * REAL(grid%cell_vol(i_cell),kind=r2)
+            grid%Nv_mol(i_cell)   = grid%grd_mol_density(i_cell)    * REAL(grid%cell_vol(i_cell),kind=r2)
+            grid%Nv_col(i_cell,:) = grid%grd_col_density(i_cell,:)  * REAL(grid%cell_vol(i_cell),kind=r2)
+            ! set velocity, in a future release we should generalize this as well somehow
+            ! 
+            grid%velo(i_cell,:)  = Get_velo(grid%cellmidcaco,model%kep_const)
+            
+            
+            grid%absvelo(i_cell) = norm(REAL(grid%velo(i_cell,:),kind=r2))
+        END DO
     END SUBROUTINE set_grid_properties
     
     

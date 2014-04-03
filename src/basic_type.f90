@@ -62,6 +62,7 @@ MODULE basic_type
         LOGICAL                           :: project_2D
         LOGICAL                           :: calc_tmp
         LOGICAL                           :: old_model
+        LOGICAL                           :: pluto_data
         LOGICAL                           :: do_raytr
 
     END TYPE Basic_TYP
@@ -82,7 +83,7 @@ MODULE basic_type
 CONTAINS
 
     SUBROUTINE InitBasic(this, ut, un, pname, presult, concept, calc_tmp,old_pname, old_model, project_2D, &
-                            do_raytr, n_tem, t_dust_min, t_dust_max, num_core)
+                            do_raytr, n_tem, t_dust_min, t_dust_max, num_core,pluto_data)
         IMPLICIT NONE
         !------------------------------------------------------------------------!
         TYPE(Basic_TYP)       :: this
@@ -103,11 +104,13 @@ CONTAINS
         LOGICAL               :: project_2D
         LOGICAL               :: calc_tmp
         LOGICAL               :: old_model
+        LOGICAL               :: pluto_data
         LOGICAL               :: do_raytr
 
         !------------------------------------------------------------------------!
         INTENT(IN)          :: ut,un,presult, pname, concept, project_2D, num_core, &
-                                n_tem, t_dust_max, t_dust_min, calc_tmp,old_model,old_pname
+                                n_tem, t_dust_max, t_dust_min, calc_tmp,old_model,old_pname, &
+                                pluto_data
         INTENT(INOUT)       :: this
         !------------------------------------------------------------------------!
         CALL InitCommon(this%mtype,ut,un)
@@ -164,6 +167,7 @@ CONTAINS
         this%t_dust_min = t_dust_min
         this%calc_tmp   = calc_tmp
         this%old_model    = old_model
+        this%pluto_data    = pluto_data
         this%do_raytr   = do_raytr
         
         this%d_tem = (this%t_dust_max - this%t_dust_min) / (real(this%n_tem, kind=r2)-1)
