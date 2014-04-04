@@ -126,17 +126,17 @@ CONTAINS
     
     
 
-    SUBROUTINE vis_plane(grid, basics, plane, typename,pix) 
+    SUBROUTINE vis_plane(grid, basics, model, plane, pix) 
     
         IMPLICIT NONE
         !--------------------------------------------------------------------------!
         TYPE(Grid_TYP), INTENT(IN)                   :: grid
         TYPE(Basic_TYP), INTENT(IN)                  :: basics
+        TYPE(Model_TYP), INTENT(IN)                  :: model
         !--------------------------------------------------------------------------!
-        INTEGER                                      :: plane, pix
+        INTEGER                                      :: plane
+        INTEGER                                      :: pix
         
-        CHARACTER(len=*), INTENT(IN)                 :: typename
-        REAL(kind=r2),DIMENSION(:,:),POINTER         :: visarr
         REAL(kind=r2),DIMENSION(1:3)                 :: caco
         REAL(kind=r2)                                :: dxy
                 
@@ -144,247 +144,100 @@ CONTAINS
         CHARACTER(len=4)                             :: fileext
         CHARACTER(len=256)                           :: outname
         
-        INTEGER                  :: i_cell, j
-        INTEGER                  :: i_x, i_y
+        INTEGER                                      :: i_cell
+        INTEGER                                      :: i_x, i_y
         
         !--------------------------------------------------------------------------!
-        j = 1  !Default value for dust (j = 1: first dust species) and H2
         fileext = '.dat'
-        IF ( typename == 'dens')  THEN
-!~             visarr => grid%grd_dust_density
-            print *,'visualize dust density distribution'
-        ELSE IF ( typename == 'densH2')  THEN
-            visarr => grid%grd_col_density
-            print *,'visualize H2 density distribution'   
-            !TbD!!!!
-!~         ELSE IF ( typename == 'densmol')  THEN
-!~             visarr => grid%grd_mol_density
-!~             j = 2
-!~             print *,'visualize selected molecule density distribution'   
-        ELSE IF ( typename == 'temp' ) THEN
-            print *,'visualize temperature distribution'
-!~             h_array = REAL(grid%t_dust, kind=r2)
-!~             visarr  => grid%t_dust
-!~             EXIT
-!~         ELSE IF ( typename == 'velo' ) THEN
-!~             print *,'visualize velocity distribution'
-!~             visarr => grid%absvelo
-        ELSE
-            print *, 'Wrong input type, skip...'
-            RETURN
-        END IF
-        
+
         IF ( plane ==  1) THEN                                       !view xz-plane
-            filename = TRIM(basics%path_results)//Getproname(basics)//'_'//typename//'_xz'
+            filename = TRIM(basics%path_results)//Getproname(basics)//'_visual_xz'
             
         ELSE IF ( plane == 2) THEN                                   !view xy-plane
-            filename = TRIM(basics%path_results)//Getproname(basics)//'_'//typename//'_xy'
+            filename = TRIM(basics%path_results)//Getproname(basics)//'_visual_xy'
         ELSE 
-            print *, 'plane not specified: using xz-plane'
-            plane = 1
-            filename = TRIM(basics%path_results)//Getproname(basics)//'_'//typename//'_xz'
+            print *, 'plane not specified'
+            RETURN
         END IF
         
         outname = TRIM(filename)//fileext
         open(unit=1, file=TRIM(outname), &
             action="write", status="unknown", form="formatted")
-        
-        
+
         IF ( plane == 2) THEN
-            print *,'  -> xy - plane'
-            dxy = 2.0*grid%co_mx_a(grid%n(1))/pix
-            write(unit=1,fmt='(I6.4,A)') pix ,'    #no of pixel of the map'
+            print *,'visualize  -> xy - plane'
+            dxy = 2.0*model%r_ou/pix
+            write(unit=1,fmt='(I6.4,A)') pix ,'    # no of pixel of the map'
             write(unit=1,fmt=*) ''
         
             DO i_x=0,pix-1
                 DO i_y=0,pix-1
-                    caco(1) = -grid%co_mx_a(grid%n(1))+(0.5 + i_x) * dxy
-                    caco(2) = -grid%co_mx_a(grid%n(1))+(0.5 + i_y) * dxy
+                    caco(1) = -model%r_ou+(0.5 + i_x) * dxy
+                    caco(2) = -model%r_ou+(0.5 + i_y) * dxy
                     caco(3) = 0.0_r2
-                    i_cell = get_cell_nr(grid,caco)
-                    write(unit=1,fmt='(3(ES15.6E3))') &
-                        caco(1), &
-                        caco(2), &
-                        visarr(i_cell,j)
-!~                         norm(Get_velo(caco))
+                    IF ( check_inside(caco,grid,model) ) THEN
+                        i_cell = get_cell_nr(grid,caco)
+                        write(unit=1,fmt='(10(ES15.6E3))') &
+                            caco(1), &
+                            caco(2), &
+                            grid%grd_dust_density(i_cell,1), &
+                            grid%grd_mol_density(i_cell), &
+                            grid%grd_col_density(i_cell,1:3), &
+                            grid%t_dust(i_cell,1), &
+                            grid%t_gas(i_cell), &
+                            grid%absvelo(i_cell)
+                    ELSE
+                        write(unit=1,fmt='(10(ES15.6E3))') &
+                            caco(1), &
+                            caco(2), &
+                            0.0_r2, &
+                            0.0_r2, &
+                            0.0_r2,0.0_r2,0.0_r2, &
+                            0.0_r2, &
+                            0.0_r2, &
+                            0.0_r2
+                    
+                    END IF
                 END DO
             END DO 
-        
-!~             print *, 'To be done!'
-!~             DO i_r=0, grid%n(1)
-!~                 DO i_ph=1, grid%n(3)
-!~                 !print *,i_cell
-!~                     IF ( (i_r == grid%n(1)) ) THEN 
-!~                         spco(1) = (grid%co_mx_a(grid%n(1))+grid%co_mx_a(grid%n(1)-1))/2.0_r2
-!~                         spco(2) = 0.0_r2               
-!~                         spco(3) = (grid%co_mx_c(grid%n(3))+  grid%co_mx_c(grid%n(3)-1))/2.0_r2          
-!~ 
-!~                     ELSE
-!~                         spco(1) = (grid%co_mx_a(i_r+1)+grid%co_mx_a(i_r))/2.0_r2
-!~                         spco(2) = 0.0_r2               
-!~                         spco(3) = (grid%co_mx_c(grid%n(3)) +  grid%co_mx_c(grid%n(3)-1))/2.0_r2 
-!~                     END IF
-!~ 
-!~                     i_cell = get_cell_nr(grid,spco)
-!~                     !print *,i_cell
-!~                     write(unit=1,fmt='(3(ES15.6E3))') &
-!~                         grid%co_mx_a( i_r ), &
-!~                         grid%co_mx_c( i_ph-1 ), &
-!~                         visarr(i_cell,j)
-!~                 
-!~                 END DO
-!~                 write(unit=1,fmt=*) ' '
-!~             END DO
-           
+
         ELSE IF (plane == 1) THEN
-            print *,'  -> xz - plane'
-            dxy = 2.0*grid%co_mx_a(grid%n(1))/pix
-            write(unit=1,fmt='(I6.4,A)') pix ,'    #no of pixel of the map'
+            print *,'visualize  -> xz - plane'
+            dxy = 2.0*model%r_ou/pix
+            write(unit=1,fmt='(I6.4,A)') pix ,'    # no of pixel of the map'
             write(unit=1,fmt=*) ''
             
             DO i_x=0,pix-1
                 DO i_y=0,pix-1
-                    caco(1) = -grid%co_mx_a(grid%n(1))+(0.5 + i_x) * dxy
+                    caco(1) = -model%r_ou+(0.5 + i_x) * dxy
                     caco(2) = 0.0_r2
-                    caco(3) = -grid%co_mx_a(grid%n(1))+(0.5 + i_y) * dxy
-                    i_cell = get_cell_nr(grid,caco)
-                    write(unit=1,fmt='(3(ES15.6E3))') &
-                        caco(1), &
-                        caco(3), &
-                        visarr(i_cell,j)
-!~                     norm(Get_velo(caco))
+                    caco(3) = -model%r_ou+(0.5 + i_y) * dxy
+                    IF ( check_inside(caco,grid,model) ) THEN
+                        i_cell = get_cell_nr(grid,caco)
+                        write(unit=1,fmt='(10(ES15.6E3))') &
+                            caco(1), &
+                            caco(3), &
+                            grid%grd_dust_density(i_cell,1), &
+                            grid%grd_mol_density(i_cell), &
+                            grid%grd_col_density(i_cell,1:3), &
+                            grid%t_dust(i_cell,1), &
+                            grid%t_gas(i_cell), &
+                            grid%absvelo(i_cell)
+                    ELSE
+                        write(unit=1,fmt='(10(ES15.6E3))') &
+                            caco(1), &
+                            caco(3), &
+                            0.0_r2, &
+                            0.0_r2, &
+                            0.0_r2,0.0_r2,0.0_r2, &
+                            0.0_r2, &
+                            0.0_r2, &
+                            0.0_r2
+                    END IF
                 END DO
             END DO     
         END IF
-            
-           
-!~         ELSE IF (plane == 1) THEN
-!~             DO i_r=0, grid%n(1)
-!~                 IF (i_r == 0) THEN
-!~                     DO i_th=0, grid%n(2)
-!~                         IF (i_th == 0) THEN
-!~                             i_cell = grid%cell_idx2nr(1,1,1)
-!~                             write(unit=1,fmt='(3(ES15.6E3))') &
-!~                                 grid%co_mx_a( i_r ), &
-!~                                 grid%co_mx_b( i_th ), &
-!~                                 visarr(i_cell,j)
-!~                         
-!~                         ELSE IF (i_th == grid%n(2)) THEN
-!~                             i_cell = grid%cell_idx2nr(1,i_th,1)
-!~                             write(unit=1,fmt='(3(ES15.6E3))') &
-!~                                 grid%co_mx_a( i_r ), &
-!~                                 grid%co_mx_b( i_th ), &
-!~                                 visarr(i_cell,j)
-!~                         ELSE
-!~                             i_cell = grid%cell_idx2nr(1,i_th,1)
-!~                             write(unit=1,fmt='(3(ES15.6E3))') &
-!~                                 grid%co_mx_a( i_r ), &
-!~                                 grid%co_mx_b( i_th ), &
-!~                                 visarr(i_cell,j)
-!~                                 
-!~                             i_cell = grid%cell_idx2nr(1,i_th+1,1)
-!~                             write(unit=1,fmt='(3(ES15.6E3))') &
-!~                                 grid%co_mx_a( i_r ), &
-!~                                 grid%co_mx_b( i_th ), &
-!~                                 visarr(i_cell,j)
-!~                         END IF
-!~                     END DO
-!~                 ELSE IF (i_r == grid%n(1)) THEN
-!~                     DO i_th=0, grid%n(2)
-!~                         IF (i_th == 0) THEN
-!~                             i_cell = grid%cell_idx2nr(i_r,1,1)
-!~                             write(unit=1,fmt='(3(ES15.6E3))') &
-!~                                 grid%co_mx_a( i_r ), &
-!~                                 grid%co_mx_b( i_th ), &
-!~                                 visarr(i_cell,j)  
-!~                         
-!~                         ELSE IF (i_th == grid%n(2)) THEN
-!~                             i_cell = grid%cell_idx2nr(i_r,i_th,1)
-!~                             write(unit=1,fmt='(3(ES15.6E3))') &
-!~                                 grid%co_mx_a( i_r ), &
-!~                                 grid%co_mx_b( i_th ), &
-!~                                 visarr(i_cell,j)
-!~                         ELSE
-!~                             i_cell = grid%cell_idx2nr(i_r,i_th,1)
-!~                             write(unit=1,fmt='(3(ES15.6E3))') &
-!~                                 grid%co_mx_a( i_r ), &
-!~                                 grid%co_mx_b( i_th ), &
-!~                                 visarr(i_cell,j)
-!~                                 
-!~                             i_cell = grid%cell_idx2nr(i_r,i_th+1,1)
-!~                             write(unit=1,fmt='(3(ES15.6E3))') &
-!~                                 grid%co_mx_a( i_r ), &
-!~                                 grid%co_mx_b( i_th ), &
-!~                                 visarr(i_cell,j)
-!~                         END IF
-!~                     END DO
-!~                 ELSE
-!~                     DO i=1,2
-!~                         IF ( i == 2) THEN
-!~                             write(unit=1,fmt=*) ' '
-!~                         END IF
-!~                         DO i_th=0, grid%n(2)
-!~                             IF (i == 1) THEN
-!~                                 IF (i_th == 0) THEN
-!~                                     i_cell = grid%cell_idx2nr(i_r,1,1)
-!~                                     write(unit=1,fmt='(3(ES15.6E3))') &
-!~                                         grid%co_mx_a( i_r ), &
-!~                                         grid%co_mx_b( i_th ), &
-!~                                         visarr(i_cell,j)  
-!~                         
-!~                                 ELSE IF (i_th == grid%n(2)) THEN
-!~                                     i_cell = grid%cell_idx2nr(i_r,i_th,1)
-!~                                     write(unit=1,fmt='(3(ES15.6E3))') &
-!~                                         grid%co_mx_a( i_r ), &
-!~                                         grid%co_mx_b( i_th ), &
-!~                                         visarr(i_cell,j)
-!~                                 ELSE
-!~                                     i_cell = grid%cell_idx2nr(i_r,i_th,1)
-!~                                     write(unit=1,fmt='(3(ES15.6E3))') &
-!~                                         grid%co_mx_a( i_r ), &
-!~                                         grid%co_mx_b( i_th ), &
-!~                                         visarr(i_cell,j)
-!~                                         
-!~                                     i_cell = grid%cell_idx2nr(i_r,i_th+1,1)
-!~                                     write(unit=1,fmt='(3(ES15.6E3))') &
-!~                                         grid%co_mx_a( i_r ), &
-!~                                         grid%co_mx_b( i_th ), &
-!~                                         visarr(i_cell,j)
-!~                                 END IF
-!~                             ELSE IF (i == 2) THEN
-!~                                 IF (i_th == 0) THEN
-!~                                     i_cell = grid%cell_idx2nr(i_r+1,1,1)
-!~                                     write(unit=1,fmt='(3(ES15.6E3))') &
-!~                                         grid%co_mx_a( i_r ), &
-!~                                         grid%co_mx_b( i_th ), &
-!~                                         visarr(i_cell,j)  
-!~                         
-!~                                 ELSE IF (i_th == grid%n(2)) THEN
-!~                                     i_cell = grid%cell_idx2nr(i_r+1,i_th,1)
-!~                                     write(unit=1,fmt='(3(ES15.6E3))') &
-!~                                         grid%co_mx_a( i_r ), &
-!~                                         grid%co_mx_b( i_th ), &
-!~                                         visarr(i_cell,j)
-!~                                 ELSE
-!~                                     i_cell = grid%cell_idx2nr(i_r+1,i_th,1)
-!~                                     write(unit=1,fmt='(3(ES15.6E3))') &
-!~                                         grid%co_mx_a( i_r ), &
-!~                                         grid%co_mx_b( i_th ), &
-!~                                         visarr(i_cell,j)
-!~                                         
-!~                                     i_cell = grid%cell_idx2nr(i_r+1,i_th+1,1)
-!~                                     write(unit=1,fmt='(3(ES15.6E3))') &
-!~                                         grid%co_mx_a( i_r ), &
-!~                                         grid%co_mx_b( i_th ), &
-!~                                         visarr(i_cell,j)
-!~                                 END IF
-!~                             END IF
-!~                         END DO                    
-!~                     END DO
-!~                 END IF
-!~                 write(unit=1,fmt=*) ' '
-!~             END DO
-!~         END IF
+
         close(unit=1)
         
         

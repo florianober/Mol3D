@@ -34,7 +34,7 @@ CONTAINS
   ! ################################################################################################
   ! simulation of primary source radiation:  
   ! ---------------------------------------
-  !       simu_type = 1: calculation of temperature distribution (old mc3d style)
+  !
   ! ---
   
     SUBROUTINE set_temperature(basics,grid,model,dust,gas,fluxes)
@@ -55,7 +55,6 @@ CONTAINS
     REAL(kind=r2), DIMENSION(1:3)                  :: moco
     REAL(kind=r2), DIMENSION(1:gas%col_trans)      :: col_mtr_tmp_ul
     REAL(kind=r2), DIMENSION(1:gas%col_trans)      :: col_mtr_tmp_lu
-!~     REAL(kind=r2)                                   :: t1, t2
     
     INTEGER                                          :: i_cell, hi_i
     INTEGER                                          :: i_a
@@ -89,14 +88,6 @@ CONTAINS
         
     END IF
     
-    
-    ! CALCULATE ALL PROBERTIES, WHICH NEED TEMPERATURE INFORMATIONS
-    ALLOCATE(grid%col_finalcolmatrixup(1:gas%col_trans,1:grid%n_cell), &
-             grid%col_finalcolmatrixlow(1:gas%col_trans,1:grid%n_cell) )
-    grid%col_finalcolmatrixup  = 0.0_r2
-    grid%col_finalcolmatrixlow = 0.0_r2
-
-    
     DO i_cell = 1,grid%n_cell
         IF (grid%grd_dust_density(i_cell,1) <= 1.0e-34 ) THEN
             grid%t_dust(i_cell,1) = 0.0
@@ -104,6 +95,7 @@ CONTAINS
         grid%t_gas(i_cell) = grid%t_dust(i_cell,1)! setting the gas temperature equal to the dust temperature
         
         ! include some kind of freeze out Temperature (TbD: define this more generally)
+
 !~         IF ( grid%t_gas(i_cell) <= 35.0 .or. grid%t_gas(i_cell) >= 60.0 ) THEN
 !~             grid%grd_mol_density(i_cell)   = 0.0
 !~         END IF
@@ -112,75 +104,63 @@ CONTAINS
     CALL sv_temp(basics, grid)      ! The propose of this routine has changed, nowadays it
                                     ! is just for saving the x midplane temperature
 
-    PRINT *, '  temperature included, now calculate some additional parameters'
-    DO i_cell = 1,grid%n_cell
+    
+    ! CALCULATE ALL PROBERTIES, WHICH NEED TEMPERATURE INFORMATIONS
+    
+    IF (basics%do_raytr) THEN
+        PRINT *, '  temperature included, now calculate some additional parameters'
+        ALLOCATE(grid%col_finalcolmatrixup(1:gas%col_trans,1:grid%n_cell), &
+                 grid%col_finalcolmatrixlow(1:gas%col_trans,1:grid%n_cell) )
+        grid%col_finalcolmatrixup  = 0.0_r2
+        grid%col_finalcolmatrixlow = 0.0_r2
+        DO i_cell = 1,grid%n_cell
 
-        ! set line width in each cell (in fact the inverse value)
-        grid%cell_gauss_a(i_cell) = 1.0_r2/(sqrt(2.0_r2*con_k*grid%t_dust(i_cell,1)/ &  
-                                            (gas%mol_weight*1.0e-3_r2/con_Na) &
-                                            +100.0_r2**2)) ! 100.0 eq trub. line width TbD!~!
-                                            
-        ! save quadratic line width value for faster calculations
-        
-        grid%cell_gauss_a2(i_cell)  =   grid%cell_gauss_a(i_cell)**2
-        ! calculate (interpolate) collision parameters c = f(T)
-        DO j = 1, gas%col_partner
-            k = gas%col_id(j)
-            IF( any(gas%col_upper(:,k) == 0) ) THEN
-                CONTINUE
-            ELSE
-                IF (grid%t_gas(i_cell) .lt. MINVAL(gas%col_alltemps(:,k)) ) THEN
-                hi_i = 1
-                
-                ELSE IF (grid%t_gas(i_cell) .gt. MAXVAL(gas%col_alltemps(:,k)) ) THEN
-                
-                hi_i = gas%col_temps - 1
+            ! set line width in each cell (in fact the inverse value)
+            grid%cell_gauss_a(i_cell) = 1.0_r2/(sqrt(2.0_r2*con_k*grid%t_dust(i_cell,1)/ &  
+                                                (gas%mol_weight*1.0e-3_r2/con_Na) &
+                                                +100.0_r2**2)) ! 100.0 eq trub. line width TbD!~!
+                                                
+            ! save quadratic line width value for faster calculations
+            
+            grid%cell_gauss_a2(i_cell)  =   grid%cell_gauss_a(i_cell)**2
+            ! calculate (interpolate) collision parameters c = f(T)
+            DO j = 1, gas%col_partner
+                k = gas%col_id(j)
+                IF( any(gas%col_upper(:,k) == 0) ) THEN
+                    CONTINUE
                 ELSE
+                    IF (grid%t_gas(i_cell) .lt. MINVAL(gas%col_alltemps(:,k)) ) THEN
+                    hi_i = 1
+                    
+                    ELSE IF (grid%t_gas(i_cell) .gt. MAXVAL(gas%col_alltemps(:,k)) ) THEN
+                    
+                    hi_i = gas%col_temps - 1
+                    ELSE
 
-                hi_i = binary_search(REAL(grid%t_gas(i_cell),kind=r2), REAL(gas%col_alltemps(:,k),kind=r2))
-                END IF
-!~                 grid%col_finalcolmatrixup(:,k,i_cell) = &
-!~                           ipol2(gas%col_alltemps(hi_i,k), gas%col_alltemps(hi_i+1,k),   &
-!~                           gas%col_colmatrix(k,:,hi_i),gas%col_colmatrix(k,:,hi_i+1), &
-!~                           grid%t_dust(i_cell,1))* grid%grd_col_density(i_cell,k)
-!~ 
-!~                 grid%col_finalcolmatrixlow(:,k,i_cell) =    &
-!~                         grid%col_finalcolmatrixup(:,k,i_cell) * &
-!~                         gas%g_level(gas%col_upper(:,k))/gas%g_level(gas%col_lower(:,k)) * &
-!~                         exp(-con_h * &
-!~                         (gas%energylevel(gas%col_upper(:,k))*con_c*100.0_r2 - &
-!~                         gas%energylevel(gas%col_lower(:,k))*con_c*100.0_r2)  &
-!~                         /(con_k*grid%t_dust(i_cell,1)))
-                        
-                col_mtr_tmp_ul(:) = &
-                                    ipol2(REAL(gas%col_alltemps(hi_i,k),kind=r2), REAL(gas%col_alltemps(hi_i+1,k),kind=r2),   &
-                                    REAL(gas%col_colmatrix(k,:,hi_i),kind=r2),REAL(gas%col_colmatrix(k,:,hi_i+1),kind=r2), &
-                                    REAL(grid%t_gas(i_cell),kind=r2))* grid%grd_col_density(i_cell,k)
-                                    
-                col_mtr_tmp_lu(:) = &
-                        col_mtr_tmp_ul(:)* &
-                        gas%g_level(gas%col_upper(:,k))/gas%g_level(gas%col_lower(:,k)) * &
-                        exp(-con_h * &
-                        (gas%energylevel(gas%col_upper(:,k))*con_c*100.0_r2 - &
-                        gas%energylevel(gas%col_lower(:,k))*con_c*100.0_r2)  &
-                        /(con_k*grid%t_gas(i_cell)))
-                        
-                grid%col_finalcolmatrixup(:,i_cell) =   grid%col_finalcolmatrixup(:,i_cell) + &
-                                                        col_mtr_tmp_ul(:)
-                grid%col_finalcolmatrixlow(:,i_cell) =  grid%col_finalcolmatrixlow(:,i_cell) + &
-                                                        col_mtr_tmp_lu(:)
-            END IF 
+                    hi_i = binary_search(REAL(grid%t_gas(i_cell),kind=r2), REAL(gas%col_alltemps(:,k),kind=r2))
+                    END IF
+                            
+                    col_mtr_tmp_ul(:) = &
+                                        ipol2(REAL(gas%col_alltemps(hi_i,k),kind=r2), REAL(gas%col_alltemps(hi_i+1,k),kind=r2),   &
+                                        REAL(gas%col_colmatrix(k,:,hi_i),kind=r2),REAL(gas%col_colmatrix(k,:,hi_i+1),kind=r2), &
+                                        REAL(grid%t_gas(i_cell),kind=r2))* grid%grd_col_density(i_cell,k)
+                                        
+                    col_mtr_tmp_lu(:) = &
+                            col_mtr_tmp_ul(:)* &
+                            gas%g_level(gas%col_upper(:,k))/gas%g_level(gas%col_lower(:,k)) * &
+                            exp(-con_h * &
+                            (gas%energylevel(gas%col_upper(:,k))*con_c*100.0_r2 - &
+                            gas%energylevel(gas%col_lower(:,k))*con_c*100.0_r2)  &
+                            /(con_k*grid%t_gas(i_cell)))
+                            
+                    grid%col_finalcolmatrixup(:,i_cell) =   grid%col_finalcolmatrixup(:,i_cell) + &
+                                                            col_mtr_tmp_ul(:)
+                    grid%col_finalcolmatrixlow(:,i_cell) =  grid%col_finalcolmatrixlow(:,i_cell) + &
+                                                            col_mtr_tmp_lu(:)
+                END IF 
+            END DO
         END DO
-                        
-        
-    END DO
-!~     CALL cpu_time(t2)
-!~     write (*,'(a,1pg12.4)')    'cpu_time:     ', t2-t1
-!~ 
-!~     print *, '   .... done'
-
-    
-    
+    END IF
 
     END SUBROUTINE set_temperature
   

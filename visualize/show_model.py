@@ -130,7 +130,85 @@ def create_plot(x,y,z,name):
     plt.ylabel('d [AU]')
     if bar:
         plt.colorbar().set_label(name+ext)
+        
+        
+def show_maps(path_results,p_name):
+    
+    # show xz-plane
+    present_plane(path_results+p_name+'_visual_xz.dat')
+    
+    # show xz-plane
+    #~ present_plane(path_results+p_name+'_visual_xy.dat')
+    
+def present_plane(file_path):
 
+    map_in = open(file_path)
+    row = map_in.readline().split()
+    map_size = int(row[0])
+    row = map_in.readline()     # empty row
+    pic = np.zeros((map_size,map_size,8))
+    for j in range(map_size):
+        for k in range(map_size):
+            row = map_in.readline().split()
+            if j == 0 and k == 0:
+                j_min = float(row[0])
+                k_min = float(row[1])
+            elif j == map_size-1 and k == map_size-1:
+                j_max = float(row[0])
+                k_max = float(row[1])
+            #~ if row[2] == 'NaN':
+                #~ pic[k,j] = 0
+            #~ else:
+            for l in range(2,10):
+                if row[l] == 'NaN':
+                    pic[k,j,l-2] = 0
+                else:
+                    pic[k,j,l-2] = row[l]
+                
+    m_range = [k_min,k_max,j_min,j_max]
+
+    xlab = 'distance [AU]'
+    ylab = xlab
+    ext = file_path[-6:-4]+'-plane'
+    
+    #-------------------------------------------------
+    #  Gas Temp
+    
+    plt.figure('Gas Temperature, '+ext)
+    plt.title('Gas Temperature, '+ext)
+    plt.xlabel(xlab)
+    plt.ylabel(ylab)
+    cont = [10,20,25,30,35,40]
+
+    CS = plt.contour(pic[:,:,6],cont,linewidths=1,colors='k',extent=m_range)
+    plt.clabel(CS,inline=1,fmt='%2.1f', fontsize=10)
+    plt.imshow(pic[:,:,6],extent=m_range,origin='lower',interpolation='None',cmap=plt.cm.jet)
+    plt.clim(0,100)
+    plt.colorbar().set_label('Temperature [K]')
+    
+    #-------------------------------------------------
+    #  molecule density
+    data = np.log10(pic[:,:,1]*1e-6)
+    plt.figure('Molecule number density distribution, '+ext)
+    plt.title('Molecule number density distribution, '+ext)
+    plt.xlabel(xlab)
+    plt.ylabel(ylab)
+    cont = np.round(np.linspace(0,np.nanmax(data),10))
+    
+    CS = plt.contour(data,cont,linewidths=1,colors='k',extent=m_range)
+    plt.clabel(CS,inline=1,fmt='%2.1f', fontsize=10)
+    plt.imshow(data,extent=m_range,origin='lower',interpolation='None',cmap=plt.cm.jet)
+    plt.clim(0,np.nanmax(data))
+    plt.colorbar().set_label('molecule density lg [cm^-3]')
+    
+    
 if __name__ == "__main__":
-    make_model(path_results,p_name)
+    
+    # two possibilities
+    # first present the model itself
+    #~ make_model(path_results,p_name)
+    
+    # present the xy and xz plane maps
+    show_maps(path_results,p_name)
+    
     plt.show()

@@ -73,21 +73,11 @@ program mol3d
         CALL run_simu(basics, fluxes, grid, model, dust, gas)
     
     !--------------------------------------------------------------------------!
-    ! 4. provide some extra visualisations, obsolent now, but maybe still useful
-    !--------------------------------------------------------------------------!
-        CALL vis_plane(grid, basics, 1,'densH2',801)
-        CALL vis_plane(grid, basics, 2,'densH2',801)
-!~         CALL vis_plane(grid, basics, 1,'temp',801)
-!~         CALL vis_plane(grid, basics, 1,'velo',801)
-!~         CALL vis_plane(grid, basics, 2,'temp',801)
-!~         CALL vis_plane(grid, basics, 2,'velo',801)
-    
-    !--------------------------------------------------------------------------!
-    ! 5. clean up
+    ! 4. clean up
     !--------------------------------------------------------------------------!
         CALL cleanup(basics, fluxes, grid, model, dust, gas)
     !--------------------------------------------------------------------------!
-    ! 6. time measurement
+    ! 5. time measurement
     !--------------------------------------------------------------------------!
     
         CALL cpu_time(t1)

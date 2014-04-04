@@ -108,7 +108,8 @@ MODULE Grid_type
         GetGridName, &
         GridInitialized, &
         get_cell_nr, &
-        mo2ca
+        mo2ca, &
+        check_inside
     
 !~     PRIVATE :: &
 !~         get_cell_nr_sp, &
@@ -152,7 +153,7 @@ CONTAINS
         
             SELECT CASE(GetGridType(this))
             
-            CASE(1,2)
+            CASE(1,2,3)
                 ! case 1 logarithm r spaced grid
                 ! case 2 linear r spaced grid
                 ! we can use the same definitions
@@ -161,7 +162,7 @@ CONTAINS
                 this%n(2)   = n_b
                 this%n(3)   = n_c
             
-            CASE(3)
+            CASE(4)
                 ! interface to Pluto data
                 ! 
                 ! was a test and is working, but not in use
@@ -408,6 +409,38 @@ CONTAINS
     
     END FUNCTION mo2ca
     
+    ! ################################################################################################
+    ! check: is current position of photon stil inside the model space?
+    ! ---
+    FUNCTION check_inside(caco,this,model) result(check_inside_result)
+    USE math_mod, ONLY : norm
+    
+    IMPLICIT NONE
+    !------------------------------------------------------------------------!
+    TYPE(Grid_TYP), INTENT(IN)                  :: this
+    TYPE(Model_TYP), INTENT(IN)                 :: model
+    
+    REAL(kind=r2), dimension(3), intent(in)     :: caco
+    
+    LOGICAL                                     :: check_inside_result   
+    !------------------------------------------------------------------------!
+    SELECT CASE(GetGridName(this))
+        
+        CASE('spherical')
+            check_inside_result = (norm(caco) <= model%r_ou)
+            
+        CASE('cylindrical')
+            check_inside_result = (sqrt( dot_product( caco(1:2), caco(1:2) ) ) <= model%r_ou &
+                                  .and. abs(caco(3)) <= model%r_ou )
+        
+        CASE('cartesian')
+            check_inside_result = (all(abs(caco) <= model%r_ou))
+        CASE DEFAULT
+            print *, 'selected coordinate system not found, set_boundaries'
+            stop
+    END SELECT
+    
+    END FUNCTION check_inside
     
     
     FUNCTION get_cell_nr(this,caco) RESULT(get_cell_nr_result)

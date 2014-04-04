@@ -43,7 +43,6 @@ CONTAINS
     CHARACTER(len=256)                               :: outname
     
     !--------------------------------------------------------------------------!  
-!~     CALL cpu_time(t1)
     SELECT CASE(GetGasType(gas))
     CASE(1)
         print *, ' using LTE method'
@@ -63,21 +62,24 @@ CONTAINS
     DEALLOCATE(grid%col_finalcolmatrixup,grid%col_finalcolmatrixlow)
     
     print *, 'populations calculated'
-    fileext = '.dat'
-    filename = TRIM(basics%path_results)//Getproname(basics)//'_lvl_pop'
-    outname = TRIM(filename)//fileext
-    OPEN(unit=1, file=TRIM(outname), &
-        action="write", status="unknown", form="formatted")
-    WRITE(fmtstr,'(A,I0,A)') '(I8,',gas%egy_lvl,'(ES15.6E3))'
-
-    DO i = 1, grid%n_cell
-
-        WRITE(unit=1,fmt=fmtstr) i, grid%lvl_pop(i,:)
     
-    END DO
-    CLOSE(unit=1)
-!~     CALL cpu_time(t2)
-!~     write (*,'(a,1pg12.4)')    'cpu_time:     ', t2-t1
+    ! save results
+    ! for default we don't save the level populations to hdd, but you can enable it
+    ! by uncomment the following lines:
+    
+!~     fileext = '.dat'
+!~     filename = TRIM(basics%path_results)//Getproname(basics)//'_lvl_pop'
+!~     outname = TRIM(filename)//fileext
+!~     OPEN(unit=1, file=TRIM(outname), &
+!~         action="write", status="unknown", form="formatted")
+!~     WRITE(fmtstr,'(A,I0,A)') '(I8,',gas%egy_lvl,'(ES15.6E3))'
+!~ 
+!~     DO i = 1, grid%n_cell
+!~ 
+!~         WRITE(unit=1,fmt=fmtstr) i, grid%lvl_pop(i,:)
+!~     
+!~     END DO
+!~     CLOSE(unit=1)
     END SUBROUTINE calc_lvlpop
 
     
@@ -89,7 +91,7 @@ CONTAINS
     
     ! ---    
     ! assumtion: T_dust = T_kin = T_gas 
-    ! good for optical thick molecules like CO
+    ! usable und easy assumption for optical thick molecules like CO
     
     IMPLICIT NONE
     !--------------------------------------------------------------------------!

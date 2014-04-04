@@ -53,17 +53,15 @@ CONTAINS
     INTEGER,DIMENSION(0:2*model%n_bin_map,0:2*model%n_bin_map)  :: counter
     INTEGER,DIMENSION(:,:),ALLOCATABLE                          :: notopx
     
-    REAL(kind=r2)                 :: hd_stepwidth, dz_min, hd_rmax, t1, t2
+    REAL(kind=r2)                 :: hd_stepwidth, dz_min, hd_rmax
          
     REAL(KIND=r2)                 :: rho_size_i, rho_size_j   ! [AU]
     REAL(KIND=r2)                 :: pix_res_i, pix_res_j     ! pixelsize [arcsec]
     REAL(KIND=r2)                 :: unit_value               ! unit conversion 
     
-    real(kind=r2), dimension(1:2) :: coor_map
-    real(kind=r2), dimension(1:3) :: ex, ey
-    !real(kind=r2), dimension(:), allocatable   :: hd_stokes_ray
-    !real(kind=r2), dimension(:,:), allocatable :: kappa_old, kappa_new, kappa_mean
-    REAL(kind=r2), dimension(:,:), allocatable :: calc_px
+    real(kind=r2), dimension(1:2)                :: coor_map
+    real(kind=r2), dimension(1:3)                :: ex, ey
+    REAL(kind=r2), dimension(:,:), allocatable   :: calc_px
     REAL(kind=r2), dimension(:,:,:), allocatable :: inten_px
     
     CHARACTER(len=252)                           :: filename
@@ -74,15 +72,22 @@ CONTAINS
     ! --- calculate or set temperature
     print *,' setting temperature distribution'
     CALL set_temperature(basics, grid, model, dust, gas, fluxes)
-    ! --- save all results for later use
-    CALL save_model(grid, basics)
-!~     stop
     
-    ! --- calculate level populations
-    print *,' calculation of level populations'
-    CALL calc_lvlpop(basics, grid , model, gas)
+    ! --- save all results for later use
+    ! first save the model itself
+    CALL save_model(grid, basics)
+
+    ! now, provide some extra visualisation output 
+    ! 1: xz plane, 2: xy plane
+    
+    CALL vis_plane(grid, basics,model, 1,801)
+    CALL vis_plane(grid, basics,model, 2,801)
 
     IF (basics%do_raytr) THEN
+    
+        ! --- first calculate level populations
+        print *,' calculation of level populations'
+        CALL calc_lvlpop(basics, grid , model, gas)
     
         hd_stepwidth = 0.2_r2
         
@@ -182,7 +187,6 @@ CONTAINS
 
             !$omp parallel num_threads(basics%num_core)
             !$omp do schedule(dynamic) private(i) 
-!~             CALL cpu_time(t1)
             DO i = 1, no_pixel
 !~             DO i = 23001,26101! no_pixel
 !~                 print *,i
@@ -197,8 +201,6 @@ CONTAINS
 !~                 print *, notopx(i,1),notopx(i,2)
             END DO
 
-!~             CALL cpu_time(t2)
-!~             write (*,'(a,1pg12.4)')    'cpu_time:     ', t2-t1
             
             !$omp end do nowait
             !CLOSE(unit=1)
@@ -214,14 +216,6 @@ CONTAINS
                 WRITE(unit=1,fmt=*) calc_px(i,1:2)
             END DO
             close(unit=1)
-!~             stop
-!~             DO i = 0, 2*model%n_bin_map
-!~             DO i = 1, 1!2*model%n_bin_map
-!~                 DO j = 0, 2*model%n_bin_map
-!~                 DO j = 1, 1!2*model%n_bin_map
-!~                     fluxes%channel_map(i,j,:,:) = fluxes%channel_map(i,j,:,:) * unit_value
-!~                 END DO
-!~             END DO
 
             DEALLOCATE( calc_px, inten_px, notopx)
         END DO ! orientation map.
@@ -304,7 +298,7 @@ CONTAINS
     
         LOGICAL                                          :: kill_photon, log_size
         !--------------------------------------------------------------------------!
-        !save photon way
+        !save photon way, just for debugging
 !~         open(unit=1, file=TRIM(basics%path_results)//Getproname(basics)//'_'//'rays.dat', &
 !~         action="write", status="unknown", form="formatted")
         
@@ -392,7 +386,6 @@ CONTAINS
                     DO tr = 1, gas%n_tr   ! be careful with more than one transition at once
                         alpha_dust =    grid%grd_dust_density(nr_cell,1) * &
                                         dust%C_ext(1,dust%num_lam_map(dust%cont_map(tr)))
-!~                             alpha_dust = 0.0_r2
                         
                         j_dust       =  alpha_dust * &
                                         planckhz(grid%t_dust(nr_cell, 1 ),&
@@ -463,14 +456,10 @@ CONTAINS
                                     dz = MAX(dz_new,0.25*dz)
                                     cell_d_l = dz*model%ref_unitn
                                 END IF
-                            
-    !~                             IF (cell_sum .ge. d_l) THEN
-    !~                                     EXIT
-    !~                             END IF
                             END DO  ! end walk inside one cell
                         END DO !vch
 !~                     print *, nr_cell
-                    END DO !transitions
+                    END DO !transitions , please do only one transition per run
                 END IF
                 
                 pos_xyz = pos_xyz_new
@@ -533,7 +522,7 @@ CONTAINS
         CASE('cylindrical')
             ray_len = model%r_ou**2-coor_map1**2-coor_map2**2
         CASE('cartesian')
-            ray_len = 1.
+            ray_len = model%r_ou**2
             print *,'TbD, not implemented yet'
             stop
         CASE DEFAULT

@@ -215,7 +215,7 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas)
     WRITE(unit=3,fmt='(A)') 'do_raytr = {'//TRIM(help)//'}'
     WRITE(unit=3,fmt='(A)') '' 
     
-    pluto_data = .True.
+    pluto_data = .False.
     
     
     CALL InitBasic(basics,simu_type,'Reemission map',proname,r_path, concept_ps, calc_tmp, old_proname, &

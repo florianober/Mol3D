@@ -20,42 +20,12 @@ MODULE grd_mod
     PRIVATE
     !--------------------------------------------------------------------------!
     PUBLIC ::   make_grid, &
-                Get_velo, &
-                check_inside
+                Get_velo
     !--------------------------------------------------------------------------!
     
 CONTAINS
 
-  ! ################################################################################################
-  ! check: is current position of photon stil inside the model space?
-!  ! ---
-    FUNCTION check_inside(caco,grid,model) result(check_inside_result)
-    
-    IMPLICIT NONE
-    !------------------------------------------------------------------------!
-    TYPE(Grid_TYP), INTENT(IN)                  :: grid
-    TYPE(Model_TYP), INTENT(IN)                 :: model
-    
-    REAL(kind=r2), dimension(3), intent(in)     :: caco
-    
-    LOGICAL                                     :: check_inside_result   
-    !------------------------------------------------------------------------!
-    SELECT CASE(GetGridName(grid))
-        
-        CASE('spherical')
-            check_inside_result = (norm(caco) <= model%r_ou)
-            
-        CASE('cylindrical')
-            check_inside_result = (sqrt( dot_product( caco(1:2), caco(1:2) ) ) <= model%r_ou .and. abs(caco(3)) <= model%r_ou )
-        
-        CASE('cartesian')
-            check_inside_result = (all(abs(caco) <= model%r_ou))
-        CASE DEFAULT
-            print *, 'selected coordinate system not found, set_boundaries'
-            stop
-    END SELECT
-    
-    END FUNCTION check_inside
+
 
 
   ! ################################################################################################
@@ -564,6 +534,8 @@ CONTAINS
         REAL(kind=r2)                               :: dr1
         REAL(kind=r2)                               :: dth
         REAL(kind=r2)                               :: dph
+        REAL(kind=r2)                               :: th_start
+        REAL(kind=r2)                               :: th_stop
         REAL(kind=r2)                               :: trash
         
         Character(256)                              :: waste
@@ -610,7 +582,7 @@ CONTAINS
             
         CASE(2)
             ! here we have a linear spherical grid
-            ! this is motivated by a given density distribution from the pluto code
+            ! 
             !
             ! ---
             ! 1.1. rho
@@ -648,8 +620,60 @@ CONTAINS
             do i_ph=1, grid%n(3)
                 grid%co_mx_c(i_ph) =  grid%co_mx_c(0) + dph * real(i_ph, kind=r2)
             end do
-        
+            
         CASE(3)
+            print *, 'pluto interface'
+            ! here we have a linear spherical grid
+            ! this is motivated by a given density distribution from the pluto code
+            ! to save endless memory, the grid is equally spaced, but only between 
+            ! in theta direction, r and ph are unchanged
+            !
+            ! ---
+            ! 1.1. rho
+            ! co_mx_a( 0 ): r_in
+            grid%co_mx_a(0) = model%r_in
+
+            ! dr1: radial extension
+            dr1 = (model%r_ou - model%r_in) / real(grid%n(1), kind=r2)
+
+            ! set outer ring radii:
+            ! co_mx_a( 1 ): r_in + dr1
+            ! co_mx_a(n(1)): r_ou
+            IF (grid%n(1) /= 100) print *, 'WARNING: no of r angles should be 100'
+            do i_r=1, grid%n(1)
+                grid%co_mx_a(i_r) = grid%co_mx_a(0) + dr1 * real(i_r, kind=r2)
+            end do
+            
+            ! ---
+            ! 1.2. theta
+            ! co_mx_b(  0 ) = -PI/2 (-90°)
+            ! co_mx_b(n(2)) = +PI/2 (+90°)
+            
+            grid%co_mx_b(0)         = -PI/2.0_r2
+            grid%co_mx_b(grid%n(2)) =  PI/2.0_r2
+            
+            ! give boundaries, derived from input file, check it!!!
+            grid%co_mx_b(1)            = -0.30099091
+            grid%co_mx_b(grid%n(2)-1)  =  0.30099091
+            IF (grid%n(2) /= 66) print *, 'WARNING: no of th angles should be 66'
+
+            dth = (grid%co_mx_b(grid%n(2)-1) - grid%co_mx_b(1)) / real(grid%n(2)-2, kind=r2)
+            do i_th=2, grid%n(2)-1
+                grid%co_mx_b(i_th) = grid%co_mx_b(1) +  dth * real(i_th-1, kind=r2)
+            end do
+            
+            ! ---
+            ! 1.3 phi
+            ! co_mx_c(  0 ) = 0    (  0°)
+            ! co_mx_c(n(3)) = 2xPI (360°)
+            grid%co_mx_c(0) = 0.0_r2
+            IF (grid%n(3) /= 124) print *, 'WARNING: no of ph angles should be 124'
+            dph = 2.0_r2*PI / real(grid%n(3), kind=r2)
+            do i_ph=1, grid%n(3)
+                grid%co_mx_c(i_ph) =  grid%co_mx_c(0) + dph * real(i_ph, kind=r2)
+            end do
+        
+        CASE(4)
             ! This is an old and very rubbish implemented version. it should work, but...;)
             !
             ! user given spherical grid, here interface to PLUTO code
