@@ -655,7 +655,7 @@ CONTAINS
             ! give boundaries, derived from input file, check it!!!
             grid%co_mx_b(1)            = -0.30099091
             grid%co_mx_b(grid%n(2)-1)  =  0.30099091
-            IF (grid%n(2) /= 66) print *, 'WARNING: no of th angles should be 66'
+            IF (grid%n(2) /= 65) print *, 'WARNING: no of th angles should be 65'
 
             dth = (grid%co_mx_b(grid%n(2)-1) - grid%co_mx_b(1)) / real(grid%n(2)-2, kind=r2)
             do i_th=2, grid%n(2)-1

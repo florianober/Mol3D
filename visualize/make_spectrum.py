@@ -38,7 +38,7 @@ int_map      = '_velo_ch_mapint.dat'
 
     
 def main():
-    print(pname)
+    #~ print(pname)
     attr = l.get_attr(pname)
     map_in,vch = l.load_mol3d_fullvchmap(path_mol3d+pname+ch_map)
     print('channel map loaded')
@@ -122,7 +122,7 @@ def main():
 
     
     N = 3
-    fig = plt.figure(22)
+    fig = plt.figure(pname+' overview map')
     grid = AxesGrid(fig, 111, # similar to subplot(132)
                     nrows_ncols = (N, N+2),
                     axes_pad = 0.0,
@@ -138,23 +138,25 @@ def main():
     
     # make velocity channel overview map
     i = 0
-    vmax = np.max(map_in)
+    vmax = np.max(map_in)*0.5
+    vmax = 1.0
     arcs = attr['r_ou']/attr['distance']
     extent = [-arcs,arcs,-arcs,arcs]
-
+    text_pos = [-0.9*arcs,0.8*arcs]
     for t in range(N*(N+2)):
             k = int(round(t*dt+dt/2))
-            conv_map = l.conv(map_in[k,:,:],beam=0.01,r_ou=attr['r_ou'],dist=attr['distance'])
+            conv_map = l.conv(map_in[k,:,:],beam=0.03,r_ou=attr['r_ou'],dist=attr['distance'])
             #~ conv_map = map_in[k,:,:]
             im = grid[t].imshow(conv_map,
                 origin='lower',interpolation='None',vmin=vmin,vmax=vmax,extent=extent)
 
-            grid[t].text(-0.06,0.05, '%2.2f Km/s' %(vch[k]*1e-3), fontsize=10,
+            grid[t].text(text_pos[0],text_pos[1], '%2.2f Km/s' %(vch[k]*1e-3), fontsize=10,
                       bbox={'facecolor':'white', 'alpha':0.4, 'pad':5}) 
 
-    grid.cbar_axes[0].colorbar(im)       
+    grid.cbar_axes[0].colorbar(im)
     for cax in grid.cbar_axes:
         cax.toggle_label(False)
+    grid.cbar_axes[0].toggle_label(True)
             
 
 main()

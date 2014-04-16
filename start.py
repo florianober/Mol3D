@@ -37,15 +37,15 @@ class worker(threading.Thread):
             self.ErgebnisLock.acquire()
             # generate input parameter and start Mol3d
             #
-
+            
             self.Ergebnis[para_in[0]] = 'working'
             
             input_parameter = para_in[1]
             set_input_file(input_parameter)
             
             self.ErgebnisLock.release()
-            #os.system('./mol3d > %s.dat' %(para_in[0]))
-            time.sleep(2)
+            time.sleep(1.2)
+            #os.system('./mol3d input/input_'+threading.current_thread().name+'.dat > %s.dat' %(para_in[0]))
             self.ErgebnisLock.acquire() 
             self.Ergebnis[para_in[0]] = 'done'
             self.ErgebnisLock.release() 
@@ -55,7 +55,7 @@ class worker(threading.Thread):
 
 def set_input_file(paralist):
     #~ print('this will be implemented soon')
-    
+    print(threading.current_thread().name)
     if paralist == 'dummy':
         # just use the unchanged input file -> "input/input.dat"
         pass
@@ -65,13 +65,11 @@ def set_input_file(paralist):
         f = open(path_home+"input/input.dat")
         lines = f.readlines()
         f.close()
-        #~ save backup
-        f = open(path_home+"input/input.dat.bak",'w')
-        f.writelines(lines)
-        f.close()
         
         # write a new input file based on the parameters given in 'paralist'
-        f = open(path_home+"input/input.dat", 'w')
+        # tbd. I should create an class which can handle all input parameter and provide a paralist
+        
+        f = open(path_home+"input/input_"+threading.current_thread().name+'.dat', 'w')
         for entry in lines:
             val = entry.split()
             if len(val) >=1:
@@ -90,7 +88,7 @@ def start_mol3d(vis):
     t1 = time.time()
     os.chdir(path_home)
     # no of threads
-    N = 1
+    N = 5
     print('')
     print('#        welcome         #')
     print('--------------------------')
@@ -131,6 +129,7 @@ def start_mol3d(vis):
     for g in range(len(arr)):  # put jobs into the queue
 
         parameter = [arr[g]['pname'],arr[g]]
+        #~ parameter = [arr[g]['pname'],'dummy']
         worker.ErgebnisLock.acquire() 
         worker.Ergebnis[parameter[0]] = "queued" 
         worker.ErgebnisLock.release()

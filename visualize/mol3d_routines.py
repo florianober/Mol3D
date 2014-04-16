@@ -93,7 +93,7 @@ def load_mol3d_map(file_path):
             pic[k,j] = row[2]
     return pic
 
-def conv(image, beam=0.5,r_ou=200,dist=140,gg=''):
+def conv(image, beam=0.1,r_ou=200,dist=140,gg=''):
     from numpy import sqrt 
     from numpy import log
     import sys
@@ -118,6 +118,10 @@ def conv(image, beam=0.5,r_ou=200,dist=140,gg=''):
     else:
         #~ print('here')
         z1 = convolve_fft(image, gauss,normalize_kernel=True)
+        
+    # rescale flux
+    # correct from Jy/px to mJy/beam
+    z1 *= (beam_x*beam_y/4.)/pxwitdth**2*1000
     return z1
 
 def get_attr(pname):
