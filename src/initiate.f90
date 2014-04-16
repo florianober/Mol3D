@@ -49,6 +49,7 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas)
     CHARACTER(len=256)                               :: flux_unit
     CHARACTER(len=4)                                 :: ref_u_str
     CHARACTER(len=32)                                :: grid_name
+    CHARACTER(len=32)                                :: in_arg
     CHARACTER(len=8), ALLOCATABLE, DIMENSION(:)      :: dust_cat
     REAL(kind=r2)                                    :: ref_u
     REAL(kind=r2)                                    :: r_in
@@ -75,6 +76,7 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas)
     INTEGER, ALLOCATABLE, DIMENSION(:)               :: tr_cat
     
     INTEGER                                          :: simu_type
+    INTEGER                                          :: i_arg
     INTEGER                                          :: n_a
     INTEGER                                          :: n_b
     INTEGER                                          :: n_c
@@ -112,7 +114,14 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas)
 
     print *, "Code initialization [level 1]"
     
-    new_input_file = 'input/input.dat'
+    IF ( iargc() == 1 ) THEN
+        ! use command line given input name
+        CALL getarg(1, in_arg)
+        new_input_file = in_arg
+    ELSE
+        new_input_file = 'input/input.dat'
+    END IF
+
     
     CALL parse('r_path',r_path,new_input_file)       !define results path
     CALL parse('proname',proname,new_input_file)     !project name
