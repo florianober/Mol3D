@@ -42,6 +42,7 @@ path_results = inp2
     
 home         = '../'
 show_all = False
+#~ show_all = True
 
 if len(glob.glob(os.path.join(path_results,p_name+'*'))) < 1:
     print('results not found, maybe the path in "path_result.dat" is not correct')
@@ -85,7 +86,7 @@ def main():
     extent = [-arcs,arcs,-arcs,arcs]
     plt.figure(p_name)
     plt.imshow(map_in*1000,origin='lower',interpolation='None',extent=extent)
-    plt.clim(vmax=np.nanmax(map_in*1000)/2,vmin=None)
+    #~ plt.clim(vmax=np.nanmax(map_in*1000)/2,vmin=None)
     #~ plt.clim(vmax=0.3,vmin=None)
     plt.colorbar().set_label('Flux [mJy/px]')
     

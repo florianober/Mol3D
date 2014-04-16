@@ -138,7 +138,7 @@ def show_maps(path_results,p_name):
     present_plane(path_results+p_name+'_visual_xz.dat')
     
     # show xz-plane
-    #~ present_plane(path_results+p_name+'_visual_xy.dat')
+    present_plane(path_results+p_name+'_visual_xy.dat')
     
 def present_plane(file_path):
 
@@ -178,27 +178,28 @@ def present_plane(file_path):
     plt.title('Gas Temperature, '+ext)
     plt.xlabel(xlab)
     plt.ylabel(ylab)
-    cont = [10,20,25,30,35,40]
+    #~ cont = [10,20,25,30,35,40]
+    cont = [10,20,25,30,35,40]*2
 
     CS = plt.contour(pic[:,:,6],cont,linewidths=1,colors='k',extent=m_range)
     plt.clabel(CS,inline=1,fmt='%2.1f', fontsize=10)
     plt.imshow(pic[:,:,6],extent=m_range,origin='lower',interpolation='None',cmap=plt.cm.jet)
-    plt.clim(0,100)
+    plt.clim(0,200)
     plt.colorbar().set_label('Temperature [K]')
     
     #-------------------------------------------------
     #  molecule density
-    data = np.log10(pic[:,:,1]*1e-6)
+    data = np.log10(pic[:,:,1]*1e-6+1e-250)
     plt.figure('Molecule number density distribution, '+ext)
     plt.title('Molecule number density distribution, '+ext)
     plt.xlabel(xlab)
     plt.ylabel(ylab)
-    cont = np.round(np.linspace(0,np.nanmax(data),10))
+    cont = np.round(np.linspace(0,7,10))
     
     CS = plt.contour(data,cont,linewidths=1,colors='k',extent=m_range)
     plt.clabel(CS,inline=1,fmt='%2.1f', fontsize=10)
     plt.imshow(data,extent=m_range,origin='lower',interpolation='None',cmap=plt.cm.jet)
-    plt.clim(0,np.nanmax(data))
+    plt.clim(2,8)
     plt.colorbar().set_label('molecule density lg [cm^-3]')
     
     

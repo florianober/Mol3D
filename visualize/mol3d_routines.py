@@ -7,6 +7,8 @@ some routines to access Mol3d data output
 
 """
 from numpy import zeros, argmax
+from astropy.convolution import convolve_fft
+from astropy.convolution import Gaussian2DKernel
 
 def mol3d_intmap(map_in,vch):
     chmap = zeros((map_in.shape[1],map_in.shape[2]))
@@ -15,7 +17,10 @@ def mol3d_intmap(map_in,vch):
         for k in range(map_in.shape[2]):
             chmap[j,k] = vch[argmax(map_in[:,j,k])]
     return chmap
-
+    
+f = open('path_result.dat')
+path_results = f.readline().split()[0]
+f.close()
 
 def load_mol3d_zerovchmap(file_path,ch=-1):
         map_in = open(file_path)
@@ -87,3 +92,47 @@ def load_mol3d_map(file_path):
             #~ else:
             pic[k,j] = row[2]
     return pic
+
+def conv(image, beam=0.5,r_ou=200,dist=140,gg=''):
+    from numpy import sqrt 
+    from numpy import log
+    import sys
+    
+    N = image.shape[0]
+    #convert FWHM -> stddev
+    beam_x = beam
+    beam_y = beam
+    beam_stddev_x = beam_x/(2.*sqrt(2*log(2)))
+    beam_stddev_y = beam_y/(2.*sqrt(2*log(2)))
+    
+    
+    arcs = r_ou / dist
+    pxwitdth = 2.0*arcs/N 
+    g_width = beam_stddev_x/pxwitdth
+
+    gauss = Gaussian2DKernel(width=g_width)  #stddev width in px
+    
+    # if gg is a given Kernel
+    if gg != '':
+        z1 = convolve_fft(image, gg,normalize_kernel=True)
+    else:
+        #~ print('here')
+        z1 = convolve_fft(image, gauss,normalize_kernel=True)
+    return z1
+
+def get_attr(pname):
+    
+    input_file = open(path_results+pname+'_input_file.dat',"r")
+    full = input_file.readlines()
+    input_file.close()
+    
+    # search for key in input_file and add to dictionary
+    attr = {}
+    for line in full:
+        if 'r_ou' in line:
+            r_ou = float(line.partition('{')[-1].rpartition('}')[0])
+            attr['r_ou'] = r_ou
+        if 'distance' in line:
+            dist = float(line.partition('{')[-1].rpartition('}')[0])
+            attr['distance'] = dist
+    return attr

@@ -32,7 +32,7 @@ except:
     
 
 
-path_results = '../results/'
+path_results = '/data/fober/mol3dresults/'
 home         = '../'
 
     
@@ -47,15 +47,15 @@ except:
 ##################### edit this area to create your desired plots ##################################
 
 create_plots = dict(Temp_midplane=False,                      #plot temperature in the midplane
-                    Spectrum=True,                           #plot the velocity spectrum
-                    Velo_ch_map=True,                         #Intensity map for every velocity channel (selectable)
-                    Intensity_map=True,                      #Intensity map integrated over all velocity channels
+                    Spectrum=False,                           #plot the velocity spectrum
+                    Velo_ch_map=False,                         #Intensity map for every velocity channel (selectable)
+                    Intensity_map=False,                      #Intensity map integrated over all velocity channels
                     Velo_map_xz=False,                        #Plot velocity in the xz (y = 0) plane
-                    Temp_map_xz=True,                        #Plot temperature in the xz (y = 0) plane
+                    Temp_map_xz=False,                        #Plot temperature in the xz (y = 0) plane
                     Velo_map_xy=False,                        #Plot velocity in the xy (z = 0) plane
                     Temp_map_xy=False,                        #Plot temperature in the xy (z = 0) plane
                     DensH2_map_xz=True,                      #Plot H2 distributione in the xz (y = 0) plane
-                    DensH2_map_xy=False                       #Plot H2 distributione in the xy (z = 0) plane
+                    DensH2_map_xy=True                       #Plot H2 distributione in the xy (z = 0) plane
 
                     )
 ####################              end of editable area            ##################################				
