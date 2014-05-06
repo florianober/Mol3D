@@ -885,6 +885,10 @@ CONTAINS
                     
                     ! set the density for all other elements (H, He,...)
                     grid%grd_col_density(i_cell,:)     = get_den(model,grid%cellmidcaco(i_cell,:))
+                ELSE
+                    grid%grd_dust_density(i_cell,:)    = 0.0_r2
+                    grid%grd_col_density(i_cell,:)     = 0.0_r2
+                
                 END IF
                 !###########################################################################
             END DO
@@ -915,10 +919,9 @@ CONTAINS
             grid%Nv(i_cell,:)     = grid%grd_dust_density(i_cell,:) * REAL(grid%cell_vol(i_cell),kind=r2)
             grid%Nv_mol(i_cell)   = grid%grd_mol_density(i_cell)    * REAL(grid%cell_vol(i_cell),kind=r2)
             grid%Nv_col(i_cell,:) = grid%grd_col_density(i_cell,:)  * REAL(grid%cell_vol(i_cell),kind=r2)
-            ! set velocity, in a future release we should generalize this as well somehow
+            ! set velocity, in a future release we should generalize this
             ! 
-            grid%velo(i_cell,:)  = Get_velo(grid%cellmidcaco,model%kep_const)
-            
+            grid%velo(i_cell,:)  = Get_velo(grid%cellmidcaco(i_cell,:),model%kep_const)
             
             grid%absvelo(i_cell) = norm(REAL(grid%velo(i_cell,:),kind=r2))
         END DO
