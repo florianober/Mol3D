@@ -6,7 +6,7 @@ some routines to access Mol3d data output
 
 
 """
-from numpy import zeros, argmax
+from numpy import zeros, argmax, array
 from astropy.convolution import convolve_fft
 from astropy.convolution import Gaussian2DKernel
 
@@ -131,6 +131,7 @@ def get_attr(pname):
     input_file.close()
     
     # search for key in input_file and add to dictionary
+    # this has to be extended
     attr = {}
     for line in full:
         if 'r_ou' in line:
@@ -139,4 +140,15 @@ def get_attr(pname):
         if 'distance' in line:
             dist = float(line.partition('{')[-1].rpartition('}')[0])
             attr['distance'] = dist
+        if 'n_bin_map' in line:
+            attr['n_bin_map']= int(line.partition('{')[-1].rpartition('}')[0])
+        if line[0:5] == 'line ':
+            attr['line'] = int(line.partition('{')[-1].rpartition('}')[0])
+            attr['tr_freq'] = CO_lines_freq[attr['line']-1]
+            attr['tr_lam'] = CO_lines_lam[attr['line']-1]
     return attr
+
+CO_lines_freq = array([115.2712018,230.5380000,345.7959899,461.0407682,576.2679305,691.4730763,806.6518060,
+                 921.7997000,1036.9123930,1151.9854520,1267.0144860,1381.9951050,1496.9229090])*1e9
+#~ CO_lines_freq *= 1e9              
+CO_lines_lam = 299792458./CO_lines_freq

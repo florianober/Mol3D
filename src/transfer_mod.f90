@@ -283,31 +283,7 @@ contains
     
     ! -
     ! 3. determine new cell number
-    i_r = 1
-    
-    hd_th = atan2( simu_var%pos_xyz_new(3), sqrt(simu_var%pos_xyz_new(1)**2 + simu_var%pos_xyz_new(2)**2))
-    i_th = floor( real(grid%n(2),kind=r2) * (hd_th + PI*0.5_r2)/PI ) +1
-    
-    hd_ph = atan3( simu_var%pos_xyz_new(2), simu_var%pos_xyz_new(1) )
-    i_ph = floor( real(grid%n(3),kind=r2) * hd_ph/PI*2.0_r2       ) +1
-
-    ! check if number of <th> cell is in range [1,n_th]
-    if      (i_th < 1   ) then
-       i_th = 1
-       i_ph = i_ph + grid%n(3)/2
-    else if (i_th > grid%n(2)) then
-       i_th = 1
-       i_ph = i_ph + grid%n(3)/2             
-    end if
-    
-    ! check if number of <ph> cell is in range [1,n_ph]
-    if      (i_ph < 1   ) then
-       i_ph = grid%n(3)
-    else if (i_ph > grid%n(3)) then
-       i_ph = 1             
-    end if
-
-    simu_var%nr_cell_new = grid%cell_idx2nr( i_r, i_th, i_ph )
+    simu_var%nr_cell_new = get_cell_nr( grid, simu_var%pos_xyz_new)
     !print *, simu_var%pos_xyz
   end subroutine path_skip_sp
 

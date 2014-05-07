@@ -73,10 +73,10 @@ def make_model(path_results,p_name):
     #~ z = model[:,5]/model[:,6]
     #~ create_plot(x,y,z,'Molecule/H2 density distribution')
 
-    # velocity distribution
-    #~ if model.shape[1] > 11:  # just to work with older versions
-        #~ z = model[:,11]/1000
-        #~ create_plot(x,y,z,'Velocity distribution')
+    #~ # velocity distribution
+    if model.shape[1] > 11:  # just to work with older versions
+        z = model[:,11]/1000
+        create_plot(x,y,z,'Velocity distribution')
 
 
 def create_plot(x,y,z,name):
@@ -110,7 +110,7 @@ def create_plot(x,y,z,name):
         ext = ' [km/s]'
         #~ cont = [zi[,1.5,2,3,5]
         cont = [1,1.5,2,3,5]
-        colors = np.round(np.linspace(0,16,151),2)
+        #~ colors = np.round(np.linspace(0,16,151),2)
     if 'Molecule/H2' in name:
         colors = 1
         bar = False
@@ -146,10 +146,14 @@ def present_plane(file_path):
     row = map_in.readline().split()
     map_size = int(row[0])
     row = map_in.readline()     # empty row
-    pic = np.zeros((map_size,map_size,8))
+    #~ pic = np.zeros((map_size,map_size,10))
     for j in range(map_size):
         for k in range(map_size):
             row = map_in.readline().split()
+            if j == 0 and j == 0:
+                len_pic = len(row)
+                pic = np.zeros((map_size,map_size,len_pic-2))
+            #~ print(len(row))
             if j == 0 and k == 0:
                 j_min = float(row[0])
                 k_min = float(row[1])
@@ -159,14 +163,13 @@ def present_plane(file_path):
             #~ if row[2] == 'NaN':
                 #~ pic[k,j] = 0
             #~ else:
-            for l in range(2,10):
+            for l in range(2,len_pic):
                 if row[l] == 'NaN':
                     pic[k,j,l-2] = 0
                 else:
                     pic[k,j,l-2] = row[l]
                 
     m_range = [k_min,k_max,j_min,j_max]
-
     xlab = 'distance [AU]'
     ylab = xlab
     ext = file_path[-6:-4]+'-plane'
@@ -188,8 +191,47 @@ def present_plane(file_path):
     plt.colorbar().set_label('Temperature [K]')
     
     #-------------------------------------------------
+    #  Velocity
+    
+    plt.figure('Velocity, '+ext)
+    plt.title('Velocity, '+ext)
+    plt.xlabel(xlab)
+    plt.ylabel(ylab)
+    #~ cont = [10,20,25,30,35,40]
+    #~ cont = [10,20,25,30,35,40]*2
+
+    CS = plt.contour(pic[:,:,7],linewidths=1,colors='k',extent=m_range)
+    plt.clabel(CS,inline=1,fmt='%2.1f', fontsize=10)
+    plt.imshow(pic[:,:,7],extent=m_range,origin='lower',interpolation='None',cmap=plt.cm.jet)
+    #~ plt.clim(0,200)
+    plt.colorbar().set_label('Velocity [km/s]')
+    
+    #-------------------------------------------------
+    #  counts/volume
+    #~ 
+    #~ plt.figure('photon counts/volume, '+ext)
+    #~ plt.title('photon counts/volume, '+ext)
+    #~ plt.xlabel(xlab)
+    #~ plt.ylabel(ylab)
+    #~ 
+    #~ plt.imshow(pic[:,:,8],extent=m_range,origin='lower',interpolation='None',cmap=plt.cm.jet)
+    #~ plt.colorbar().set_label('arbitrary')
+    #~ 
+    #~ #-------------------------------------------------
+    #~ #  counts
+    #~ 
+    #~ plt.figure('photon counts, '+ext)
+    #~ plt.title('photon counts, '+ext)
+    #~ plt.xlabel(xlab)
+    #~ plt.ylabel(ylab)
+    #~ 
+    #~ plt.imshow(pic[:,:,9],extent=m_range,origin='lower',interpolation='None',cmap=plt.cm.jet)
+    #~ plt.colorbar().set_label('arbitrary')
+    
+    #-------------------------------------------------
     #  molecule density
-    data = np.log10(pic[:,:,1]*1e-6+1e-250)
+    
+    data = np.log10(pic[:,:,1]*1e-6)
     plt.figure('Molecule number density distribution, '+ext)
     plt.title('Molecule number density distribution, '+ext)
     plt.xlabel(xlab)
@@ -201,7 +243,8 @@ def present_plane(file_path):
     plt.imshow(data,extent=m_range,origin='lower',interpolation='None',cmap=plt.cm.jet)
     plt.clim(2,8)
     plt.colorbar().set_label('molecule density lg [cm^-3]')
-    
+    #~ plt.figure('Molecule number density distribution cut, '+ext)
+    #~ plt.plot(pic[:,200,1])
     
 if __name__ == "__main__":
     
