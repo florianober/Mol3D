@@ -78,10 +78,11 @@ CONTAINS
     CALL save_model(grid, basics)
 
     ! now, provide some extra visualisation output 
-    ! 1: xz plane, 2: xy plane
+    ! 1: xz plane, 2: xy plane, 3: yz plane
     
-    CALL vis_plane(grid, basics,model, 1,801)
-    CALL vis_plane(grid, basics,model, 2,801)
+    CALL vis_plane(grid, basics,model, 1,401)
+    CALL vis_plane(grid, basics,model, 2,401)
+    CALL vis_plane(grid, basics,model, 3,401)
 
     IF (basics%do_raytr) THEN
     

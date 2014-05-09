@@ -224,7 +224,7 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas)
     WRITE(unit=3,fmt='(A)') 'do_raytr = {'//TRIM(help)//'}'
     WRITE(unit=3,fmt='(A)') '' 
     
-    pluto_data = .False.
+    pluto_data = .True.
     
     
     CALL InitBasic(basics,simu_type,'Reemission map',proname,r_path, concept_ps, calc_tmp, old_proname, &
@@ -399,52 +399,67 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas)
     
     !--------------------------------------------------------------------------!
     
+    IF (pluto_data .and. not(old_model) ) THEN
+        ! fix the cell properties
+        grid_name = 'spherical'
+        grid_type = 3
+        n_a = 100
+        n_b = 65
+        n_c = 124
+        CALL parse('sf',sf,input_file)  ! in fact, it is used to scale the grid
+        model%r_in = sf*model%r_in
+        model%r_ou = sf*model%r_ou
+    ELSE
+        ! this is the normal way, read the grid properties from the input file
+        CALL parse('grid_name',grid_name,input_file)  
+        
+          ! possible values: spherical (mostly mc3d style)
+          !                  cylindrical (in progress, working but there are some bugs, test for yourself)
+          !                  cartesian   (planed)
+          !
+          ! EXAMPLE:
+          ! 
+          ! spherical :  r = / 1 = rho  \
+          !                  | 2 = theta|
+          !                  \ 3 = phi  /
+          ! n(1) = n_r :  number of point in r direction
+          ! n(2) = n_th : number of point in th direction, must be odd
+          ! n(3) = n_ph : number of point in oh direction, must be 1 or even
+          ! sf   = step factor for logarithmic r scale
+          ! ..
+        CALL parse('grid_type',grid_type,input_file)
+        CALL parse('n_a',n_a,input_file)
+        CALL parse('n_b',n_b,input_file) 
+        CALL parse('n_c',n_c,input_file)
+        CALL parse('sf',sf,input_file) 
 
-    !grid_type = 'cylindrical'   
-    !grid_type = 'spherical'
-    CALL parse('grid_name',grid_name,input_file)  
+    END IF
+    
+    ! write informations about the grid in the log/input file
     
     WRITE(unit=3,fmt='(A)') 'grid_name = {'//TRIM(grid_name)// &
-    '}              possible values: spherical (OK), cylindrical (testing), cartesian (planned)'
-      ! possible values: spherical (mostly mc3d style)
-      !                  cylindrical (in progress, working but there are some bugs, test for yourself)
-      !                  cartesian   (planed)
-      !
-      ! EXAMPLE:
-      ! 
-      ! spherical :  r = / 1 = rho  \
-      !                  | 2 = theta|
-      !                  \ 3 = phi  /
-      ! n(1) = n_r :  number of point in r direction
-      ! n(2) = n_th : number of point in th direction, must be odd
-      ! n(3) = n_ph : number of point in oh direction, must be 1 or even
-      ! sf   = step factor for logarithmic r scale
-      ! ..
-    
-    CALL parse('grid_type',grid_type,input_file)
+        '}              possible values: spherical (OK), cylindrical (testing), cartesian (planned)'
+        
     WRITE(help,fmt='(I1)') grid_type
     WRITE(unit=3,fmt='(A)') 'grid_type = {'//TRIM(help)// &
     '}                      default = 1. 2 and higher values for user defined grids'
     
-    CALL parse('n_a',n_a,input_file)
     WRITE(help,fmt='(I4)') n_a
     WRITE(unit=3,fmt='(A)') 'n_a = {'//TRIM(help)// &
     '}                     '
-    CALL parse('n_b',n_b,input_file) 
+
     WRITE(help,fmt='(I4)') n_b
     WRITE(unit=3,fmt='(A)') 'n_b = {'//TRIM(help)// &
     '}                     '
     
-    CALL parse('n_c',n_c,input_file)
     WRITE(help,fmt='(I4)') n_c
     WRITE(unit=3,fmt='(A)') 'n_c = {'//TRIM(help)// &
     '}                     ' 
-    CALL parse('sf',sf,input_file) 
+
     WRITE(help,fmt='(F12.9)') sf
     WRITE(unit=3,fmt='(A)') 'sf = {'//TRIM(help)//&
     '}                  stepfactor for logarithm grid'
     WRITE(unit=3,fmt='(A)') ''
-    
     
     ! give the type of the specified grid 
     ! 1 == analytical version (prefered)

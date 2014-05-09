@@ -155,6 +155,9 @@ CONTAINS
             
         ELSE IF ( plane == 2) THEN                                   !view xy-plane
             filename = TRIM(basics%path_results)//Getproname(basics)//'_visual_xy'
+            
+        ELSE IF ( plane == 3) THEN                                   !view yz-plane
+            filename = TRIM(basics%path_results)//Getproname(basics)//'_visual_yz'
         ELSE 
             print *, 'plane not specified'
             RETURN
@@ -164,7 +167,44 @@ CONTAINS
         open(unit=1, file=TRIM(outname), &
             action="write", status="unknown", form="formatted")
 
-        IF ( plane == 2) THEN
+        IF ( plane == 3) THEN
+            print *,'visualize  -> yz - plane'
+            dxy = 2.0*model%r_ou/pix
+            write(unit=1,fmt='(I6.4,A)') pix ,'    # no of pixel of the map'
+            write(unit=1,fmt=*) ''
+        
+            DO i_x=0,pix-1
+                DO i_y=0,pix-1
+                    caco(1) = 0.0_r2
+                    caco(2) = -model%r_ou+(0.5 + i_x) * dxy
+                    caco(3) = -model%r_ou+(0.5 + i_y) * dxy
+                    IF ( check_inside(caco,grid,model) ) THEN
+                        i_cell = get_cell_nr(grid,caco)
+                        write(unit=1,fmt='(10(ES15.6E3))') &
+                            caco(2), &
+                            caco(3), &
+                            grid%grd_dust_density(i_cell,1), &
+                            grid%grd_mol_density(i_cell), &
+                            grid%grd_col_density(i_cell,1:3), &
+                            grid%t_dust(i_cell,1), &
+                            grid%t_gas(i_cell), &
+                            grid%absvelo(i_cell)
+                    ELSE
+                        write(unit=1,fmt='(10(ES15.6E3))') &
+                            caco(2), &
+                            caco(3), &
+                            0.0_r2, &
+                            0.0_r2, &
+                            0.0_r2,0.0_r2,0.0_r2, &
+                            0.0_r2, &
+                            0.0_r2, &
+                            0.0_r2
+                    
+                    END IF
+                END DO
+            END DO 
+            
+        ELSEIF ( plane == 2) THEN
             print *,'visualize  -> xy - plane'
             dxy = 2.0*model%r_ou/pix
             write(unit=1,fmt='(I6.4,A)') pix ,'    # no of pixel of the map'

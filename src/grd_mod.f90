@@ -403,7 +403,6 @@ CONTAINS
                                 abs(grid%co_mx_b(i_th) - grid%co_mx_b(i_th-1)) + &
                                 (grid%co_mx_a(i_r)**2.0_r2-grid%co_mx_a(i_r-1)**2.0_r2 )* &
                                 (grid%co_mx_c(i_ph) - grid%co_mx_c(i_ph-1) ) )/3.0_r2
-!~         grid%cell_minA(i_cell) = grid%cell_minA(i_cell)*5.0e2 
 !~         print *, grid%co_mx_a(i_r-1)
         ! volume of individual cells [m^3]
         
@@ -823,7 +822,7 @@ CONTAINS
             DO i = 1,pluto_n(1)
                 READ(unit=1,fmt=*,iostat=io) i_in, pluto_r(i)
             END DO
-            
+            pluto_r = pluto_r*grid%sf
             DO i = 1,2
                 READ(unit=1,fmt=*,iostat=io) waste
             END DO
@@ -881,6 +880,7 @@ CONTAINS
                 ! add your custom density distribution here
                 !
                 IF (P_xy .lt. R_gap_in .or. P_xy .gt. R_gap_ou) THEN
+                IF (abs(atan(P_z/P_xy)) < 0.30 ) THEN
                     grid%grd_dust_density(i_cell,:)    = get_den(model,grid%cellmidcaco(i_cell,:))
                     
                     ! set the density for all other elements (H, He,...)
@@ -888,6 +888,7 @@ CONTAINS
                 ELSE
                     grid%grd_dust_density(i_cell,:)    = 0.0_r2
                     grid%grd_col_density(i_cell,:)     = 0.0_r2
+                END IF
                 
                 END IF
                 !###########################################################################
