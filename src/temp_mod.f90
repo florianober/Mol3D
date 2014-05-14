@@ -206,7 +206,8 @@ CONTAINS
         INTEGER                                          :: seed
 !~         !$ INTEGER omp_get_thread_num 
         
-        REAL(kind=r2),DIMENSION(:,:),ALLOCATABLE      :: t_dust
+        REAL(kind=r1),DIMENSION(:,:),ALLOCATABLE      :: t_dust
+        REAL(kind=r1),DIMENSION(:,:),ALLOCATABLE      :: dt_dust
         REAL(kind=r2),DIMENSION(:,:),ALLOCATABLE      :: grd_d_l
         REAL(kind=r2),DIMENSION(:,:,:),ALLOCATABLE    :: i_star_abs
         
@@ -231,10 +232,13 @@ CONTAINS
 !~         !$omp parallel PRIVATE(i_phot,seed,simu_var,rand_nr,t_dust,grd_d_l,i_star_abs)
         
         ALLOCATE( t_dust(0:grid%n_cell,1:dust%n_dust), &
+                  dt_dust(0:grid%n_cell,1:dust%n_dust), &
                    grd_d_l(1:grid%n_cell,1:dust%n_lam),&
                    i_star_abs(1:dust%n_dust,1:dust%n_lam,1:grid%n_cell) )
 
         t_dust        = grid%t_dust
+        !dt_dust        = grid%delta_t_dust
+        dt_dust        = 0.0
         i_star_abs    = grid%i_star_abs
         grd_d_l(:,:)  = grid%grd_d_l
         
@@ -274,8 +278,8 @@ CONTAINS
                     DO
                         IF (simu_var%inside .and. (simu_var%n_interact < n_interact_max)) THEN
                             simu_var%n_interact = simu_var%n_interact +1
-!~                             print *,simu_var%nr_cell
-                            CALL interact(basics,grid, dust, rand_nr, fluxes, simu_var, t_dust, i_star_abs)
+
+                            CALL interact(basics,grid, dust, rand_nr, fluxes, simu_var, t_dust, i_star_abs,dt_dust)
                             CALL next_pos_const(model, rand_nr, grid, dust, simu_var, grd_d_l)
                             cycle
                         ELSE 
@@ -304,6 +308,7 @@ CONTAINS
 !~             !$ print *,grd_d_l(141,40), 'd_l'
 !~             !$ print *,t_dust(45,1), 'temp'
 !~             !$ print *,i_star_abs(1,40,45), 'i_star_abs'
+            grid%delta_t_dust = grid%delta_t_dust+dt_dust
             grid%i_star_abs = grid%i_star_abs+i_star_abs
             grid%t_dust     = grid%t_dust+t_dust
             grid%grd_d_l    = grid%grd_d_l+grd_d_l

@@ -79,6 +79,7 @@ MODULE Grid_type
         REAL(kind=r2),DIMENSION(:,:),POINTER      :: cellmidcaco
         REAL(kind=r2),DIMENSION(:,:,:),POINTER    :: i_star_abs
         REAL(kind=r1),DIMENSION(:,:),POINTER      :: t_dust
+        REAL(kind=r1),DIMENSION(:,:),POINTER      :: delta_t_dust
         REAL(kind=r1),DIMENSION(:),POINTER        :: t_gas
         REAL(kind=r2), DIMENSION(:),POINTER       :: ddust
         REAL(kind=r2),DIMENSION(:,:),POINTER      :: grd_d_l
@@ -275,6 +276,7 @@ CONTAINS
             this%cell_idx2nr( 0:this%n(1), 0:this%n(2), 0:this%n(3) ), &
             this%cell_nr2idx( 1:3, 0:this%n_cell ), &
             this%t_dust(  0:this%n_cell, 1:n_dust ), &
+            this%delta_t_dust(  0:this%n_cell, 1:n_dust ), &
             this%t_gas(  0:this%n_cell), &
             this%grd_d_l( 1:this%n_cell, 1:n_lam ) , &
             this%i_star_abs( 1:n_dust, 1:n_lam, 1:this%n_cell), &
@@ -302,6 +304,7 @@ CONTAINS
         this%cell_idx2nr(:,:,:)   = 0
         this%cell_nr2idx(:,:)     = 0
         this%t_dust(:,:)          = 0.0
+        this%delta_t_dust(:,:)    = 0.0
         this%t_gas(:)             = 0.0
         this%grd_d_l(:,:)         = 0.0_r2
         this%i_star_abs(:,:,:)    = 0.0_r2
@@ -341,6 +344,7 @@ CONTAINS
             this%cell_idx2nr, &
             this%cell_nr2idx, &
             this%t_dust, &
+            this%delta_t_dust, &
             this%t_gas, &
             this%grd_d_l, &
             this%lvl_pop, &

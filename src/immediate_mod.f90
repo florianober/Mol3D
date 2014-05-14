@@ -26,7 +26,7 @@ contains
   ! immediate reemission RT concept (routine from mc3d but modified)
   ! see Bjorkman & Wood 2001, ApJ
   ! ---
-  SUBROUTINE immediate(basics,rand_nr,grid,dust,simu_var, i_dust_action,t_dust, i_star_abs )
+  SUBROUTINE immediate(basics,rand_nr,grid,dust,simu_var, i_dust_action,t_dust, i_star_abs,dt_dust )
   
     IMPLICIT NONE
     !--------------------------------------------------------------------------!
@@ -38,8 +38,9 @@ contains
     TYPE(Simu_TYP),INTENT(INOUT)                    :: simu_var
     !--------------------------------------------------------------------------!
         
-    REAL(kind=r2),DIMENSION(:,:),INTENT(INOUT)      :: t_dust
-    REAL(kind=r2),DIMENSION(:,:,:),INTENT(INOUT)    :: i_star_abs
+    REAL(kind=r1),DIMENSION(0:grid%n_cell,1:dust%n_dust),INTENT(INOUT)      :: t_dust
+    REAL(kind=r1),DIMENSION(0:grid%n_cell,1:dust%n_dust),INTENT(INOUT)      :: dt_dust
+    REAL(kind=r2),DIMENSION(1:dust%n_dust, 1:dust%n_lam, 1:grid%n_cell),INTENT(INOUT)    :: i_star_abs
     !--------------------------------------------------------------------------!
     integer, intent(in)                             :: i_dust_action
 
@@ -54,6 +55,8 @@ contains
                          t_dust, i_star_abs)
     ! 3. estimate difference in SED
     i_tem_hd1 = (t_dust_old - basics%t_dust_min) / basics%d_tem
+    !print *,t_dust(simu_var%nr_cell,1)
+    dt_dust(simu_var%nr_cell,1) = abs(t_dust_old - t_dust_new) 
     i_tem_1   = floor( i_tem_hd1 ) 
     
     nr_lam_old  = simu_var%nr_lam
@@ -213,8 +216,8 @@ contains
     TYPE(Simu_TYP),INTENT(INOUT)                    :: simu_var
     !--------------------------------------------------------------------------!
         
-    REAL(kind=r2),DIMENSION(:,:),INTENT(INOUT)      :: t_dust
-    REAL(kind=r2),DIMENSION(:,:,:),INTENT(INOUT)    :: i_star_abs
+    REAL(kind=r1),DIMENSION(0:grid%n_cell,1:dust%n_dust),INTENT(INOUT)                  :: t_dust
+    REAL(kind=r2),DIMENSION(1:dust%n_dust, 1:dust%n_lam, 1:grid%n_cell),INTENT(INOUT)    :: i_star_abs
     !--------------------------------------------------------------------------!
 
     integer, intent(in)                             :: i_dust_action

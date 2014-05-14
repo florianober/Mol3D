@@ -137,6 +137,12 @@ def get_attr(pname):
         if 'r_ou' in line:
             r_ou = float(line.partition('{')[-1].rpartition('}')[0])
             attr['r_ou'] = r_ou
+        if 'r_in' in line:
+            r_in = float(line.partition('{')[-1].rpartition('}')[0])
+            attr['r_in'] = r_in
+        if 'sf =' in line:
+            sf = float(line.partition('{')[-1].rpartition('}')[0])
+            attr['sf'] = sf
         if 'distance' in line:
             dist = float(line.partition('{')[-1].rpartition('}')[0])
             attr['distance'] = dist

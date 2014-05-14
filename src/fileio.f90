@@ -180,7 +180,7 @@ CONTAINS
                     caco(3) = -model%r_ou+(0.5 + i_y) * dxy
                     IF ( check_inside(caco,grid,model) ) THEN
                         i_cell = get_cell_nr(grid,caco)
-                        write(unit=1,fmt='(10(ES15.6E3))') &
+                        write(unit=1,fmt='(11(ES15.6E3))') &
                             caco(2), &
                             caco(3), &
                             grid%grd_dust_density(i_cell,1), &
@@ -188,14 +188,16 @@ CONTAINS
                             grid%grd_col_density(i_cell,1:3), &
                             grid%t_dust(i_cell,1), &
                             grid%t_gas(i_cell), &
-                            grid%absvelo(i_cell)
+                            grid%absvelo(i_cell), &
+                            grid%delta_t_dust(i_cell,1)
                     ELSE
-                        write(unit=1,fmt='(10(ES15.6E3))') &
+                        write(unit=1,fmt='(11(ES15.6E3))') &
                             caco(2), &
                             caco(3), &
                             0.0_r2, &
                             0.0_r2, &
                             0.0_r2,0.0_r2,0.0_r2, &
+                            0.0_r2, &
                             0.0_r2, &
                             0.0_r2, &
                             0.0_r2
@@ -217,7 +219,7 @@ CONTAINS
                     caco(3) = 0.0_r2
                     IF ( check_inside(caco,grid,model) ) THEN
                         i_cell = get_cell_nr(grid,caco)
-                        write(unit=1,fmt='(10(ES15.6E3))') &
+                        write(unit=1,fmt='(11(ES15.6E3))') &
                             caco(1), &
                             caco(2), &
                             grid%grd_dust_density(i_cell,1), &
@@ -225,14 +227,16 @@ CONTAINS
                             grid%grd_col_density(i_cell,1:3), &
                             grid%t_dust(i_cell,1), &
                             grid%t_gas(i_cell), &
-                            grid%absvelo(i_cell)
+                            grid%absvelo(i_cell), &
+                            grid%delta_t_dust(i_cell,1)
                     ELSE
-                        write(unit=1,fmt='(10(ES15.6E3))') &
+                        write(unit=1,fmt='(11(ES15.6E3))') &
                             caco(1), &
                             caco(2), &
                             0.0_r2, &
                             0.0_r2, &
                             0.0_r2,0.0_r2,0.0_r2, &
+                            0.0_r2, &
                             0.0_r2, &
                             0.0_r2, &
                             0.0_r2
@@ -254,7 +258,7 @@ CONTAINS
                     caco(3) = -model%r_ou+(0.5 + i_y) * dxy
                     IF ( check_inside(caco,grid,model) ) THEN
                         i_cell = get_cell_nr(grid,caco)
-                        write(unit=1,fmt='(10(ES15.6E3))') &
+                        write(unit=1,fmt='(11(ES15.6E3))') &
                             caco(1), &
                             caco(3), &
                             grid%grd_dust_density(i_cell,1), &
@@ -262,14 +266,16 @@ CONTAINS
                             grid%grd_col_density(i_cell,1:3), &
                             grid%t_dust(i_cell,1), &
                             grid%t_gas(i_cell), &
-                            grid%absvelo(i_cell)
+                            grid%absvelo(i_cell), &
+                            grid%delta_t_dust(i_cell,1)
                     ELSE
-                        write(unit=1,fmt='(10(ES15.6E3))') &
+                        write(unit=1,fmt='(11(ES15.6E3))') &
                             caco(1), &
                             caco(3), &
                             0.0_r2, &
                             0.0_r2, &
                             0.0_r2,0.0_r2,0.0_r2, &
+                            0.0_r2, &
                             0.0_r2, &
                             0.0_r2, &
                             0.0_r2

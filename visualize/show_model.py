@@ -140,6 +140,9 @@ def show_maps(path_results,p_name):
     # show xz-plane
     present_plane(path_results+p_name+'_visual_xy.dat')
     
+    # show yz-plane
+    present_plane(path_results+p_name+'_visual_yz.dat')
+    
 def present_plane(file_path):
 
     map_in = open(file_path)
@@ -207,8 +210,19 @@ def present_plane(file_path):
     plt.colorbar().set_label('Velocity [km/s]')
     
     #-------------------------------------------------
-    #  counts/volume
+    #  error in Temperature
+    if pic.shape[2] > 8:
+        plt.figure('Temperature error, '+ext)
+        plt.title('Temperature error, '+ext)
+        plt.xlabel(xlab)
+        plt.ylabel(ylab)
+        
+        plt.imshow(pic[:,:,8],extent=m_range,origin='lower',interpolation='None',cmap=plt.cm.jet)
+        plt.colorbar().set_label('delta Temperature [K]')
     #~ 
+    #-------------------------------------------------
+    #  counts/volume
+    
     #~ plt.figure('photon counts/volume, '+ext)
     #~ plt.title('photon counts/volume, '+ext)
     #~ plt.xlabel(xlab)

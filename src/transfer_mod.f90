@@ -43,7 +43,7 @@ contains
         TYPE(Simu_TYP),INTENT(INOUT)                      :: simu_var
         !--------------------------------------------------------------------------!
         
-        REAL(kind=r2),DIMENSION(:,:),INTENT(INOUT)      :: grd_d_l
+        REAL(kind=r2),DIMENSION(1:grid%n_cell, 1:dust%n_lam),INTENT(INOUT)      :: grd_d_l
         !--------------------------------------------------------------------------
             
         logical                                            :: kill_photon
@@ -68,13 +68,13 @@ contains
 !~                 print *, 'here? huch'
                 simu_var%pos_xyz = simu_var%pos_xyz_new
                 simu_var%nr_cell = simu_var%nr_cell_new
-                IF (check_inside(simu_var%pos_xyz_new(:),grid, model) ) THEN
-                    kill_photon = .True.
+                IF (not(check_inside(simu_var%pos_xyz_new(:),grid, model)) ) THEN
+!~                     kill_photon = .True.
+                    simu_var%inside = .false.
                     exit
                 END IF
-
-        
             END IF
+            
             ! 2.2. determine: - geometric path length in current cell (d_l [ref_unit]);
             !                 - new entry point in neighbouring cell
             !                 - new cell number
@@ -102,7 +102,6 @@ contains
 
             ! 2.4. check status
             IF (d_tau > tau_end) THEN
-                !print *,'higher',d_tau, simu_var%nr_cell
                 ! optical depth and thus final cell reached, 
                 ! but exact position of new point of interaction has yet to be determined
                 ! ---

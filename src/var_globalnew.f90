@@ -64,9 +64,6 @@ module var_globalnew
 !~                  2.0_r2, -3544.0_r2/2565.0_r2, 1859.0_r2/4104.0_r2, -11.0_r2/40.0_r2, &
 !~                 0.0_r2/), (/6,6/)))
 
-  !integer, public, parameter :: &
-  !     unit_tmp = 4           !????
-
   character(len=75), public, parameter :: &
        hrule = "---------------------------------------------------------------------------"
   character(len= 5), public, parameter :: path_misc        = "misc/"
@@ -79,7 +76,7 @@ module var_globalnew
   character(len=13), public, parameter :: path_extern      = "input/extern/"
   character(len=10), public, parameter :: path_mol         = "input/mol/"
   
-  character(len=8), public, parameter :: mol3d_version    = "Feb 2014"
+  character(len=8), public, parameter :: mol3d_version    = "May 2014"
   
 
 
