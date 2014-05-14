@@ -126,7 +126,9 @@ def main():
     print(FWHM)
     print('transition wavelength %2.2f mu'%(attr['tr_lam']*1e6))
     beam = np.array([4*FWHM,2*FWHM,FWHM,FWHM*0.5,FWHM*0.05])
-    arcs = attr['r_ou']/attr['distance']
+    
+    r_ou_new = attr['r_ou'] * attr['sf']
+    arcs = r_ou_new/attr['distance']
     extent = [-arcs,arcs,-arcs,arcs]
     text_pos = [-0.9*arcs,-0.8*arcs]
     xx = np.linspace(-arcs,arcs,attr['n_bin_map']*2+1)
@@ -135,7 +137,8 @@ def main():
     step = 1 
     pic_vch = np.arange(step*15,step=step)+(len(vch)-1)/2-step*7
     
-    for i in range(len(beam)):
+    #~ for i in range(len(beam)):
+    for i in [1]:
         if i == 4:
             fig = plt.figure(pname+' overview map no real ALMA beam ')
         else:
@@ -150,20 +153,19 @@ def main():
                         cbar_mode="single",
                         aspect="auto"
                         )
-        #~ print dir(grid[0])
 
         
         # make velocity channel overview map
         
         vmin = 0
-        vmax =  np.max(l.conv(map_in[(len(vch)-1)/2,:,:],beam=beam[i],r_ou=attr['r_ou'],dist=attr['distance']))
+        vmax =  np.max(l.conv(map_in[(len(vch)-1)/2,:,:],beam=beam[i],r_ou=r_ou_new,dist=attr['distance']))
 
         #~ for t in range(N*(N+2)):
         for t in range(15):
                 #k = int(round(t*dt+dt/2))
                 k = pic_vch[t]
 
-                conv_map = l.conv(map_in[k,:,:],beam=beam[i],r_ou=attr['r_ou'],dist=attr['distance'])
+                conv_map = l.conv(map_in[k,:,:],beam=beam[i],r_ou=r_ou_new,dist=attr['distance'])
                 # plot x cut
                 grid[t].plot(xx,conv_map[attr['n_bin_map'],:]/vmax*arcs*0.8,'k')
                 # plot y cut
@@ -173,7 +175,7 @@ def main():
                     origin='lower',interpolation='None',extent=extent,aspect="auto")
                 grid[t].text(text_pos[0],text_pos[1], '%2.2f Km/s' %(vch[k]*1e-3), fontsize=10,
                           bbox={'facecolor':'white', 'alpha':0.4, 'pad':5})
-
+        
         cbar = grid.cbar_axes[0].colorbar(im)
         #~ cbar.ax.set_label('Flux [mJy/beam]') 
         cbar.set_label_text('Flux [mJy/beam]') 
@@ -183,7 +185,18 @@ def main():
             cax.toggle_label(False)
         
         grid.cbar_axes[0].toggle_label(True)
-
+        
+        #--------------------------------------
+        #~ plt.figure('~continuum reemission')
+        #~ conv_map = l.conv(map_in[0,:,:],beam=beam[i],r_ou=r_ou_new,dist=attr['distance'])
+        #~ vmax =  np.max(conv_map)
+        #~ plt.plot(xx,conv_map[attr['n_bin_map'],:]/vmax*arcs*0.8,'k')
+        #~ plt.plot(xx,conv_map[:,attr['n_bin_map']]/vmax*arcs*0.8,'w')
+        #~ plt.imshow(conv_map,vmin=vmin,vmax=vmax,
+                    #~ origin='lower',interpolation='None',extent=extent,aspect="auto")
+        #~ plt.xlabel('X ["]')
+        #~ plt.ylabel('Y ["}')
+        #~ plt.colorbar()
             
 
 main()

@@ -42,8 +42,8 @@ class worker(threading.Thread):
             
             input_parameter = para_in[1]
             set_input_file(input_parameter)
-            
             self.ErgebnisLock.release()
+            
             time.sleep(1.2)
             #os.system('./mol3d input/input_'+threading.current_thread().name+'.dat > %s.dat' %(para_in[0]))
             self.ErgebnisLock.acquire() 
