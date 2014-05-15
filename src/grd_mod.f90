@@ -880,7 +880,7 @@ CONTAINS
                 ! add your custom density distribution here
                 !
                 IF (P_xy .lt. R_gap_in .or. P_xy .gt. R_gap_ou) THEN
-                IF (abs(atan(P_z/P_xy)) < 0.30 ) THEN
+!~                 IF (abs(atan(P_z/P_xy)) < 0.30 ) THEN
                     grid%grd_dust_density(i_cell,:)    = get_den(model,grid%cellmidcaco(i_cell,:))
                     
                     ! set the density for all other elements (H, He,...)
@@ -888,7 +888,7 @@ CONTAINS
                 ELSE
                     grid%grd_dust_density(i_cell,:)    = 0.0_r2
                     grid%grd_col_density(i_cell,:)     = 0.0_r2
-                END IF
+!~                 END IF
                 
                 END IF
                 !###########################################################################
