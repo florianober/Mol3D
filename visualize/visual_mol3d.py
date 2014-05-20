@@ -75,14 +75,13 @@ def main():
     dist = 140  # standard value
     
     # search for key in input_file  
-    for line in full:
-        if 'r_ou' in line:
-            r_ou = float(line.partition('{')[-1].rpartition('}')[0])
-        if 'distance' in line:
-            dist = float(line.partition('{')[-1].rpartition('}')[0])
+
+    attr = l.get_attr(p_name)
+    
+    
     
     # calculate arcseconds for a disk with given extension and distance
-    arcs = r_ou / dist
+    arcs = attr['sf']*attr['r_ou'] / attr['distance']
     extent = [-arcs,arcs,-arcs,arcs]
     plt.figure(p_name)
     plt.imshow(map_in*1000,origin='lower',interpolation='None',extent=extent)

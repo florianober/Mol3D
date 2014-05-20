@@ -20,6 +20,7 @@ MODULE grd_mod
     PRIVATE
     !--------------------------------------------------------------------------!
     PUBLIC ::   make_grid, &
+                Set_velo, &
                 Get_velo
     !--------------------------------------------------------------------------!
     
@@ -922,14 +923,14 @@ CONTAINS
             grid%Nv_col(i_cell,:) = grid%grd_col_density(i_cell,:)  * REAL(grid%cell_vol(i_cell),kind=r2)
             ! set velocity, in a future release we should generalize this
             ! 
-            grid%velo(i_cell,:)  = Get_velo(grid%cellmidcaco(i_cell,:),model%kep_const)
+            grid%velo(i_cell,:)  = Set_velo(grid%cellmidcaco(i_cell,:),model%kep_const)
             
             grid%absvelo(i_cell) = norm(REAL(grid%velo(i_cell,:),kind=r2))
         END DO
     END SUBROUTINE set_grid_properties
     
     
-    PURE FUNCTION Get_velo(caco,kep_const) RESULT(velo)
+    PURE FUNCTION Set_velo(caco,kep_const) RESULT(velo)
     
         ! define your velocity distribution here! velo in cartesian coordinates
         !
@@ -950,6 +951,23 @@ CONTAINS
         velo(1) = (-1.0) * caco(2) * r
         velo(2) =          caco(1) * r
         velo(3) = 0.0
+        
+    END FUNCTION Set_velo
+    
+
+    ELEMENTAL FUNCTION Get_velo(velo1,velo2,x) RESULT(velo_x)
+    
+        ! define your velocity distribution here! velo in cartesian coordinates
+        !
+        IMPLICIT NONE
+        !------------------------------------------------------------------------!
+        REAL(kind=r2),INTENT(IN)                           :: velo1,velo2
+        REAL(kind=r2)                                      :: velo_x
+        REAL(kind=r2),INTENT(IN)                           :: x
+        !------------------------------------------------------------------------!
+
+        velo_x = (velo2-velo1)*x + velo1
+        
         
     END FUNCTION Get_velo
     

@@ -68,7 +68,7 @@ contains
 !~                 print *, 'here? huch'
                 simu_var%pos_xyz = simu_var%pos_xyz_new
                 simu_var%nr_cell = simu_var%nr_cell_new
-                IF (not(check_inside(simu_var%pos_xyz_new(:),grid, model)) ) THEN
+                IF (.not. check_inside(simu_var%pos_xyz_new(:),grid, model) ) THEN
 !~                     kill_photon = .True.
                     simu_var%inside = .false.
                     exit

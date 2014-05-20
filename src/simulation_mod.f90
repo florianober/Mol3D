@@ -418,8 +418,17 @@ CONTAINS
                                 RK_k(:) = 0.0
                                 
                                 DO k = 1,6
-                                    velo_dir_xyz   =  dot_product(Get_velo(pos_xyz_cell+ &
+                                    IF (velo_type == 1 ) THEN
+                                    ! use the analytical velocity distribution
+                                        velo_dir_xyz   =  dot_product(Set_velo(pos_xyz_cell+ &
                                                       cell_d_l*grid%dir_xyz*RK_c(k),model%kep_const),grid%dir_xyz) 
+
+                                    ELSEIF (velo_type == 2 ) THEN
+                                    ! linear interpolation of the velocity 
+                                        velo_dir_xyz   = Get_velo(dot_product(grid%velo(nr_cell,:),grid%dir_xyz), &
+                                                              dot_product(grid%velo(nr_cell_new,:),grid%dir_xyz), &
+                                                              cell_d_l*RK_c(k)/d_l)
+                                    END IF
                                     expo = -((gas%velo_channel(vch)-velo_dir_xyz)**2*      &
                                                      grid%cell_gauss_a2(nr_cell))
                                     gauss_val  =  exp(expo)

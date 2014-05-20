@@ -76,53 +76,30 @@ module var_globalnew
   character(len=13), public, parameter :: path_extern      = "input/extern/"
   character(len=10), public, parameter :: path_mol         = "input/mol/"
   
-  character(len=8), public, parameter :: mol3d_version    = "May 2014"
+  
   
 
 
   ! ---
   ! strings
   ! ---
-  !###########3character(len=8), public :: pronam_temp
-  !character(len=12), public :: dust_single_tmp
-  !character(len=12), public, allocatable, dimension(:,:) :: dust_single
+  character(len=8), public, parameter :: mol3d_version    = "May 2014"
 
   ! ---
   ! integer
   ! ---
-  integer, public :: pre_ana, i_lam_show
-  !integer, public :: nr_lam
-  !integer, public :: lot_th
+  integer, public :: pre_ana, i_lam_show, velo_type
+  integer, public :: velo_type
+
   integer, public :: kill_photon_count, n_wrong_temp, n_interact_max
-  !integer, public, allocatable, dimension(:,:,:) :: SCAANG
-  !integer, public :: n_den_par
+
 
   ! ---
   ! real(kind=r2)
   ! ---
   !real(kind=r2), public :: i_min
   real(kind=r2), public :: acc_select_level
-  !real(kind=r2), public :: SINPHI, COSPHI, SINTHE, COSTHE, SIN2PH, COS2PH
-  !real(kind=r2), public :: t_dust_min, t_dust_max
-  !real(kind=r2), public :: zoom  
 
-  !real(kind=r2), dimension(1:3), public :: pos_xyz, pos_xyz_li
-  !real(kind=r2), dimension(1:3,1:3), public :: D
-
-  !real(kind=r2), allocatable, dimension(:), public :: tem_tab, d_lam, diff_planck
-
-  !real(kind=r2), allocatable, dimension(:), public :: sin_th_map, cos_th_map, sin_ph_map, cos_ph_map
-  !real(kind=r2), allocatable, dimension(:), public :: den_par
-
-  !real(kind=r2), allocatable, dimension(:,:), public :: planck_tab
-
-
-!  real(kind=r2), allocatable, dimension(:,:,:), public :: i_star_abs 
-
-!  real(kind=r2), allocatable, dimension(:,:,:),     public :: stokes_sed
-!  real(kind=r2), allocatable, dimension(:,:,:,:,:), public :: stokes_map
-
-!  real(kind=r2), allocatable, dimension(:,:,:,:,:), public :: SME
 
   ! ---
   ! logical

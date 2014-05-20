@@ -147,7 +147,8 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas)
     project_2D = .TRUE.                  ! old parameter from mc3d
     
     show_error = .False.                             ! show some minor warnings
-
+    velo_type  = 1                                   ! analytical velocity distri
+!~     velo_type  = 2                                ! lin. interpolated velocity distribution
     ! use results of earlier calculations
     !
     CALL parse('old_model',old_model,new_input_file)
@@ -400,7 +401,7 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas)
     
     !--------------------------------------------------------------------------!
     
-    IF (pluto_data .and. not(old_model) ) THEN
+    IF (pluto_data .and. .not. old_model ) THEN
         ! fix the cell properties
         grid_name = 'spherical'
         grid_type = 3
@@ -433,6 +434,10 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas)
         CALL parse('n_b',n_b,input_file) 
         CALL parse('n_c',n_c,input_file)
         CALL parse('sf',sf,input_file) 
+        IF (pluto_data) THEN
+            model%r_in = sf*model%r_in
+            model%r_ou = sf*model%r_ou
+        END IF
 
     END IF
     
