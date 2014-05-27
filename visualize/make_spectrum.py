@@ -20,6 +20,7 @@ import numpy as np
 import little as li
 import mol3d_routines as l
 from mpl_toolkits.axes_grid1 import AxesGrid
+from astropy.io import fits as pf
 
 try:
     pname = sys.argv[1]
@@ -38,11 +39,12 @@ int_map      = '_velo_ch_mapint.dat'
 
     
 def main():
-    #~ print(pname)
+    print(pname)
     attr = l.get_attr(pname)
     map_in,vch = l.load_mol3d_fullvchmap(path_mol3d+pname+ch_map)
     print('channel map loaded')
-    
+
+
     # plot spectrum of the hole map
     #~ no_pix = map_in.shape[2]*map_in.shape[1]
     #~ plt.figure(0)
@@ -122,9 +124,10 @@ def main():
 
     
     N = 3
-    FWHM = li.ALMA_FWHM(attr['tr_lam'],16)
+    #~ FWHM = li.ALMA_FWHM(attr['tr_lam'],16)
+    FWHM = 0.09
     print(FWHM)
-    print('transition wavelength %2.2f mu'%(attr['tr_lam']*1e6))
+    #~ print('transition wavelength %2.2f mu'%(attr['tr_lam']*1e6))
     beam = np.array([4*FWHM,2*FWHM,FWHM,FWHM*0.5,FWHM*0.05])
     
     r_ou_new = attr['r_ou'] * attr['sf']
@@ -137,8 +140,16 @@ def main():
     step = 1 
     pic_vch = np.arange(step*15,step=step)+(len(vch)-1)/2-step*7
     
+    try:
+        hdulist = pf.open(path_mol3d+pname+'_final.fits')
+        map_casa = hdulist[0].data
+    except:
+        hdulist = ''
+        map_casa = ''
+
+    
     #~ for i in range(len(beam)):
-    for i in [1]:
+    for i in [4]:
         if i == 4:
             fig = plt.figure(pname+' overview map no real ALMA beam ')
         else:
@@ -185,19 +196,65 @@ def main():
             cax.toggle_label(False)
         
         grid.cbar_axes[0].toggle_label(True)
-        
-        #--------------------------------------
-        #~ plt.figure('~continuum reemission')
-        #~ conv_map = l.conv(map_in[0,:,:],beam=beam[i],r_ou=r_ou_new,dist=attr['distance'])
-        #~ vmax =  np.max(conv_map)
-        #~ plt.plot(xx,conv_map[attr['n_bin_map'],:]/vmax*arcs*0.8,'k')
-        #~ plt.plot(xx,conv_map[:,attr['n_bin_map']]/vmax*arcs*0.8,'w')
-        #~ plt.imshow(conv_map,vmin=vmin,vmax=vmax,
-                    #~ origin='lower',interpolation='None',extent=extent,aspect="auto")
-        #~ plt.xlabel('X ["]')
-        #~ plt.ylabel('Y ["}')
-        #~ plt.colorbar()
-            
+    
+    
+    #-----------------------------------compare with CASA ALMA simulation
+    
+    if hdulist != '':
+        N_casa = map_casa.shape[2]
+        xx = np.linspace(-arcs,arcs,N_casa)
+        fig = plt.figure(pname+' overview map simulated with CASA ')
 
+        grid = AxesGrid(fig, 111, # similar to subplot(132)
+                        nrows_ncols = (N, N+2),
+                        axes_pad = 0.0,
+                        share_all=True,
+                        label_mode = "1",
+                        cbar_location = "top",
+                        cbar_mode="single",
+                        aspect="auto"
+                        )
+
+        
+        # make velocity channel overview map
+        
+        vmin = 0
+        vmax =  np.max(l.conv(map_casa[0,(len(vch)-1)/2,:,:],beam=beam[i],r_ou=r_ou_new,dist=attr['distance']))
+
+        #~ for t in range(N*(N+2)):
+        for t in range(15):
+                #k = int(round(t*dt+dt/2))
+                k = pic_vch[t]
+
+                # plot x cut
+                grid[t].plot(xx,map_casa[0,k,N_casa/2,:]/vmax*arcs*0.8,'k')
+                # plot y cut
+                grid[t].plot(xx,map_casa[0,k,:,N_casa/2]/vmax*arcs*0.8,'w')
+                
+                im = grid[t].imshow(map_casa[0,k,:,:],vmin=vmin,vmax=vmax,
+                    origin='lower',interpolation='None',extent=extent,aspect="auto")
+                grid[t].text(text_pos[0],text_pos[1], '%2.2f Km/s' %(vch[k]*1e-3), fontsize=10,
+                          bbox={'facecolor':'white', 'alpha':0.4, 'pad':5})
+        
+        cbar = grid.cbar_axes[0].colorbar(im)
+        #~ cbar.ax.set_label('Flux [mJy/beam]') 
+        cbar.set_label_text('Flux [mJy/beam]') 
+
+        grid.cbar_axes[0].colorbar(im)
+        for cax in grid.cbar_axes:
+            cax.toggle_label(False)
+        
+        grid.cbar_axes[0].toggle_label(True)
+
+    #~ if hdulist == '':
+        #~ save fits file for ALMA CASA
+        #~ res = 2.0*li.as2deg(arcs)/map_in.shape[2]
+        #~ print(res,r_ou_new)
+        #~ li.create_CASA_fits(map_in,out_name=pname+'.fits',resolution=res)
+    
+    #~ try:
+        #~ hdulist.close()
+    #~ except:
+        #~ pass
 main()
 plt.show()
