@@ -206,17 +206,17 @@ CONTAINS
             !$omp end do nowait
             !CLOSE(unit=1)
             !$omp end parallel
-            filename = TRIM(basics%path_results)//Getproname(basics)//'_pixelmap.dat'
-                open(unit=1, file=TRIM(filename), &
+!~             filename = TRIM(basics%path_results)//Getproname(basics)//'_pixelmap.dat'
+!~                 open(unit=1, file=TRIM(filename), &
                 action="write", status="unknown", form="formatted")
             WRITE (*,"(A)") " Raytracing ... finished! "
             DO i = 1, no_pixel
                 fluxes%channel_map(notopx(i,1),notopx(i,2),:,:) = &
                          fluxes%channel_map(notopx(i,1),notopx(i,2),:,:) +  unit_value* &
                          inten_px(i,:,:)*(calc_px(i,3)*calc_px(i,4)*4.)/(rho_size_i*rho_size_j)
-                WRITE(unit=1,fmt=*) calc_px(i,1:2)
+!~                 WRITE(unit=1,fmt=*) calc_px(i,1:2)
             END DO
-            close(unit=1)
+!~             close(unit=1)
 
             DEALLOCATE( calc_px, inten_px, notopx)
         END DO ! orientation map.
@@ -225,8 +225,6 @@ CONTAINS
         CALL save_ch_map(model, basics, gas, fluxes)
     END IF
     
-
-
     
     print *, 'Simulation finished!'
     

@@ -2,31 +2,28 @@
 # -*- coding: utf-8 -*-
 """
 
-some routines to access Mol3d data output
+objects and routines to access Mol3d data (output)
 
 
 """
 from numpy import zeros, argmax, array
 from astropy.convolution import convolve_fft
 from astropy.convolution import Gaussian2DKernel
+import os.path
+import helper as hlp
 
-def mol3d_intmap(map_in,vch):
-    chmap = zeros((map_in.shape[1],map_in.shape[2]))
-    
-    for j in range(map_in.shape[1]):
-        for k in range(map_in.shape[2]):
-            chmap[j,k] = vch[argmax(map_in[:,j,k])]
-    return chmap
-    
+
+# some general definitions
 f = open('path_result.dat')
 path_results = f.readline().split()[0]
 f.close()
-#~ path_results = '/data/fober/mol3dresults/hd_sim/'
-c = 299792458.
-CO_lines_freq =  array([115.2712018,230.5380000,345.7959899,461.0407682,576.2679305,691.4730763,806.6518060,
-                 921.7997000,1036.9123930,1151.9854520,1267.0144860,1381.9951050,1496.9229090])*1e9
-HCO_lines_freq = array([89.1885230,178.3750650,267.5576190,356.7342880,445.9029960,535.0617755,
-                        624.2086733,713.3420900,802.4583290,891.5579242,980.6374000,1069.6938000])*1e9
+
+resulting_files = array(['_cell_boundaries.dat','_input_file.dat','_model.dat','_temp_x.dat',
+                        '_velo_ch_map.dat','_velo_ch_mapint.dat','_velo_ch_mapsum.dat',
+                        '_visual_xy.dat','_visual_xz.dat','_visual_yz.dat'])
+
+# some routines to read mol3d results from file
+
 
 def load_mol3d_zerovchmap(file_path,ch=-1):
         map_in = open(file_path)
@@ -98,37 +95,42 @@ def load_mol3d_map(file_path):
             #~ else:
             pic[k,j] = row[2]
     return pic
+    
 
-def conv(image, beam=0.1,r_ou=200,dist=140,gg=''):
-    from numpy import sqrt 
-    from numpy import log
-    import sys
-    
-    N = image.shape[0]
-    #convert FWHM -> stddev
-    beam_x = beam
-    beam_y = beam
-    beam_stddev_x = beam_x/(2.*sqrt(2*log(2)))
-    beam_stddev_y = beam_y/(2.*sqrt(2*log(2)))
-    
-    
-    arcs = r_ou / dist
-    pxwitdth = 2.0*arcs/N 
-    g_width = beam_stddev_x/pxwitdth
 
-    gauss = Gaussian2DKernel(width=g_width)  #stddev width in px
+def get_attr(pname):
+    print('This function is old and replaced by the mol3d class')
     
-    # if gg is a given Kernel
-    if gg != '':
-        z1 = convolve_fft(image, gg,normalize_kernel=True)
-    else:
-        #~ print('here')
-        z1 = convolve_fft(image, gauss,normalize_kernel=True)
-        
-    # rescale flux
-    # correct from Jy/px to mJy/beam
-    z1 *= (beam_x*beam_y/4.)/pxwitdth**2*1000
-    return z1
+    input_file = open(path_results+pname+'_input_file.dat',"r")
+    full = input_file.readlines()
+    input_file.close()
+    
+    # search for key in input_file and add to dictionary
+    # this has to be extended
+    attr = {}
+    for line in full:
+        if 'r_ou' in line:
+            r_ou = float(line.partition('{')[-1].rpartition('}')[0])
+            attr['r_ou'] = r_ou
+        if 'r_in' in line:
+            r_in = float(line.partition('{')[-1].rpartition('}')[0])
+            attr['r_in'] = r_in
+        if 'sf =' in line:
+            sf = float(line.partition('{')[-1].rpartition('}')[0])
+            attr['sf'] = sf
+        if 'distance' in line:
+            dist = float(line.partition('{')[-1].rpartition('}')[0])
+            attr['distance'] = dist
+        if 'n_bin_map' in line:
+            attr['n_bin_map']= int(line.partition('{')[-1].rpartition('}')[0])
+        if line[0:5] == 'line ':
+            attr['line'] = int(line.partition('{')[-1].rpartition('}')[0])
+            #~ attr['tr_freq'] = CO_lines_freq[attr['line']-1]
+            #~ attr['tr_lam'] = lines_lam[attr['line']-1]
+    return attr    
+
+
+# mol3d class definition
 
 class mol3d:
     """A class to handle mol3d objects"""
@@ -138,44 +140,56 @@ class mol3d:
         self.__pname = pname
         self.__attr = {}
         self.__velochmap = []
-        
+        self.__files = []
+        for f in resulting_files:
+            # search for files for this pname
+            self.__files.append(os.path.isfile(path_results+pname+f))
         # search for key in input_file and add to dictionary
         # this has to be extended
-        self.__attr['r_path']       = self.get_attr_from_file('r_path')
-        self.__attr['r_ou']         = float(self.get_attr_from_file('r_ou'))
-        self.__attr['r_in']         = float(self.get_attr_from_file('r_in'))
-        self.__attr['sf']           = float(self.get_attr_from_file('sf'))
-        self.__attr['distance']     = float(self.get_attr_from_file('distance'))
-        self.__attr['n_bin_map']    = int(self.get_attr_from_file('n_bin_map'))
-        self.__attr['line']         = int(self.get_attr_from_file('line'))
-        self.__attr['gas_cat_name'] = self.get_attr_from_file('gas_cat_name')
-        self.__attr['i_vel_chan']   = int(self.get_attr_from_file('i_vel_chan'))
-        self.__attr['vel_max']      = float(self.get_attr_from_file('vel_max'))
         
-        # now calculate some more properties and make some consitent tests
-        if self.__attr['r_path'] != path_results:
-            #~ print('project has been copied')
-            self.__attr['r_path'] = path_results
-
-        self.__attr['dvelo'] = self.__attr['vel_max']/(self.__attr['i_vel_chan'])
-        
-        if self.__attr['gas_cat_name'] == 'co.dat':
-            self.__attr['tr_freq'] = CO_lines_freq[self.__attr['line']-1]
+        if self.__files[1]:
+            self.__attr['r_path']       = self.get_attr_from_file('r_path')
+            self.__attr['r_ou']         = float(self.get_attr_from_file('r_ou'))
+            self.__attr['r_in']         = float(self.get_attr_from_file('r_in'))
+            self.__attr['sf']           = float(self.get_attr_from_file('sf'))
+            self.__attr['distance']     = float(self.get_attr_from_file('distance'))
+            self.__attr['n_bin_map']    = int(self.get_attr_from_file('n_bin_map'))
+            self.__attr['line']         = int(self.get_attr_from_file('line'))
+            self.__attr['gas_cat_name'] = self.get_attr_from_file('gas_cat_name')
+            self.__attr['i_vel_chan']   = int(self.get_attr_from_file('i_vel_chan'))
+            self.__attr['vel_max']      = float(self.get_attr_from_file('vel_max'))
             
-        elif self.__attr['gas_cat_name'] == 'hco+@xpol.dat':
-            self.__attr['tr_freq'] = HCO_lines_freq[self.__attr['line']-1]
+            # now calculate some more properties and make some consitent tests
+            if self.__attr['r_path'] != path_results:
+                #~ print('project has been copied')
+                self.__attr['r_path'] = path_results
+
+            self.__attr['dvelo'] = self.__attr['vel_max']/(self.__attr['i_vel_chan'])
+            
+            if self.__attr['gas_cat_name'] == 'co.dat':
+                self.__attr['tr_freq'] = hlp.CO_lines_freq[self.__attr['line']-1]
+                
+            elif self.__attr['gas_cat_name'] == 'hco+@xpol.dat':
+                self.__attr['tr_freq'] = hlp.HCO_lines_freq[self.__attr['line']-1]
+            else:
+                print("ERROR, gas type unknown")
+                self.__attr['tr_freq'] = 1.0
+            self.__attr['tr_lam'] = hlp.c/self.__attr['tr_freq']
+            self.__attr['dtr_freq'] = self.__attr['tr_freq']/hlp.c*self.__attr['dvelo']
         else:
-            print("ERROR, gas type unknown")
-            self.__attr['tr_freq'] = 1.0
-        self.__attr['tr_lam'] = c/self.__attr['tr_freq']
-        self.__attr['dtr_freq'] = self.__attr['tr_freq']/c*self.__attr['dvelo']
+            print('ERROR: Could not find results')
+        
         
     def load_velo_ch_map(self):
         self.__velochmap,wlen = load_mol3d_fullvchmap(path_results+self.__pname+'_velo_ch_map.dat')
         
     def return_velo_ch_map(self):
         if self.__velochmap == []:
-            self.load_velo_ch_map()
+            
+            if self.__files[4]:
+                self.load_velo_ch_map()
+            else:
+                pass
         else:
             pass
         return self.__velochmap
@@ -209,38 +223,4 @@ class mol3d:
             print('ERROR, could not find key')
             key_value = ''
         return key_value
-        
-
-
-
-def get_attr(pname):
-    print('This function is old and replaced by the mol3d class')
-    
-    input_file = open(path_results+pname+'_input_file.dat',"r")
-    full = input_file.readlines()
-    input_file.close()
-    
-    # search for key in input_file and add to dictionary
-    # this has to be extended
-    attr = {}
-    for line in full:
-        if 'r_ou' in line:
-            r_ou = float(line.partition('{')[-1].rpartition('}')[0])
-            attr['r_ou'] = r_ou
-        if 'r_in' in line:
-            r_in = float(line.partition('{')[-1].rpartition('}')[0])
-            attr['r_in'] = r_in
-        if 'sf =' in line:
-            sf = float(line.partition('{')[-1].rpartition('}')[0])
-            attr['sf'] = sf
-        if 'distance' in line:
-            dist = float(line.partition('{')[-1].rpartition('}')[0])
-            attr['distance'] = dist
-        if 'n_bin_map' in line:
-            attr['n_bin_map']= int(line.partition('{')[-1].rpartition('}')[0])
-        if line[0:5] == 'line ':
-            attr['line'] = int(line.partition('{')[-1].rpartition('}')[0])
-            #~ attr['tr_freq'] = CO_lines_freq[attr['line']-1]
-            #~ attr['tr_lam'] = lines_lam[attr['line']-1]
-    return attr
 
