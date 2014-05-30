@@ -235,6 +235,12 @@ CONTAINS
                 this%sf     = sf
                 this%n(2)   = n_b
                 this%n(3)   = n_c
+            CASE(2)
+                !here we fix grid values for torbias self similar results
+                this%n(1)   = 84
+                this%sf     = sf
+                this%n(2)   = 1
+                this%n(3)   = 103
             CASE DEFAULT
                 print *, 'selected coordinate type not found. try grid_type = [1]'
                 stop
