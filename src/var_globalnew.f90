@@ -88,7 +88,7 @@ module var_globalnew
   ! ---
   ! integer
   ! ---
-  integer, public :: pre_ana, i_lam_show, velo_type
+  integer, public :: pre_ana, i_lam_show
   integer, public :: velo_type
 
   integer, public :: kill_photon_count, n_wrong_temp, n_interact_max

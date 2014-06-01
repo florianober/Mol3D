@@ -580,6 +580,7 @@ CONTAINS
         REAL(kind=r2)                               :: th_start
         REAL(kind=r2)                               :: th_stop
         REAL(kind=r2)                               :: trash
+        REAL(kind=r2)                               :: value_in
         
         Character(256)                              :: waste
         !------------------------------------------------------------------------!
@@ -715,8 +716,42 @@ CONTAINS
             do i_ph=1, grid%n(3)
                 grid%co_mx_c(i_ph) =  grid%co_mx_c(0) + dph * real(i_ph, kind=r2)
             end do
-        
+            
         CASE(4)
+            ! ---
+            ! 1.1 r
+            open(unit=1, file="input/grid/logr.dat", &
+                    action="read", status="unknown", form="formatted")
+                    
+            DO i_r = 0, grid%n(1)
+                read(unit=1,fmt=*) value_in
+                grid%co_mx_a(i_r) = 10.0**(value_in)
+            END DO
+            close(unit=1)
+            ! ---
+            ! 1.2 th
+            open(unit=1, file="input/grid/theta.dat", &
+                    action="read", status="unknown", form="formatted")
+                    
+            DO i_th = 0, grid%n(2)
+                read(unit=1,fmt=*) value_in
+                grid%co_mx_b(i_th) = value_in
+            END DO
+            close(unit=1)
+        
+            ! ---
+            ! 1.3 phi
+            ! co_mx_c(  0 ) = 0    (  0°)
+            ! co_mx_c(n(3)) = 2xPI (360°)
+            grid%co_mx_c(0) = 0.0_r2
+        
+            dph = 2.0_r2*PI / real(grid%n(3), kind=r2)
+            do i_ph=1, grid%n(3)
+                grid%co_mx_c(i_ph) =  grid%co_mx_c(0) + dph * real(i_ph, kind=r2)
+            end do
+        
+        
+        CASE(5)
             ! This is an old and very rubbish implemented version. it should work, but...;)
             !
             ! user given spherical grid, here interface to PLUTO code
@@ -907,20 +942,22 @@ CONTAINS
             
             DEALLOCATE(pluto_r,pluto_th,pluto_ph)
             CLOSE(unit=1)
-        ELSE IF (GetGridType(grid) == 2 .and. GetGridName(grid) == 'cylindrical' ) THEN
+        ELSE IF (GetGridType(grid) == 4 .and. GetGridName(grid) == 'spherical' ) THEN
         
-            OPEN(unit=1, file="input/grid/ppdisk_density2d.dat", &
+            OPEN(unit=1, file="input/grid/ppdisk_density_spherical2D.dat", &
             action="read", status="unknown", form="formatted")
             DO i = 1,11
                 !read header
                 READ(unit=1,fmt=*,iostat=io) waste
             END DO
-            moco(2) = PI
-            DO i = 1, grid%n(1)*(grid%n(3)-2)*grid%n(2)
-                READ(unit=1,fmt=*,iostat=io) moco(1),moco(3),value_in
+            moco(3) = PI
+            DO i = 1, (grid%n(1))*(grid%n(2))*grid%n(3)
+                READ(unit=1,fmt=*,iostat=io) moco(1),moco(2),value_in
+!~                 print *, i
+                moco(1) = 10.0**(moco(1))
                 i_cell = get_cell_nr(grid,mo2ca(grid,moco))
-                grid%grd_dust_density(i_cell,:) = value_in
-                grid%grd_col_density(i_cell,:)  = value_in
+                grid%grd_dust_density(i_cell,:) = 10.0**(value_in)
+                grid%grd_col_density(i_cell,:)  = 10.0**(value_in)
             END DO
             CLOSE(unit=1)
             

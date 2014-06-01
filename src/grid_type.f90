@@ -164,6 +164,15 @@ CONTAINS
                 this%n(3)   = n_c
             
             CASE(4)
+                ! case 1 logarithm r spaced grid
+                ! case 2 linear r spaced grid
+                ! we can use the same definitions
+                this%n(1)   = 200
+                this%sf     = 1.000
+                this%n(2)   = 201
+                this%n(3)   = 1
+            
+            CASE(5)
                 ! interface to Pluto data
                 ! 
                 ! was a test and is working, but not in use

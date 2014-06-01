@@ -208,7 +208,7 @@ CONTAINS
             !$omp end parallel
 !~             filename = TRIM(basics%path_results)//Getproname(basics)//'_pixelmap.dat'
 !~                 open(unit=1, file=TRIM(filename), &
-                action="write", status="unknown", form="formatted")
+!~                 action="write", status="unknown", form="formatted")
             WRITE (*,"(A)") " Raytracing ... finished! "
             DO i = 1, no_pixel
                 fluxes%channel_map(notopx(i,1),notopx(i,2),:,:) = &
