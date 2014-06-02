@@ -18,6 +18,7 @@ import sys
 import matplotlib.pyplot as plt
 import numpy as np
 import little as li
+import helper as hlp
 import mol3d_routines as l
 from mpl_toolkits.axes_grid1 import AxesGrid
 from astropy.io import fits as pf
@@ -30,6 +31,7 @@ except:
     
 
 path_mol3d  = '/data/fober/mol3dresults/'
+#~ path_mol3d  = '../results/'
 ch_map      = '_velo_ch_map.dat'
 int_map      = '_velo_ch_mapint.dat'
 
@@ -169,14 +171,14 @@ def main():
         # make velocity channel overview map
         
         vmin = 0
-        vmax =  np.max(l.conv(map_in[(len(vch)-1)/2,:,:],beam=beam[i],r_ou=r_ou_new,dist=attr['distance']))
+        vmax =  np.max(hlp.conv(map_in[(len(vch)-1)/2,:,:],beam=beam[i],r_ou=r_ou_new,dist=attr['distance']))
 
         #~ for t in range(N*(N+2)):
         for t in range(15):
                 #k = int(round(t*dt+dt/2))
                 k = pic_vch[t]
 
-                conv_map = l.conv(map_in[k,:,:],beam=beam[i],r_ou=r_ou_new,dist=attr['distance'])
+                conv_map = hlp.conv(map_in[k,:,:],beam=beam[i],r_ou=r_ou_new,dist=attr['distance'])
                 # plot x cut
                 grid[t].plot(xx,conv_map[attr['n_bin_map'],:]/vmax*arcs*0.8,'k')
                 # plot y cut
@@ -219,7 +221,7 @@ def main():
         # make velocity channel overview map
         
         vmin = 0
-        vmax =  np.max(l.conv(map_casa[0,(len(vch)-1)/2,:,:],beam=beam[i],r_ou=r_ou_new,dist=attr['distance']))
+        vmax =  np.max(hlp.conv(map_casa[0,(len(vch)-1)/2,:,:],beam=beam[i],r_ou=r_ou_new,dist=attr['distance']))
 
         #~ for t in range(N*(N+2)):
         for t in range(15):

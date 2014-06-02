@@ -130,18 +130,18 @@ contains
         
         if ( tem_in .gt. 1.0e-30 ) then
             
-            const = 2.0*con_h*freq_in**3/(con_c**2)
-            
+!~             const = 2.0*con_h*freq_in**3/(con_c**2)
+            const = 2.0*con_h*freq_in * (freq_in/con_c) *(freq_in/con_c)
             !Use Wien approximation for h*c/lam>>k*T:
             hnu_tk = con_h*freq_in/(tem_in*con_k)
-            
-            if (con_h*freq_in/(tem_in*con_k) .gt. 100.0) then
+!~             print *,const, hnu_tk
+            if (hnu_tk .gt. 100.0) then
                 planck_result = const * exp(-hnu_tk)
-                !print *,'lala'
+!~                 print *,'lala'
             
             else
                 planck_result = const / (exp(hnu_tk)-1.0)
-                !print *, 'ich'
+!~                 print *, 'ich'
             endif
         else
             planck_result = 0.0
