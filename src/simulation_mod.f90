@@ -184,10 +184,14 @@ CONTAINS
                 calc_px(i,3:4) = pixel_p%size_xy
                 CALL RemoveLast(pixel_list)
             END DO
+            PRINT '(A,I7,A,I7,A)', '   do raytrace with ',no_pixel,' Pixel (', &
+                          no_pixel-(2*model%n_bin_map +1)**2, ' subpixel)' 
+            
+            
             IF (basics%do_velo_ch_map ) THEN
                 ALLOCATE (inten_px (1:no_pixel,-gas%i_vel_chan:gas%i_vel_chan,1:gas%n_tr))
-                PRINT '(A,I7,A,I7,A)', '   do raytrace with ',no_pixel,' Pixel (', &
-                                          no_pixel-(2*model%n_bin_map +1)**2, ' subpixel)' 
+
+                inten_px = 0.0_r2
                 k = 1
                 PRINT *, '  calculating velocity channel maps'
                 !$omp parallel num_threads(basics%num_core)
@@ -197,6 +201,7 @@ CONTAINS
                         WRITE (*,'(A,I3,A)') '      ',int(i/real(no_pixel)*100),' % done...'//char(27)//'[A'
                         k = k + 1
                     END IF
+                    
                     inten_px(i,:,:)     =   get_intensity_px(basics, grid, &
                                             model, dust, gas, &
                                             calc_px(i,1), calc_px(i,2), ex, ey)
@@ -224,6 +229,7 @@ CONTAINS
             
             IF (basics%do_continuum_map ) THEN
                 ALLOCATE (continuum_px (1:no_pixel,1:dust%n_lam))
+                continuum_px = 0.0_r2
                 k = 1
                 PRINT *, '  calculating continuum maps'
                 !$omp parallel num_threads(basics%num_core)
@@ -377,41 +383,17 @@ CONTAINS
 
             nr_cell      = get_cell_nr(grid,pos_xyz)
             DO WHILE ( dz_sum*(1.0_r2+epsr2*1.0e3) .lt. 2.0_r2* sqrt(ray_len) )
-                IF ( nr_cell == 0 ) THEN
-                    SELECT CASE(GetGridName(grid))
-                    !px_intensity(:,:) = 0.0_r2
-                    CASE('spherical')
-                        d_l =  abs(dot_product(grid%dir_xyz, pos_xyz)) / &
-                                (norm(pos_xyz)*norm(grid%dir_xyz))*(2.0_r2*model%r_in+epsilon(d_l)*1.0e6_r2)
-                        IF (d_l <= 1.0E-10_r2) THEN
-                            d_l = 2.0_r2* sqrt(ray_len)
-                        END IF      
-                        d_l = d_l + d_l*epsilon(d_l)*1.0e6_r2
-                        
-                        pos_xyz_new    = pos_xyz + d_l * grid%dir_xyz
-                        
-                            
-                    CASE('cylindrical')
+                IF ( nr_cell==0 ) THEN
 
-                        IF (abs(dot_product(grid%dir_xyz,(/0,0,1/))) == 1.0 ) THEN
-                            EXIT
-                        ELSE
-                            d_l =  abs((2.0_r2+epsr2*1.0e2_r2) * model%r_in * &
-                                   dot_product(grid%dir_xyz(1:2),pos_xyz(1:2))/ &
-                                   sqrt(sum(pos_xyz(1:2)**2)) / sqrt(sum(grid%dir_xyz(1:2)**2)) /&
-                                   sqrt(1.0-abs(dot_product(grid%dir_xyz,(/0,0,1/)))))
-
-                        END IF
-                            pos_xyz_new    = pos_xyz + d_l * grid%dir_xyz
-                    END SELECT
+                    CALL path_skip( grid, pos_xyz,grid%dir_xyz, &
+                                   pos_xyz_new,nr_cell_new,d_l)
+                    dz_sum = dz_sum + d_l
+                    pos_xyz = pos_xyz_new
+                    nr_cell = nr_cell_new
                     
-                    nr_cell_new    = get_cell_nr( grid, pos_xyz_new)
-
-                ELSE
-
-                    CALL path( grid, pos_xyz, pos_xyz_new, nr_cell, nr_cell_new, d_l, kill_photon, grid%dir_xyz)
-
                 END IF
+
+                CALL path( grid, pos_xyz, pos_xyz_new, nr_cell, nr_cell_new, d_l, kill_photon, grid%dir_xyz)
 
                 ! At this point, we have an entrance point(pos_xyz) and exit point (pos_xyz_new) and 
                 ! the length of the cell path (d_l) 
@@ -422,14 +404,14 @@ CONTAINS
                         
                         j_dust       =  alpha_dust * &
                                         planckhz(grid%t_dust(nr_cell, 1 ),&
-                                        REAL(con_c/dust%lam(dust%num_lam_map(dust%cont_map(tr))),kind=r1))
+                                        con_c/dust%lam(dust%num_lam_map(dust%cont_map(tr))))
 !~                             j_dust = 0.0_r2
 !~                         alpha_dust = 0.0_r2
                         j_ul =      grid%grd_mol_density(nr_cell)                     *   &
                                     grid%lvl_pop(nr_cell,gas%trans_upper(gas%tr_cat(tr)))  *   &
                                     gas%trans_einstA(gas%tr_cat(tr)) * &
                                     basics%linescale*grid%cell_gauss_a(nr_cell)
-!~                             j_ul = 0.0_r2
+                            j_ul = 0.0_r2
 
                         alpha_ul =      grid%grd_mol_density(nr_cell)                     *   &
                                         (grid%lvl_pop(nr_cell,gas%trans_lower(gas%tr_cat(tr))) *   &
@@ -438,7 +420,7 @@ CONTAINS
                                         gas%trans_einstB_u(gas%tr_cat(tr))) * &
                                         basics%linescale*grid%cell_gauss_a(nr_cell)
                                         
-!~                             alpha_ul = 0.0_r2
+                            alpha_ul = 0.0_r2
                         DO vch = -gas%i_vel_chan, gas%i_vel_chan
                             cell_d_l = d_l
                             dz = cell_d_l * model%ref_unit
@@ -540,8 +522,8 @@ CONTAINS
         REAL(KIND=r2)                                    :: dz
         REAL(KIND=r2)                                    :: dz_new
         REAL(KIND=r2)                                    :: dz_sum
-        REAL(KIND=r1)                                    :: j_dust
-        REAL(KIND=r1)                                    :: alpha_dust
+        REAL(KIND=r2)                                    :: j_dust
+        REAL(KIND=r2)                                    :: alpha_dust
         REAL(KIND=r1)                                    :: velo_dir_xyz
         
         REAL(KIND=r2)                                    :: d_l
@@ -555,12 +537,12 @@ CONTAINS
         
         
         REAL(KIND=r1)                                              :: gauss_val
-        REAL(KIND=r1), DIMENSION(1:dust%n_lam)                     :: intensity
-        REAL(KIND=r1)                                              :: intensity_new
-        REAL(KIND=r1)                                              :: intensity_new2
-        REAL(KIND=r1)                                              :: j_ges
+        REAL(KIND=r2), DIMENSION(1:dust%n_lam)                     :: intensity
+        REAL(KIND=r2)                                              :: intensity_new
+        REAL(KIND=r2)                                              :: intensity_new2
+        REAL(KIND=r2)                                              :: j_ges
 
-        REAL(KIND=r1)                                              :: alpha_ges
+        REAL(KIND=r2)                                              :: alpha_ges
 
         
         
@@ -616,41 +598,18 @@ CONTAINS
 
             nr_cell      = get_cell_nr(grid,pos_xyz)
             DO WHILE ( dz_sum*(1.0_r2+epsr2*1.0e3) .lt. 2.0_r2* sqrt(ray_len) )
-                IF ( nr_cell == 0 ) THEN
-                    SELECT CASE(GetGridName(grid))
-                    !px_intensity(:,:) = 0.0_r2
-                    CASE('spherical')
-                        d_l =  abs(dot_product(grid%dir_xyz, pos_xyz)) / &
-                                (norm(pos_xyz)*norm(grid%dir_xyz))*(2.0_r2*model%r_in+epsilon(d_l)*1.0e6_r2)
-                        IF (d_l <= 1.0E-10_r2) THEN
-                            d_l = 2.0_r2* sqrt(ray_len)
-                        END IF      
-                        d_l = d_l + d_l*epsilon(d_l)*1.0e6_r2
-                        
-                        pos_xyz_new    = pos_xyz + d_l * grid%dir_xyz
-                        
-                            
-                    CASE('cylindrical')
+                IF ( nr_cell==0 ) THEN
 
-                        IF (abs(dot_product(grid%dir_xyz,(/0,0,1/))) == 1.0 ) THEN
-                            EXIT
-                        ELSE
-                            d_l =  abs((2.0_r2+epsr2*1.0e2_r2) * model%r_in * &
-                                   dot_product(grid%dir_xyz(1:2),pos_xyz(1:2))/ &
-                                   sqrt(sum(pos_xyz(1:2)**2)) / sqrt(sum(grid%dir_xyz(1:2)**2)) /&
-                                   sqrt(1.0-abs(dot_product(grid%dir_xyz,(/0,0,1/)))))
-
-                        END IF
-                            pos_xyz_new    = pos_xyz + d_l * grid%dir_xyz
-                    END SELECT
+                    CALL path_skip( grid, pos_xyz,grid%dir_xyz, &
+                                   pos_xyz_new,nr_cell_new,d_l)
+                    dz_sum = dz_sum + d_l
+                    pos_xyz = pos_xyz_new
+                    nr_cell = nr_cell_new
                     
-                    nr_cell_new    = get_cell_nr( grid, pos_xyz_new)
-
-                ELSE
-
-                    CALL path( grid, pos_xyz, pos_xyz_new, nr_cell, nr_cell_new, d_l, kill_photon, grid%dir_xyz)
-
                 END IF
+
+                CALL path( grid, pos_xyz, pos_xyz_new, nr_cell, nr_cell_new, d_l, kill_photon, grid%dir_xyz)
+
 
                 ! At this point, we have an entrance point(pos_xyz) and exit point (pos_xyz_new) and 
                 ! the length of the cell path (d_l) 
@@ -662,28 +621,47 @@ CONTAINS
                             
                             j_dust       =  alpha_dust * &
                                         planckhz(grid%t_dust(nr_cell, 1 ),&
-                                        REAL(con_c/dust%lam(i_lam),kind=r1))
+                                        con_c/dust%lam(i_lam))
                             cell_d_l = d_l
                             dz = cell_d_l * model%ref_unit
                             cell_sum = 0.0_r2
                             pos_xyz_cell = pos_xyz
-                            intensity_new   = 0.0
-                            intensity_new2  = 0.0
+                            intensity_new   = 0.0_r2
+                            intensity_new2  = 0.0_r2
                             DO WHILE (cell_sum .lt. d_l)
                                 RK_k(:) = 0.0
+                                
                                 
                                 DO k = 1,6
 
                                     j_ges          = j_dust
                                     alpha_ges      = alpha_dust
-                                    
-                                    RK_k(k) = ( -alpha_ges*(intensity(i_lam) + &
+!~                                     IF (intensity(i_lam) <  1.e-200_r2 .and. j_ges < 1e-200_r2) THEN
+!~                                         RK_k(k) = 0.0_r2
+!~                                     ELSE
+                                        RK_k(k) = ( -alpha_ges*(intensity(i_lam) + &
                                                 dz*dot_product(RK_a(:,k),RK_k(:)) ) + j_ges)
+!~                                     END IF
                                 END DO ! for all k
                         
                                 intensity_new  = intensity(i_lam) + dz*(dot_product(RK_b1(:),RK_k(:)))
                                 intensity_new2 = intensity(i_lam) + dz*(dot_product(RK_b2(:),RK_k(:)))
+                                IF (intensity_new < 0.0_r2 .or.intensity_new2 < 0.0_r2 ) THEN
+                                    intensity_new  = 0.0_r2
+                                    intensity_new2 = 0.0_r2
                                 
+                                END IF
+!~                                 IF (intensity_new < 0.0_r2) THEN
+!~                                     print *, 'here', i_lam, j_dust, alpha_dust
+!~                                     print *, grid%t_dust(nr_cell, 1 )
+!~                                     print *, intensity_new, intensity_new2
+!~                                     print *,planckhz(grid%t_dust(nr_cell, 1 ),&
+!~                                         con_c/dust%lam(i_lam))
+!~                                     print *, intensity(i_lam)
+!~                                     print *, intensity(:)
+!~                                     print *, RK_k
+!~                                     stop
+!~                                 END IF
                                 epsi= abs(intensity_new2-intensity_new)/&
                                          ( rel_err*abs(intensity_new) + abs_err)
                                          
@@ -700,9 +678,11 @@ CONTAINS
                                     END IF
                                 
                                 ELSE
+
                                     dz = MAX(dz_new,0.25*dz)
                                     cell_d_l = dz*model%ref_unitn
                                 END IF
+
                             END DO  ! end walk inside one cell
                         END DO ! i_lam
 !~                     print *, nr_cell
@@ -787,52 +767,22 @@ CONTAINS
             nr_cell      = get_cell_nr(grid,pos_xyz)
 !~             print *, 2.0_r2* sqrt(ray_len)
             DO WHILE ( dz_sum*(1.0_r2+epsilon(dz_sum)*1.0e3) .lt. 2.0_r2* sqrt(ray_len) )
-                IF ( nr_cell == 0 ) THEN
-                    SELECT CASE(GetGridName(grid))
-                    CASE('spherical')
-                        d_l =  abs(dot_product(grid%dir_xyz, pos_xyz)) / &
-                                (norm(pos_xyz)*norm(grid%dir_xyz))*(2.0_r2*model%r_in+epsilon(d_l)*1.0e6_r2)
-                        IF (d_l <= 1.0E-10_r2) THEN
-                            d_l = 2.0_r2* sqrt(ray_len)
-                        END IF      
-                        d_l = d_l + d_l*epsilon(d_l)*1.0e6_r2
-                        pos_xyz_new    = pos_xyz + d_l * grid%dir_xyz
-                        
-                        IF (show_error ) THEN
-                            IF (norm(pos_xyz_new) .lt. model%r_in) THEN 
-!~                                 print *, d_l, d_l +(model%r_in - norm(pos_xyz)), d_l +d_l*epsilon(d_l)*1.0e5_r2
-!~                                 print *, norm(pos_xyz)
-!~                                 print *, norm(pos_xyz_new)
-!~                                 print *, get_cell_nr(grid,pos_xyz_new)
-                                print *, 'ERROR1: new cell is still zero'
-                            END IF
-                            
-                        END IF
-                    CASE('cylindrical')
-!~                         print *,  grid%dir_xyz,(/0,0,1/)
-                        IF (abs(dot_product(grid%dir_xyz,(/0,0,1/))) == 1.0 ) THEN
-                            dz_sum = 2.1* sqrt(ray_len)
-                            d_l = 0.0
-                        ELSE
-                            d_l =  abs((2.0_r2+epsilon(d_l)*1.0e2_r2) * model%r_in * &
-                                   dot_product(grid%dir_xyz(1:2),pos_xyz(1:2))/ &
-                                   sqrt(sum(pos_xyz(1:2)**2)) / sqrt(sum(grid%dir_xyz(1:2)**2)) /&
-                                   sqrt(1.0-abs(dot_product(grid%dir_xyz,(/0,0,1/)))))
+                IF ( nr_cell==0 ) THEN
 
-                        END IF
-                        pos_xyz_new    = pos_xyz + d_l * grid%dir_xyz
-                    END SELECT
+                    CALL path_skip( grid, pos_xyz,grid%dir_xyz, &
+                                   pos_xyz_new,nr_cell_new,d_l)
+                    dz_sum = dz_sum + d_l
+                    pos_xyz = pos_xyz_new
+                    nr_cell = nr_cell_new
                     
-                    nr_cell_new    = get_cell_nr( grid, pos_xyz_new)
-
-                ELSE
-
-                    CALL path( grid, pos_xyz, pos_xyz_new, nr_cell, nr_cell_new, d_l, kill_photon, grid%dir_xyz)
-
                 END IF
                 
+                
+                
+                CALL path( grid, pos_xyz, pos_xyz_new, nr_cell, nr_cell_new, d_l, kill_photon, grid%dir_xyz)
+                
                 ray_minA = MIN(ray_minA, grid%cell_minA(nr_cell))
-                IF ( xxres*yyres .gt. ray_minA .and. ray_minA .gt. 1.0e-9) THEN
+                IF ( xxres*yyres .gt. ray_minA ) THEN
                     log_size = .True.
                     EXIT
                 END IF

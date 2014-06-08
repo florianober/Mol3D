@@ -96,7 +96,7 @@ CONTAINS
         TYPE(Fluxes_TYP), INTENT(INOUT) :: this
         !------------------------------------------------------------------------!
         CALL CloseCommon(this%fltype)
-        DEALLOCATE(this%channel_map)
+        DEALLOCATE(this%channel_map,this%continuum_map )
         
         
     END SUBROUTINE CloseFluxes

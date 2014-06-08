@@ -77,8 +77,8 @@ def load_mol3d_fullvchmap(file_path,return_all=False):
             
 def load_mol3d_continuum_map(file_path,return_all=False):
         map_in = open(file_path)
-        #~ row = map_in.readline().split()
-        #~ n_lam = int(row[0])
+        row = map_in.readline().split()
+        n_lam = int(row[0])
         n_lam = 100
         row = map_in.readline().split()
         map_size = int(row[0])

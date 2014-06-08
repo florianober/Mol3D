@@ -122,23 +122,23 @@ contains
   
         !------------------------------------------------------------------------!
         real(kind=r1), intent(in)       :: tem_in
-        real(kind=r1), intent(in)       :: freq_in
+        real(kind=r2), intent(in)       :: freq_in
         real(kind=r2)                   :: planck_result
         real(kind=r2)                   :: const
         real(kind=r2)                   :: hnu_tk
         !------------------------------------------------------------------------!
         
-        if ( tem_in .gt. 1.0e-30 ) then
+        if ( tem_in .gt. 1.0e-12 ) then
             
 !~             const = 2.0*con_h*freq_in**3/(con_c**2)
             const = 2.0*con_h*freq_in * (freq_in/con_c) *(freq_in/con_c)
             !Use Wien approximation for h*c/lam>>k*T:
-            hnu_tk = con_h*freq_in/(tem_in*con_k)
+            hnu_tk = con_h/con_k *freq_in/tem_in
+!~             hnu_tk = con_h*freq_in/(tem_in*con_k)
 !~             print *,const, hnu_tk
-            if (hnu_tk .gt. 100.0) then
+            if (hnu_tk .gt. 200.0) then
                 planck_result = const * exp(-hnu_tk)
 !~                 print *,'lala'
-            
             else
                 planck_result = const / (exp(hnu_tk)-1.0)
 !~                 print *, 'ich'
@@ -146,7 +146,7 @@ contains
         else
             planck_result = 0.0
         endif
-        !print *, const * exp(-hnu_tk) ,con_c /freq_in
+!~         if (planck_result < 1e-20) print *,const, hnu_tk, planck_result
     END FUNCTION planckhz
 
   ! ################################################################################################

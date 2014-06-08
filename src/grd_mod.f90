@@ -105,7 +105,7 @@ CONTAINS
         end do
         
         grid%cell_minA(0) = model%r_in**2*PI
-        
+!~         print *, minval(grid%cell_minA), grid%cell_minA(0)
 !    ! fill grid with disk properties,e.g. temp, density, velocity...
         CALL set_grid_properties(basics,grid,gas,model)   
     ! verification: maximum cell number (i.e., total number of cells) = total number of cells
@@ -363,12 +363,11 @@ CONTAINS
         
         i_cell = grid%cell_idx2nr(i_r,i_ph,i_z)
         dz = abs(grid%co_mx_c(i_z-1) - grid%co_mx_c(i_z))
-        !dz  = 2.0_r2*model%r_ou / real(grid%n(3), kind=r2)
         dth = 2.0_r2*PI / real(grid%n(2), kind=r2)
         
-        grid%cell_minA(i_cell) = ( 0.5* dth *  (grid%co_mx_a(i_r)**2-grid%co_mx_a(i_r-1)**2)+ &
-                                    ( dth * grid%co_mx_a(i_r-1) * dz)+ &
-                                    ( (grid%co_mx_a(i_r)-grid%co_mx_a(i_r-1))*dz)) /3.0_r2
+        grid%cell_minA(i_cell) = MIN( 0.5* dth *  (grid%co_mx_a(i_r)**2-grid%co_mx_a(i_r-1)**2), &
+                                    ( dth * grid%co_mx_a(i_r-1) * dz), &
+                                    ( (grid%co_mx_a(i_r)-grid%co_mx_a(i_r-1))*dz))
                                     
 !~         grid%cell_minA(i_cell) = grid%cell_minA(i_cell)*1.0e3
         ! volume of individual cells [m^3]
@@ -396,17 +395,25 @@ CONTAINS
         !------------------------------------------------------------------------!
         
         i_cell = grid%cell_idx2nr(i_r,i_th,i_ph)
-        grid%cell_minA(i_cell) = ( &
+!~         grid%cell_minA(i_cell) = ( &
+!~                                 grid%co_mx_a(i_r-1)**2.0_r2 * &
+!~                                 (grid%co_mx_c(i_ph) - grid%co_mx_c(i_ph-1) ) * &
+!~                                 abs(grid%co_mx_b(i_th) - grid%co_mx_b(i_th-1) ) + &
+!~                                 (grid%co_mx_a(i_r)**2.0_r2-grid%co_mx_a(i_r-1)**2.0_r2 ) * &
+!~                                 abs(grid%co_mx_b(i_th) - grid%co_mx_b(i_th-1)) + &
+!~                                 (grid%co_mx_a(i_r)**2.0_r2-grid%co_mx_a(i_r-1)**2.0_r2 )* &
+!~                                 (grid%co_mx_c(i_ph) - grid%co_mx_c(i_ph-1) ) )/3.0_r2
+        grid%cell_minA(i_cell) = MIN( &
                                 grid%co_mx_a(i_r-1)**2.0_r2 * &
                                 (grid%co_mx_c(i_ph) - grid%co_mx_c(i_ph-1) ) * &
-                                abs(grid%co_mx_b(i_th) - grid%co_mx_b(i_th-1) ) + &
+                                abs(grid%co_mx_b(i_th) - grid%co_mx_b(i_th-1) ) , &
                                 (grid%co_mx_a(i_r)**2.0_r2-grid%co_mx_a(i_r-1)**2.0_r2 ) * &
-                                abs(grid%co_mx_b(i_th) - grid%co_mx_b(i_th-1)) + &
+                                abs(grid%co_mx_b(i_th) - grid%co_mx_b(i_th-1)) , &
                                 (grid%co_mx_a(i_r)**2.0_r2-grid%co_mx_a(i_r-1)**2.0_r2 )* &
-                                (grid%co_mx_c(i_ph) - grid%co_mx_c(i_ph-1) ) )/3.0_r2
+                                (grid%co_mx_c(i_ph) - grid%co_mx_c(i_ph-1) ) )
 !~         print *, grid%co_mx_a(i_r-1)
         ! volume of individual cells [m^3]
-        
+        grid%cell_minA(i_cell) = grid%cell_minA(i_cell)
         grid%cell_vol(i_cell) = &
                                 abs( &
                                 (2.0_r2*PI/3.0_r2) * &
@@ -943,8 +950,12 @@ CONTAINS
             DEALLOCATE(pluto_r,pluto_th,pluto_ph)
             CLOSE(unit=1)
         ELSE IF (GetGridType(grid) == 4 .and. GetGridName(grid) == 'spherical' ) THEN
-        
-            OPEN(unit=1, file="input/grid/ppdisk_density_spherical2D.dat", &
+            print *, 'Tobias density'
+!~             OPEN(unit=1, file="input/grid/PPD_density2d_lp_kappa-1p499_hbeta1p125.dat", &
+            OPEN(unit=1, file="input/grid/PPD_density2d_dsb_kappa-1p49_hbeta1p0.dat", &
+!~             OPEN(unit=1, file="input/grid/PPD_density2d_dsb_kappa-1p49_hbeta1p125.dat", &
+!~             OPEN(unit=1, file="input/grid/PPD_density2d_dsb_kappa-1p499_hbeta1p125.dat", &
+!~             OPEN(unit=1, file="input/grid/ppdisk_density_spherical2D.dat", &
             action="read", status="unknown", form="formatted")
             DO i = 1,11
                 !read header
