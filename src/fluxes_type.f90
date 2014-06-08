@@ -23,6 +23,7 @@ MODULE fluxes_type
         REAL(kind=r2), dimension(1:4)                  :: stokes, stokes_ini
         !REAL(kind=r2), dimension(:,:,:,:,:), POINTER   :: stokes_map
         REAL(kind=r2), DIMENSION(:,:,:,:), POINTER     :: channel_map
+        REAL(kind=r2), DIMENSION(:,:,:), POINTER       :: continuum_map
         INTEGER                :: n_dust_emi
         
     END TYPE Fluxes_TYP
@@ -41,7 +42,7 @@ MODULE fluxes_type
     !--------------------------------------------------------------------------!
 CONTAINS
 
-    SUBROUTINE InitFluxes(this,ut,un, emi_dust, n_bin_map, n_tr, vch)
+    SUBROUTINE InitFluxes(this,ut,un, emi_dust, n_bin_map, n_tr, vch,n_lam)
         IMPLICIT NONE
         !------------------------------------------------------------------------!
         TYPE(Fluxes_TYP)       :: this
@@ -50,9 +51,10 @@ CONTAINS
         INTEGER                :: n_tr
         INTEGER                :: ut
         INTEGER                :: vch
+        INTEGER                :: n_lam
         CHARACTER(LEN=*)       :: un
         !------------------------------------------------------------------------!
-        INTENT(IN)             :: ut,un, emi_dust, n_bin_map, n_tr, vch
+        INTENT(IN)             :: ut,un, emi_dust, n_bin_map, n_tr, vch,n_lam
         INTENT(INOUT)          :: this
         !------------------------------------------------------------------------!
         CALL InitCommon(this%fltype,ut,un)
@@ -78,11 +80,12 @@ CONTAINS
         
         
         allocate(  &
-                  this%channel_map(0:2*n_bin_map, 0:2*n_bin_map,-vch:vch,1:n_tr) )
+                  this%channel_map(0:2*n_bin_map, 0:2*n_bin_map,-vch:vch,1:n_tr), &
+                  this%continuum_map(0:2*n_bin_map, 0:2*n_bin_map,1:n_lam))
                   
         !this%stokes_map(:,:,:,:,:) = 0.0_r2
         this%channel_map(:,:,:,:)    = 0.0_r2
-
+        this%continuum_map(:,:,:)    = 0.0_r2
 
     END SUBROUTINE InitFluxes
 
@@ -93,7 +96,7 @@ CONTAINS
         TYPE(Fluxes_TYP), INTENT(INOUT) :: this
         !------------------------------------------------------------------------!
         CALL CloseCommon(this%fltype)
-        DEALLOCATE(this%channel_map)
+        DEALLOCATE(this%channel_map,this%continuum_map )
         
         
     END SUBROUTINE CloseFluxes

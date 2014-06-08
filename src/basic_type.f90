@@ -64,6 +64,8 @@ MODULE basic_type
         LOGICAL                           :: old_model
         LOGICAL                           :: pluto_data
         LOGICAL                           :: do_raytr
+        LOGICAL                           :: do_continuum_map
+        LOGICAL                           :: do_velo_ch_map
 
     END TYPE Basic_TYP
     SAVE
@@ -83,7 +85,7 @@ MODULE basic_type
 CONTAINS
 
     SUBROUTINE InitBasic(this, ut, un, pname, presult, concept, calc_tmp,old_pname, old_model, project_2D, &
-                            do_raytr, n_tem, t_dust_min, t_dust_max, num_core,pluto_data)
+                            do_raytr, do_continuum_map,do_velo_ch_map,n_tem, t_dust_min, t_dust_max, num_core,pluto_data)
         IMPLICIT NONE
         !------------------------------------------------------------------------!
         TYPE(Basic_TYP)       :: this
@@ -106,11 +108,13 @@ CONTAINS
         LOGICAL               :: old_model
         LOGICAL               :: pluto_data
         LOGICAL               :: do_raytr
+        LOGICAL               :: do_continuum_map
+        LOGICAL               :: do_velo_ch_map
 
         !------------------------------------------------------------------------!
         INTENT(IN)          :: ut,un,presult, pname, concept, project_2D, num_core, &
                                 n_tem, t_dust_max, t_dust_min, calc_tmp,old_model,old_pname, &
-                                pluto_data
+                                pluto_data,do_continuum_map,do_velo_ch_map
         INTENT(INOUT)       :: this
         !------------------------------------------------------------------------!
         CALL InitCommon(this%mtype,ut,un)
@@ -169,6 +173,8 @@ CONTAINS
         this%old_model    = old_model
         this%pluto_data    = pluto_data
         this%do_raytr   = do_raytr
+        this%do_continuum_map   = do_continuum_map
+        this%do_velo_ch_map = do_velo_ch_map
         
         this%d_tem = (this%t_dust_max - this%t_dust_min) / (real(this%n_tem, kind=r2)-1)
         

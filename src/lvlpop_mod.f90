@@ -189,6 +189,7 @@ CONTAINS
     !calculate external radiation field
 
     J_ext(:) = planckhz(2.75,gas%trans_freq(:))
+!~     J_ext(:) = 0
 
    
     DO i_cell = 1,grid%n_cell

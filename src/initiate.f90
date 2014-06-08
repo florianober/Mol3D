@@ -101,8 +101,10 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas)
     LOGICAL                                          :: project_2D
     LOGICAL                                          :: calc_tmp
     LOGICAL                                          :: old_model
-    LOGICAL                                          :: pluto_data
+    LOGICAL                                          :: pluto_data  !remark: this should be removed
     LOGICAL                                          :: do_raytr
+    LOGICAL                                          :: do_velo_ch_map
+    LOGICAL                                          :: do_continuum_map
     !--------------------------------------------------------------------------!
     INTENT(INOUT)                                    :: basics, &
                                                         fluxes, &
@@ -220,18 +222,25 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas)
     WRITE(unit=3,fmt='(A)') 'calc_temp = {'//TRIM(help)//&
     '}                      calculate temperature (with monte carlo method)'
     
-    CALL parse('do_raytr',do_raytr,new_input_file)
-    WRITE(help,fmt='(L1)') do_raytr
-    WRITE(unit=3,fmt='(A)') 'do_raytr = {'//TRIM(help)//'}'
-    WRITE(unit=3,fmt='(A)') '' 
+!~     CALL parse('do_raytr',do_raytr,new_input_file)
+!~     WRITE(help,fmt='(L1)') do_raytr
+!~     WRITE(unit=3,fmt='(A)') 'do_raytr = {'//TRIM(help)//'}'
+!~     WRITE(unit=3,fmt='(A)') '' 
     
 !~     pluto_data = .True.
     pluto_data = .False.
-    
+    do_continuum_map = .True.
+    do_velo_ch_map = .False.
+    IF (do_continuum_map .or. do_velo_ch_map) THEN
+        do_raytr = .True.
+    ELSE
+        do_raytr = .False.
+    END IF
     
     CALL InitBasic(basics,simu_type,'Reemission map',proname,r_path, concept_ps, calc_tmp, old_proname, &
                     old_model, &
-                    project_2D, do_raytr,n_tem, t_dust_min, t_dust_max, num_core, pluto_data)
+                    project_2D, do_raytr,do_continuum_map,do_velo_ch_map, n_tem, t_dust_min, t_dust_max, &
+                    num_core, pluto_data)
     !--------------------------------------------------------------------------! 
     
     print *, "Code initialization [level 2] Model Setup"
@@ -503,7 +512,7 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas)
     '}                 possible values: Jy_pix, T_mb'
     
     CALL InitFluxes(fluxes,1,flux_unit, n_dust_emi, &
-                    model%n_bin_map,gas%n_tr, gas%i_vel_chan)
+                    model%n_bin_map,gas%n_tr, gas%i_vel_chan,dust%n_lam)
     
     
     !--------------------------------------------------------------------------! 

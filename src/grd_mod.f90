@@ -105,7 +105,7 @@ CONTAINS
         end do
         
         grid%cell_minA(0) = model%r_in**2*PI
-        
+!~         print *, minval(grid%cell_minA), grid%cell_minA(0)
 !    ! fill grid with disk properties,e.g. temp, density, velocity...
         CALL set_grid_properties(basics,grid,gas,model)   
     ! verification: maximum cell number (i.e., total number of cells) = total number of cells
@@ -363,12 +363,11 @@ CONTAINS
         
         i_cell = grid%cell_idx2nr(i_r,i_ph,i_z)
         dz = abs(grid%co_mx_c(i_z-1) - grid%co_mx_c(i_z))
-        !dz  = 2.0_r2*model%r_ou / real(grid%n(3), kind=r2)
         dth = 2.0_r2*PI / real(grid%n(2), kind=r2)
         
-        grid%cell_minA(i_cell) = ( 0.5* dth *  (grid%co_mx_a(i_r)**2-grid%co_mx_a(i_r-1)**2)+ &
-                                    ( dth * grid%co_mx_a(i_r-1) * dz)+ &
-                                    ( (grid%co_mx_a(i_r)-grid%co_mx_a(i_r-1))*dz)) /3.0_r2
+        grid%cell_minA(i_cell) = MIN( 0.5* dth *  (grid%co_mx_a(i_r)**2-grid%co_mx_a(i_r-1)**2), &
+                                    ( dth * grid%co_mx_a(i_r-1) * dz), &
+                                    ( (grid%co_mx_a(i_r)-grid%co_mx_a(i_r-1))*dz))
                                     
 !~         grid%cell_minA(i_cell) = grid%cell_minA(i_cell)*1.0e3
         ! volume of individual cells [m^3]
@@ -396,17 +395,25 @@ CONTAINS
         !------------------------------------------------------------------------!
         
         i_cell = grid%cell_idx2nr(i_r,i_th,i_ph)
-        grid%cell_minA(i_cell) = ( &
+!~         grid%cell_minA(i_cell) = ( &
+!~                                 grid%co_mx_a(i_r-1)**2.0_r2 * &
+!~                                 (grid%co_mx_c(i_ph) - grid%co_mx_c(i_ph-1) ) * &
+!~                                 abs(grid%co_mx_b(i_th) - grid%co_mx_b(i_th-1) ) + &
+!~                                 (grid%co_mx_a(i_r)**2.0_r2-grid%co_mx_a(i_r-1)**2.0_r2 ) * &
+!~                                 abs(grid%co_mx_b(i_th) - grid%co_mx_b(i_th-1)) + &
+!~                                 (grid%co_mx_a(i_r)**2.0_r2-grid%co_mx_a(i_r-1)**2.0_r2 )* &
+!~                                 (grid%co_mx_c(i_ph) - grid%co_mx_c(i_ph-1) ) )/3.0_r2
+        grid%cell_minA(i_cell) = MIN( &
                                 grid%co_mx_a(i_r-1)**2.0_r2 * &
                                 (grid%co_mx_c(i_ph) - grid%co_mx_c(i_ph-1) ) * &
-                                abs(grid%co_mx_b(i_th) - grid%co_mx_b(i_th-1) ) + &
+                                abs(grid%co_mx_b(i_th) - grid%co_mx_b(i_th-1) ) , &
                                 (grid%co_mx_a(i_r)**2.0_r2-grid%co_mx_a(i_r-1)**2.0_r2 ) * &
-                                abs(grid%co_mx_b(i_th) - grid%co_mx_b(i_th-1)) + &
+                                abs(grid%co_mx_b(i_th) - grid%co_mx_b(i_th-1)) , &
                                 (grid%co_mx_a(i_r)**2.0_r2-grid%co_mx_a(i_r-1)**2.0_r2 )* &
-                                (grid%co_mx_c(i_ph) - grid%co_mx_c(i_ph-1) ) )/3.0_r2
+                                (grid%co_mx_c(i_ph) - grid%co_mx_c(i_ph-1) ) )
 !~         print *, grid%co_mx_a(i_r-1)
         ! volume of individual cells [m^3]
-        
+        grid%cell_minA(i_cell) = grid%cell_minA(i_cell)
         grid%cell_vol(i_cell) = &
                                 abs( &
                                 (2.0_r2*PI/3.0_r2) * &
@@ -468,52 +475,95 @@ CONTAINS
         REAL(kind=r2)                               :: dz
         REAL(kind=r2)                               :: sf
         !------------------------------------------------------------------------!        
-        ! ---
-        ! 1.1. rho
-        ! co_mx_a( 0 ): r_in
-        grid%co_mx_a(0) = model%r_in
+        
+        SELECT CASE(GetGridType(grid))
+        CASE(1)
+            ! normal grid
+            
+            ! ---
+            ! 1.1. rho
+            ! co_mx_a( 0 ): r_in
+            grid%co_mx_a(0) = model%r_in
 
-        ! dr1: radial extension of first cell
-        dr1 = (model%r_ou - model%r_in) * (grid%sf-1.0_r2)/ (grid%sf**grid%n(1) - 1.0_r2)
+            ! dr1: radial extension of first cell
+            dr1 = (model%r_ou - model%r_in) * (grid%sf-1.0_r2)/ (grid%sf**grid%n(1) - 1.0_r2)
 
-        ! set outer ring radii:
-        ! co_mx_a( 1 ): r_in + dr1
-        ! co_mx_a(n(1)): r_ou
-        do i_r=1, grid%n(1)
-            grid%co_mx_a(i_r) = grid%co_mx_a(0) + dr1 * (grid%sf**i_r - 1.0_r2) / (grid%sf-1.0_r2)
-        end do
+            ! set outer ring radii:
+            ! co_mx_a( 1 ): r_in + dr1
+            ! co_mx_a(n(1)): r_ou
+            do i_r=1, grid%n(1)
+                grid%co_mx_a(i_r) = grid%co_mx_a(0) + dr1 * (grid%sf**i_r - 1.0_r2) / (grid%sf-1.0_r2)
+            end do
+            
+            ! ---
+            ! 1.2 theta
+            ! co_mx_b(  0 ) = 0    (  0°)
+            ! co_mx_b(n(3)) = 2xPI (360°)
+            
+            grid%co_mx_b(0) = 0.0_r2
+            !grid%co_mx_b(0) = -PI
         
-        ! ---
-        ! 1.2 theta
-        ! co_mx_b(  0 ) = 0    (  0°)
-        ! co_mx_b(n(3)) = 2xPI (360°)
+            dth = 2.0_r2*PI / real(grid%n(2), kind=r2)
+            do i_th=1, grid%n(2)
+                grid%co_mx_b(i_th) =  grid%co_mx_b(0) + dth * real(i_th, kind=r2)
+            end do
+            
+            ! ---
+            ! 1.3. z
+            ! co_mx_c( 0 )  =- r_out
+            ! co_mx_c(n(3)) =  r_out
+            ! dz should not be constant, because we want to have small cells in the inner region
+            !      -> we use sf too, but not the user given value but a fixed one
+            
+    !~         grid%co_mx_c(grid%n(3)*0.5) = 0.0_r2
+    !~         sf = 1.08_r2
+            sf = grid%sf+0.01
+            !dz = 2.0_r2*model%r_ou / real(grid%n(3), kind=r2)
+            dz = model%r_ou * (sf-1.0_r2)/ (sf**((grid%n(3)-1)*0.5) - 1.0_r2)
+            do i_z=1, int(grid%n(3)*0.5)
+                grid%co_mx_c(int((grid%n(3)-1)*0.5+i_z+1)) =            dz * (sf**i_z - 1.0_r2) / (sf-1.0_r2)
+                grid%co_mx_c(int((grid%n(3)-1)*0.5-i_z)) =  -1.0_r2 * dz * (sf**i_z - 1.0_r2) / (sf-1.0_r2)
+            end do
+            grid%co_mx_c(int((grid%n(3)-1)*0.5)) = -1.0_r2/3.0_r2 * dz 
+            grid%co_mx_c(int((grid%n(3)-1)*0.5+1)) = 1.0_r2/3.0_r2 * dz 
+            
+            
+        CASE(2)
+            !grid based on Tobias self similar disk simulations
+            ! ---
+            ! 1.1. rho
+            ! co_mx_a( 0 ): r_in
+            grid%co_mx_a(0) = model%r_in
+            DO i_r = 1,grid%n(1)
+                grid%co_mx_a(i_r) = model%r_in*(model%r_ou/model%r_in)**(float(i_r)/grid%n(1))
+            END DO
+            
+            
+            ! ---
+            ! 1.2 theta
+            ! co_mx_b(  0 ) = 0    (  0°)
+            ! co_mx_b(n(3)) = 2xPI (360°)
+            
+            grid%co_mx_b(0) = 0.0_r2
+            !grid%co_mx_b(0) = -PI
         
-        grid%co_mx_b(0) = 0.0_r2
-        !grid%co_mx_b(0) = -PI
-    
-        dth = 2.0_r2*PI / real(grid%n(2), kind=r2)
-        do i_th=1, grid%n(2)
-            grid%co_mx_b(i_th) =  grid%co_mx_b(0) + dth * real(i_th, kind=r2)
-        end do
-        
-        ! ---
-        ! 1.3. z
-        ! co_mx_c( 0 )  =- r_out
-        ! co_mx_c(n(3)) =  r_out
-        ! dz should not be constant, because we want to have small cells in the inner region
-        !      -> we use sf too, but not the user given value but a fixed one
-        
-!~         grid%co_mx_c(grid%n(3)*0.5) = 0.0_r2
-!~         sf = 1.08_r2
-        sf = grid%sf+0.01
-        !dz = 2.0_r2*model%r_ou / real(grid%n(3), kind=r2)
-        dz = model%r_ou * (sf-1.0_r2)/ (sf**((grid%n(3)-1)*0.5) - 1.0_r2)
-        do i_z=1, int(grid%n(3)*0.5)
-            grid%co_mx_c(int((grid%n(3)-1)*0.5+i_z+1)) =            dz * (sf**i_z - 1.0_r2) / (sf-1.0_r2)
-            grid%co_mx_c(int((grid%n(3)-1)*0.5-i_z)) =  -1.0_r2 * dz * (sf**i_z - 1.0_r2) / (sf-1.0_r2)
-        end do
-        grid%co_mx_c(int((grid%n(3)-1)*0.5)) = -1.0_r2/3.0_r2 * dz 
-        grid%co_mx_c(int((grid%n(3)-1)*0.5+1)) = 1.0_r2/3.0_r2 * dz 
+            dth = 2.0_r2*PI / real(grid%n(2), kind=r2)
+            DO i_th=1, grid%n(2)
+                grid%co_mx_b(i_th) =  grid%co_mx_b(0) + dth * real(i_th, kind=r2)
+            END DO
+            
+            ! ---
+            ! 1.3. z
+            ! co_mx_c( 0 )  =- r_out
+            ! co_mx_c(n(3)) =  r_out
+            grid%co_mx_c(0)         = -model%r_ou
+            DO i_th = 0, grid%n(3)-2
+                grid%co_mx_c(i_th+1) = 520.0*sinh(5.0*(2.0*(float(i_th)/(grid%n(3)-2))-1))/sinh(5.0)
+            END DO
+            grid%co_mx_c(grid%n(3)) = model%r_ou
+            
+            
+        END SELECT
 
     END SUBROUTINE set_boundaries_cy
     
@@ -537,6 +587,7 @@ CONTAINS
         REAL(kind=r2)                               :: th_start
         REAL(kind=r2)                               :: th_stop
         REAL(kind=r2)                               :: trash
+        REAL(kind=r2)                               :: value_in
         
         Character(256)                              :: waste
         !------------------------------------------------------------------------!
@@ -672,8 +723,42 @@ CONTAINS
             do i_ph=1, grid%n(3)
                 grid%co_mx_c(i_ph) =  grid%co_mx_c(0) + dph * real(i_ph, kind=r2)
             end do
-        
+            
         CASE(4)
+            ! ---
+            ! 1.1 r
+            open(unit=1, file="input/grid/logr.dat", &
+                    action="read", status="unknown", form="formatted")
+                    
+            DO i_r = 0, grid%n(1)
+                read(unit=1,fmt=*) value_in
+                grid%co_mx_a(i_r) = 10.0**(value_in)
+            END DO
+            close(unit=1)
+            ! ---
+            ! 1.2 th
+            open(unit=1, file="input/grid/theta.dat", &
+                    action="read", status="unknown", form="formatted")
+                    
+            DO i_th = 0, grid%n(2)
+                read(unit=1,fmt=*) value_in
+                grid%co_mx_b(i_th) = value_in
+            END DO
+            close(unit=1)
+        
+            ! ---
+            ! 1.3 phi
+            ! co_mx_c(  0 ) = 0    (  0°)
+            ! co_mx_c(n(3)) = 2xPI (360°)
+            grid%co_mx_c(0) = 0.0_r2
+        
+            dph = 2.0_r2*PI / real(grid%n(3), kind=r2)
+            do i_ph=1, grid%n(3)
+                grid%co_mx_c(i_ph) =  grid%co_mx_c(0) + dph * real(i_ph, kind=r2)
+            end do
+        
+        
+        CASE(5)
             ! This is an old and very rubbish implemented version. it should work, but...;)
             !
             ! user given spherical grid, here interface to PLUTO code
@@ -864,6 +949,29 @@ CONTAINS
             
             DEALLOCATE(pluto_r,pluto_th,pluto_ph)
             CLOSE(unit=1)
+        ELSE IF (GetGridType(grid) == 4 .and. GetGridName(grid) == 'spherical' ) THEN
+            print *, 'Tobias density'
+!~             OPEN(unit=1, file="input/grid/PPD_density2d_lp_kappa-1p499_hbeta1p125.dat", &
+            OPEN(unit=1, file="input/grid/PPD_density2d_dsb_kappa-1p49_hbeta1p0.dat", &
+!~             OPEN(unit=1, file="input/grid/PPD_density2d_dsb_kappa-1p49_hbeta1p125.dat", &
+!~             OPEN(unit=1, file="input/grid/PPD_density2d_dsb_kappa-1p499_hbeta1p125.dat", &
+!~             OPEN(unit=1, file="input/grid/ppdisk_density_spherical2D.dat", &
+            action="read", status="unknown", form="formatted")
+            DO i = 1,11
+                !read header
+                READ(unit=1,fmt=*,iostat=io) waste
+            END DO
+            moco(3) = PI
+            DO i = 1, (grid%n(1))*(grid%n(2))*grid%n(3)
+                READ(unit=1,fmt=*,iostat=io) moco(1),moco(2),value_in
+!~                 print *, i
+                moco(1) = 10.0**(moco(1))
+                i_cell = get_cell_nr(grid,mo2ca(grid,moco))
+                grid%grd_dust_density(i_cell,:) = 10.0**(value_in)
+                grid%grd_col_density(i_cell,:)  = 10.0**(value_in)
+            END DO
+            CLOSE(unit=1)
+            
         ELSE 
             DO i_cell = 1, grid%n_cell
                 ! number of particles / cell / species;

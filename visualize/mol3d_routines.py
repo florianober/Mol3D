@@ -51,7 +51,7 @@ def load_mol3d_zerovchmap(file_path,ch=-1):
                 break
         return pic
         
-def load_mol3d_fullvchmap(file_path):
+def load_mol3d_fullvchmap(file_path,return_all=False):
         map_in = open(file_path)
         row = map_in.readline().split()
         vel_ch = int(row[0])
@@ -70,8 +70,35 @@ def load_mol3d_fullvchmap(file_path):
             for j in range(map_size**2):
                 row = map_in.readline().split()
                 pic[k,int(row[1]),int(row[0])] = row[2]
-        return pic,vch
-
+        if return_all:       
+            return pic,vch
+        else:
+            return pic
+            
+def load_mol3d_continuum_map(file_path,return_all=False):
+        map_in = open(file_path)
+        row = map_in.readline().split()
+        n_lam = int(row[0])
+        n_lam = 100
+        row = map_in.readline().split()
+        map_size = int(row[0])
+        
+        pic  = zeros((n_lam,map_size,map_size))
+        wlen = zeros(n_lam)
+        
+        row = map_in.readline()	#empty row
+        for k in range(n_lam):
+            row = map_in.readline()	#empty row
+            row = map_in.readline().split()
+            wlen[k] = float(row[0])
+            row = map_in.readline()	#empty row
+            for j in range(map_size**2):
+                row = map_in.readline().split()
+                pic[k,int(row[1]),int(row[0])] = row[2]
+        if return_all:
+            return pic,wlen
+        else:
+            return pic
 
 def load_mol3d_map(file_path):
 
@@ -118,6 +145,9 @@ def get_attr(pname):
         if 'sf =' in line:
             sf = float(line.partition('{')[-1].rpartition('}')[0])
             attr['sf'] = sf
+        if 'zoom_map =' in line:
+            zoom_map = float(line.partition('{')[-1].rpartition('}')[0])
+            attr['zoom_map'] = zoom_map
         if 'distance' in line:
             dist = float(line.partition('{')[-1].rpartition('}')[0])
             attr['distance'] = dist
@@ -181,7 +211,7 @@ class mol3d:
         
         
     def load_velo_ch_map(self):
-        self.__velochmap,wlen = load_mol3d_fullvchmap(path_results+self.__pname+'_velo_ch_map.dat')
+        self.__velochmap = load_mol3d_fullvchmap(path_results+self.__pname+'_velo_ch_map.dat')
         
     def return_velo_ch_map(self):
         if self.__velochmap == []:
@@ -202,8 +232,10 @@ class mol3d:
     attr = property(return_attr)
     
 
-    def get_name(self):
+    def return_name(self):
         return self.__pname
+    
+    pname = property(return_name)
     
     def get_attr_from_file(self,key):
         input_file = open(path_results+self.__pname+'_input_file.dat',"r")

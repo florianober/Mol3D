@@ -81,7 +81,9 @@ def main():
     
     
     # calculate arcseconds for a disk with given extension and distance
-    arcs = attr['sf']*attr['r_ou'] / attr['distance']
+    #~ arcs = attr['sf']*attr['r_ou'] / attr['distance']
+    #~ arcs = attr['r_ou'] / attr['distance'] / attr['zoom_map']
+    arcs = attr['r_ou'] / attr['zoom_map']
     extent = [-arcs,arcs,-arcs,arcs]
     plt.figure(p_name)
     plt.imshow(map_in*1000,origin='lower',interpolation='None',extent=extent)

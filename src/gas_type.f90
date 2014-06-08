@@ -48,7 +48,7 @@ MODULE gas_type
         REAL(kind=r1), DIMENSION(:), POINTER    :: trans_einstA
         REAL(kind=r1), DIMENSION(:), POINTER    :: trans_einstB_l
         REAL(kind=r1), DIMENSION(:), POINTER    :: trans_einstB_u
-        REAL(kind=r1), DIMENSION(:), POINTER    :: trans_freq
+        REAL(kind=r2), DIMENSION(:), POINTER    :: trans_freq
         REAL(kind=r1), DIMENSION(:), POINTER    :: trans_inneregy
         
         REAL(kind=r1), DIMENSION(:), POINTER    :: velo_channel
