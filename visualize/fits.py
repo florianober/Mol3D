@@ -21,13 +21,58 @@ import numpy as np
 import helper as hlp
 import mol3d_routines as l
 import matplotlib.pyplot as plt
+from astropy.io import fits as pf
 
+path_fits = '/data/fober/casa_fits/'
 
 ########################################################
 ### main
 
-    
 def main():
+    
+    models = glob.glob(path_fits+'sp1*_velo_ch_map_alma??.fits')
+    pname_list = []
+    for entry in models:
+        pname = entry[len(path_fits)+4:-24]
+        alma_conf = entry[-7:-5]
+        #~ print(entry[len(path_fits):-24])
+        if os.path.isfile(path_fits+'s1_'+pname+'_velo_ch_map_alma'+alma_conf+'.fits'):
+            pname_list.append(pname)
+            header = pf.open(path_fits+'s1_'+pname+'_velo_ch_map_alma'+alma_conf+'.fits')[0].header
+            s1  = pf.open(path_fits+'s1_'+pname+'_velo_ch_map_alma'+alma_conf+'.fits')[0].data
+            sp1 = pf.open(path_fits+'sp1_'+pname+'_velo_ch_map_alma'+alma_conf+'.fits')[0].data
+            
+            s1_noisy  = pf.open(path_fits+'s1_'+pname+'_velo_ch_map_alma'+alma_conf+'.noisy.fits')[0].data
+            sp1_noisy = pf.open(path_fits+'sp1_'+pname+'_velo_ch_map_alma'+alma_conf+'.noisy.fits')[0].data
+            
+            # write differential image into a new fits file
+            # first clean image
+            diff_map = np.zeros((s1.shape),dtype=np.float32)
+            for i in range(s1.shape[1]):
+                diff_map[0,i,:,:] = np.abs(s1[0,i,:,:]-sp1[0,i,:,:])
+            hlp.write_image2fits(diff_map,file_name=pname+'.clean.diff_image_alma%2.2d.fits' %(int(alma_conf)),header=header)
+            
+            # write differential image into a new fits file
+            # now noisy image
+            diff_map = np.zeros((s1_noisy.shape),dtype=np.float32)
+            for i in range(s1_noisy.shape[1]):
+                diff_map[0,i,:,:] = np.abs(s1_noisy[0,i,:,:]-sp1_noisy[0,i,:,:])
+            hlp.write_image2fits(diff_map,file_name=pname+'.noisy.diff_image_alma%2.2d.fits' %(int(alma_conf)),header=header)
+            
+            #~ for w in range(50,91,2):
+                #~ plt.figure('clean %2.2g' %w)
+                #~ plt.imshow(np.abs(s1[0,w,:,:]-sp1[0,w,:,:]),origin='lower')
+                #~ plt.colorbar()
+                #~ 
+                #~ plt.figure('noisy%2.2g' %w)
+                #~ plt.imshow(np.abs(s1_noisy[0,w,:,:]-sp1_noisy[0,w,:,:]),origin='lower')
+                #~ plt.colorbar()
+        plt.show()
+            
+    
+    # now the noisy images
+    
+def tocasa():
     pname = 'sp1_k08m01st00i0CO3'
     models = glob.glob(l.path_results+'*_velo_ch_map.dat')
     #~ models = glob.glob('/data/fober/mol3dresults/hd_sim/*_input_file.dat')
@@ -52,4 +97,6 @@ def mk_fits(pname):
     else:
         print('skipping missing project')
     del project
+    
+#tocasa()
 main()

@@ -951,12 +951,8 @@ CONTAINS
             CLOSE(unit=1)
         ELSE IF (GetGridType(grid) == 4 .and. GetGridName(grid) == 'spherical' ) THEN
             print *, 'Tobias density'
-!~             OPEN(unit=1, file="input/grid/PPD_density2d_lp_kappa-1p499_hbeta1p125.dat", &
-            OPEN(unit=1, file="input/grid/PPD_density2d_dsb_kappa-1p49_hbeta1p0.dat", &
-!~             OPEN(unit=1, file="input/grid/PPD_density2d_dsb_kappa-1p49_hbeta1p125.dat", &
-!~             OPEN(unit=1, file="input/grid/PPD_density2d_dsb_kappa-1p499_hbeta1p125.dat", &
-!~             OPEN(unit=1, file="input/grid/ppdisk_density_spherical2D.dat", &
-            action="read", status="unknown", form="formatted")
+            OPEN(unit=1, file="input/grid/tobias_disk.dat", &
+                action="read", status="unknown", form="formatted")
             DO i = 1,11
                 !read header
                 READ(unit=1,fmt=*,iostat=io) waste
