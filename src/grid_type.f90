@@ -593,6 +593,10 @@ CONTAINS
         ELSE
             i_th = binary_search(spco(2),this%co_mx_b)
         END IF
+        IF ( i_th .gt. this%n(2)) THEN
+			i_th = this%n(2)			
+        END IF
+        
         ! ---
         ! phi
         

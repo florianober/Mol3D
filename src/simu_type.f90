@@ -41,8 +41,6 @@ MODULE simu_type
         REAL(kind=r2)                                    :: c_in_akt 
         REAL(kind=r2), DIMENSION(:),POINTER            :: prob_action
         REAL(kind=r2), DIMENSION(:),POINTER            :: diff_planck
-        REAL(kind=r2), DIMENSION(:),POINTER            :: diff_planckx
-        REAL(kind=r2), DIMENSION(:),POINTER            :: diff_planckx2
         
 
     END TYPE Simu_TYP
@@ -100,14 +98,10 @@ CONTAINS
         this%c_in_akt    = 0.0_r2
 
         ALLOCATE ( this%prob_action( 1:n_dust), &
-                    this%diff_planck( 1:n_lam), &
-                    this%diff_planckx( 1:n_lam), &
-                    this%diff_planckx2( 1:n_lam) &
-                                                )
+                    this%diff_planck( 1:n_lam))
         this%prob_action(:)   = 0.0_r2
         this%diff_planck(:)   = 0.0_r2
-        this%diff_planckx(:)  = 0.0_r2
-        this%diff_planckx2(:) = 0.0_r2
+
     END SUBROUTINE InitSimu
 
 
@@ -119,9 +113,7 @@ CONTAINS
         CALL CloseCommon(this%mtype)
         
         DEALLOCATE(this%prob_action, &
-                    this%diff_planck, &
-                    this%diff_planckx, &
-                    this%diff_planckx2)
+                    this%diff_planck)
         
     END SUBROUTINE CloseSimu
 
