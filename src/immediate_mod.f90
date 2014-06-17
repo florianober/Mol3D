@@ -116,7 +116,7 @@ contains
     endif
     simu_var%nr_lam      = i_lam
     simu_var%c_in_akt    = simu_var%c_in_akt * dust%d_lam(nr_lam_old)/dust%d_lam(simu_var%nr_lam)
-    simu_var%current_albedo = (dust%C_sca(:,i_lam) / dust%C_ext(:,i_lam))
+    simu_var%current_albedo = dust%albedo(:,i_lam)
   end subroutine immediate
 
 
