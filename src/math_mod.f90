@@ -54,7 +54,7 @@ contains
   ! lam_in      ... wavelength    [m]
   ! planck      ... kirchhoff-planck function [W * m^-2 * m^-1]
   ! ---
-    PURE FUNCTION planck(tem_in, lam_in) result(planck_result)
+    ELEMENTAL FUNCTION planck(tem_in, lam_in) result(planck_result)
   
         !------------------------------------------------------------------------!
         real(kind=r1), intent(in)      :: tem_in

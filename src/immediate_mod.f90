@@ -45,6 +45,7 @@ contains
     integer, intent(in)                             :: i_dust_action
 
     integer       :: nr_lam_old, i_tem_1, i_tem_2
+    integer       :: i_lam
     real(kind=r2) :: t_dust_old,t_dust_new, hd1, rndx
     real(kind=r2) :: i_tem_hd1, i_tem_hd2
     REAL(KIND=r2),DIMENSION(1:dust%n_lam)  :: pt_1, pt_2
@@ -97,27 +98,25 @@ contains
        ! chose a wavelength in the difference SED randomly == new wavelength
        CALL RAN2(rand_nr,rndx)
        hd1 = 0.0_r2
-       simu_var%nr_lam = 1
+       i_lam = 1
        do
-          simu_var%nr_lam = simu_var%nr_lam + 1
+          i_lam = i_lam + 1
           
-          hd1 = hd1 +  integ1(dust%lam(:), simu_var%diff_planck(:), simu_var%nr_lam-1, simu_var%nr_lam)
+          hd1 = hd1 +  integ1(dust%lam(:), simu_var%diff_planck(:), i_lam-1, i_lam)
           if (hd1>=rndx) then
              exit
           else
              cycle
           end if       
        enddo
-    
-!~        nr_lam_new          = simu_var%nr_lam
-       simu_var%c_in_akt   = simu_var%c_in_akt * dust%d_lam(nr_lam_old)/dust%d_lam(simu_var%nr_lam)
 
     else
-!~        nr_lam_new           = dust%n_lam-1
-!~        simu_var%nr_lam      = nr_lam_new
-       simu_var%nr_lam      = dust%n_lam-1
-       simu_var%c_in_akt    = simu_var%c_in_akt * dust%d_lam(nr_lam_old)/dust%d_lam(simu_var%nr_lam)
+        i_lam = dust%n_lam-1
+       
     endif
+    simu_var%nr_lam      = i_lam
+    simu_var%c_in_akt    = simu_var%c_in_akt * dust%d_lam(nr_lam_old)/dust%d_lam(simu_var%nr_lam)
+    simu_var%current_albedo = (dust%C_sca(:,i_lam) / dust%C_ext(:,i_lam))
   end subroutine immediate
 
 

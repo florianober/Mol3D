@@ -77,6 +77,7 @@ contains
     simu_var%stokes(:) = fluxes%stokes_ini(:)
         
     simu_var%nr_lam    = i_lam                              ! initial wavelength of photon    
+    simu_var%current_albedo = (dust%C_sca(:,i_lam) / dust%C_ext(:,i_lam))
     simu_var%c_in_akt  = dust%c_in_star(simu_var%nr_lam)    ! set energy of photon package
     simu_var%inside    = .true.                            ! photon inside model space
     simu_var%D(:,:)    = basics%mat_ident3(:,:)             ! initialize rotation matrix

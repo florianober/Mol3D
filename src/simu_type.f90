@@ -41,6 +41,7 @@ MODULE simu_type
         REAL(kind=r2)                                    :: c_in_akt 
         REAL(kind=r2), DIMENSION(:),POINTER            :: prob_action
         REAL(kind=r2), DIMENSION(:),POINTER            :: diff_planck
+        REAL(kind=r2), DIMENSION(:),POINTER            :: current_albedo
         
 
     END TYPE Simu_TYP
@@ -98,9 +99,11 @@ CONTAINS
         this%c_in_akt    = 0.0_r2
 
         ALLOCATE ( this%prob_action( 1:n_dust), &
+                   this%current_albedo( 1:n_dust), &
                     this%diff_planck( 1:n_lam))
         this%prob_action(:)   = 0.0_r2
         this%diff_planck(:)   = 0.0_r2
+        this%current_albedo   = 0.0_r2
 
     END SUBROUTINE InitSimu
 

@@ -126,7 +126,8 @@ contains
     ! 2. select type of interaction
     CALL RAN2(rand_nr, rndx)
     !print *, 'rand',rndx
-    IF ( rndx < (dust%C_sca(i_dust_action,simu_var%nr_lam) / dust%C_ext(i_dust_action,simu_var%nr_lam)) ) then               
+!~     IF ( rndx < (dust%C_sca(i_dust_action,simu_var%nr_lam) / dust%C_ext(i_dust_action,simu_var%nr_lam)) ) then               
+    IF ( rndx < simu_var%current_albedo(i_dust_action) ) then               
 
        ! 2.1 scattering
         CALL scatter( basics, rand_nr, dust, simu_var, i_dust_action )
