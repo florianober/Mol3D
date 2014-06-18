@@ -403,7 +403,8 @@ CONTAINS
                         alpha_dust =    grid%grd_dust_density(nr_cell,1) * &
                                         dust%C_ext(1,dust%num_lam_map(dust%cont_map(tr)))
                         
-                        j_dust       =  alpha_dust * &
+                        j_dust       =  grid%grd_dust_density(nr_cell,1) * &
+                                        dust%C_abs(1,dust%num_lam_map(dust%cont_map(tr))) * &
                                         planckhz(grid%t_dust(nr_cell, 1 ),&
                                         con_c/dust%lam(dust%num_lam_map(dust%cont_map(tr))))
 !~                             j_dust = 0.0_r2
@@ -620,7 +621,8 @@ CONTAINS
                             alpha_dust =    grid%grd_dust_density(nr_cell,1) * &
                                         dust%C_ext(1,i_lam)
                             
-                            j_dust       =  alpha_dust * &
+                            j_dust   =  grid%grd_dust_density(nr_cell,1) * &
+                                        dust%C_abs(1,i_lam) * &
                                         planckhz(grid%t_dust(nr_cell, 1 ),&
                                         con_c/dust%lam(i_lam))
                             cell_d_l = d_l

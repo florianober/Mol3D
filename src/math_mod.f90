@@ -8,7 +8,7 @@ module math_mod
 
     implicit none
     public :: planck, planckhz, integ1, rad2grad, grad2rad, atan3, atanx, norm,cy2ca, sp2ca, ca2sp, ipol1, ipol2, &
-       arcdis, dasico, gauss_arr, solvestateq, binary_search, get_expo,get_opa
+       arcdis, dasico, gauss_arr, solvestateq, binary_search, get_expo,get_opa,random_planck_frequency
     
 contains
 
@@ -59,25 +59,13 @@ contains
         !------------------------------------------------------------------------!
         real(kind=r1), intent(in)      :: tem_in
         real(kind=r2), intent(in)      :: lam_in
-        real(kind=r2)                   :: planck_result
-        real(kind=r2)                   :: const
+        real(kind=r2)                  :: planck_result
+        real(kind=r2),parameter        :: c1 = 2.0_r2 * con_h * con_c * con_c
+        real(kind=r2),parameter        :: c2 = con_h * con_c / con_k
         !------------------------------------------------------------------------!
         
-        if ( tem_in .gt. 1.0e-30 ) then
-            
-            const = 2.0*con_h*con_c**2.0/(lam_in**5.0)
-            
-            !Use Wien approximation for h*c/lam>>k*T:
-            if (con_h*con_c/lam_in .gt. 100.0*con_k*tem_in) then
-                planck_result = const * exp(-con_c2/(tem_in*lam_in))
-            
-!~ !            elseif ( con_h*con_c/lam_in .lt. 0.001_r2*con_k*tem_in) then
-!~ !                planck_result = 2.0_r2*con_c*con_k*tem_in/lam_in**4.0_r2
-!~ !                print *,'here'
-            else
-                planck_result = const / (exp(con_c2/(tem_in*lam_in))-1.0)
-            endif
-            
+        if ( tem_in .gt. 1.0e-12 ) then
+            planck_result = c1 / lam_in /lam_in /lam_in/ lam_in /lam_in / (exp(c2/(tem_in*lam_in))-1.0)
         else
             planck_result = 0.0_r2
         endif
@@ -124,29 +112,17 @@ contains
         real(kind=r1), intent(in)       :: tem_in
         real(kind=r2), intent(in)       :: freq_in
         real(kind=r2)                   :: planck_result
-        real(kind=r2)                   :: const
-        real(kind=r2)                   :: hnu_tk
+        real(kind=r2),parameter         :: c1 = 2.0_r2 * con_h / con_c / con_c
+        real(kind=r2),parameter         :: c2 = con_h/con_k
         !------------------------------------------------------------------------!
         
         if ( tem_in .gt. 1.0e-12 ) then
             
-!~             const = 2.0*con_h*freq_in**3/(con_c**2)
-            const = 2.0*con_h*freq_in * (freq_in/con_c) *(freq_in/con_c)
-            !Use Wien approximation for h*c/lam>>k*T:
-            hnu_tk = con_h/con_k *freq_in/tem_in
-!~             hnu_tk = con_h*freq_in/(tem_in*con_k)
-!~             print *,const, hnu_tk
-            if (hnu_tk .gt. 200.0) then
-                planck_result = const * exp(-hnu_tk)
-!~                 print *,'lala'
-            else
-                planck_result = const / (exp(hnu_tk)-1.0)
-!~                 print *, 'ich'
-            endif
+            planck_result = c1 * freq_in * freq_in * freq_in  / (exp(c2*freq_in/tem_in)-1.0)
+
         else
             planck_result = 0.0
         endif
-!~         if (planck_result < 1e-20) print *,const, hnu_tk, planck_result
     END FUNCTION planckhz
 
   ! ################################################################################################
@@ -171,6 +147,62 @@ contains
        integ1_result = 0.0_r2
     end if
   end function integ1
+  
+  subroutine random_planck_frequency(nu,T, rand_nr)
+!~     use datatype
+    use randgen_type
+    ! Random frequency sampled from a planck function with temperature T
+
+    ! The algorithm is taken from 'Sampling a random variable distributed
+    ! according to planck's law' by Barnett and Canfield
+
+    implicit none
+
+    real(kind=r2),intent(in) :: T
+    real(kind=r2),intent(out) :: nu
+    real(kind=r2) :: x,r,ra1,ra2,ra3,ra4,a,y,z
+
+    real(kind=r2),parameter :: k  = 1.3806503e-23_r2 ! J/K
+    real(kind=r2),parameter :: h  = 6.626068e-34_r2 ! J.s
+    TYPE(Randgen_TYP)                                 :: rand_nr
+    
+
+
+    ! Sample a random number from x^3/(exp(x)-1)
+
+    do
+
+       CALL RAN2(rand_nr, ra1)
+       CALL RAN2(rand_nr, ra2)
+       CALL RAN2(rand_nr, ra3)
+       CALL RAN2(rand_nr, ra4)
+
+       r = ra1*ra2*ra3*ra4
+
+       if(r > 0._r2) exit
+
+    end do
+
+    x = - log(r)
+
+    a = 1._r2
+    y = 1._r2
+    z = 1._r2
+
+    CALL RAN2(rand_nr, ra1)
+    do
+       if(1.08232_r2*ra1 <= a) exit
+       y = y + 1._r2
+       z = 1._r2/y
+       a = a + z*z*z*z
+    end do
+    x = x * z
+
+    ! Convert to frequency
+
+    nu = x * k * T / h
+
+  end subroutine random_planck_frequency
 
 
 !!$  ! ################################################################################################
