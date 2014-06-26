@@ -481,15 +481,36 @@ CONTAINS
         TYPE(Dust_TYP), INTENT(IN)                   :: dust
         TYPE(Fluxes_TYP), INTENT(IN)                 :: fluxes
         !--------------------------------------------------------------------------!
-        INTEGER                                      :: i_lam, i, j
+        INTEGER                                      :: i_lam, i, j, sta, u
         !--------------------------------------------------------------------------!
         
-        
+        sta = 0
         OPEN(unit=1, file=TRIM(basics%path_results)//Getproname(basics)//'_'//'continuum_map.dat', &
             action="write", status="unknown", form="formatted")
         
         OPEN(unit=2, file=TRIM(basics%path_results)//Getproname(basics)//'_'//'continuum_sed.dat', &
             action="write", status="unknown", form="formatted")
+        
+        PRINT *, 'write fits file'
+        ! get a new u(nit) number
+        call ftgiou(u,sta)
+        if (sta .gt. 0) print *,'here 1'
+        ! init fits file
+        call ftinit(u,'!continuum_map.fits',1,sta)
+        if (sta .gt. 0) print *,'here 2'
+        ! write header
+        call ftphpr(u,.true.,-64,3,(/2*model%n_bin_map+1,2*model%n_bin_map+1,dust%n_lam/),0,1,.true.,sta)
+        if (sta .gt. 0) print *,'here 3'
+        ! write array to fits file
+        call ftpprd(u,1,1,(2*model%n_bin_map+1)**2*dust%n_lam,fluxes%continuum_map(:,:,:),sta)
+        if (sta .gt. 0) print *,'here 4'
+        ! add another header keyword
+        call ftpkyj(u,'EXPOSURE',1500,'Total Exposure Time',sta)
+        if (sta .gt. 0) print *,'here 5'
+        call ftclos(u, sta)
+        if (sta .gt. 0) print *,'here 6'
+        call ftfiou(u, sta)
+        if (sta .gt. 0) print *,'here 7'
         
         !write file header
         WRITE(unit=1,fmt='(I6.4,A)') dust%n_lam, '     #number of wavelengths'
@@ -498,10 +519,10 @@ CONTAINS
         
         WRITE(unit=2,fmt='(A)') '#wavelength [m]    flux [Jy]'
         WRITE(unit=2,fmt=*) ''
-            
+
         
         !write results
-            
+        PRINT *, 'write ascii file'
         DO i_lam =1, dust%n_lam
 !~             print *, i_lam
             WRITE (unit=2,fmt='(2(ES15.6E3))') dust%lam(i_lam), sum(fluxes%continuum_map(:,:,i_lam))

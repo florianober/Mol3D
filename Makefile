@@ -62,7 +62,7 @@ endif
 
 ifeq ($(FC),gfortran)
   CFLAGS = -Wall -O2
-  DEPFLAGS = -J$(BUILD_DIR) -I$(BUILD_DIR)
+  DEPFLAGS = -J$(BUILD_DIR) -I$(BUILD_DIR) -lcfitsio
   OFLAGS = -x f95-cpp-input
   #OFLAGS = 
   ifeq ($(CO),debug)
@@ -81,7 +81,7 @@ endif
 #
 ifeq ($(FC),ifort)
   CFLAGS = -O3 #-warn all -warn errors
-  DEPFLAGS = -module $(BUILD_DIR) -I$(BUILD_DIR)
+  DEPFLAGS = -module $(BUILD_DIR) -I$(BUILD_DIR) -lcfitsio
   OFLAGS = -fpp
   ifeq ($(CO),debug)
 #    CFLAGS = -pg -check bounds -check uninit -std -warn all -warn errors -WB -zero -traceback
