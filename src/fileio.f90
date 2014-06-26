@@ -485,62 +485,35 @@ CONTAINS
         !--------------------------------------------------------------------------!
         
         sta = 0
-        OPEN(unit=1, file=TRIM(basics%path_results)//Getproname(basics)//'_'//'continuum_map.dat', &
-            action="write", status="unknown", form="formatted")
         
-        OPEN(unit=2, file=TRIM(basics%path_results)//Getproname(basics)//'_'//'continuum_sed.dat', &
-            action="write", status="unknown", form="formatted")
-        
-        PRINT *, 'write fits file'
         ! get a new u(nit) number
         call ftgiou(u,sta)
-        if (sta .gt. 0) print *,'here 1'
         ! init fits file
-        call ftinit(u,'!continuum_map.fits',1,sta)
-        if (sta .gt. 0) print *,'here 2'
+        call ftinit(u,'!'//TRIM(basics%path_results)//Getproname(basics)//'_continuum_map.fits.gz',1,sta)
         ! write header
-        call ftphpr(u,.true.,-64,3,(/2*model%n_bin_map+1,2*model%n_bin_map+1,dust%n_lam/),0,1,.true.,sta)
-        if (sta .gt. 0) print *,'here 3'
+        call ftphpr(u,.true.,-32,3,(/2*model%n_bin_map+1,2*model%n_bin_map+1,dust%n_lam/),0,1,.true.,sta)
         ! write array to fits file
         call ftpprd(u,1,1,(2*model%n_bin_map+1)**2*dust%n_lam,fluxes%continuum_map(:,:,:),sta)
-        if (sta .gt. 0) print *,'here 4'
-        ! add another header keyword
+        ! add other header keywords
         call ftpkyj(u,'EXPOSURE',1500,'Total Exposure Time',sta)
-        if (sta .gt. 0) print *,'here 5'
+        ! close the fits file
         call ftclos(u, sta)
-        if (sta .gt. 0) print *,'here 6'
+        ! free the (u)nit number
         call ftfiou(u, sta)
-        if (sta .gt. 0) print *,'here 7'
         
-        !write file header
-        WRITE(unit=1,fmt='(I6.4,A)') dust%n_lam, '     #number of wavelengths'
-        WRITE(unit=1,fmt='(I6.4,A)') 2*model%n_bin_map+1 , '   #size of map'
-        WRITE(unit=1,fmt=*) ''
         
         WRITE(unit=2,fmt='(A)') '#wavelength [m]    flux [Jy]'
         WRITE(unit=2,fmt=*) ''
 
         
-        !write results
-        PRINT *, 'write ascii file'
+        !write sed in ascii format
+        OPEN(unit=2, file=TRIM(basics%path_results)//Getproname(basics)//'_continuum_sed.dat', &
+            action="write", status="unknown", form="formatted")
         DO i_lam =1, dust%n_lam
-!~             print *, i_lam
             WRITE (unit=2,fmt='(2(ES15.6E3))') dust%lam(i_lam), sum(fluxes%continuum_map(:,:,i_lam))
 
-            WRITE(unit=1,fmt=*) ''
-            WRITE (unit=1,fmt='(ES15.6E3,A)') dust%lam(i_lam), '   #wavelength'
-            WRITE(unit=1,fmt=*) ''
-            DO i = 0, 2*model%n_bin_map
-                DO j = 0, 2*model%n_bin_map   
-                    WRITE(unit=1,fmt='(I5,I5,1(ES15.6E3))')   &
-                            i, &
-                            j, &
-                            fluxes%continuum_map(i,j,i_lam)
-                END DO
-            END DO
         END DO
             
-        CLOSE(unit=1)
         CLOSE(unit=2)
 
     END SUBROUTINE save_continuum_map
@@ -554,68 +527,62 @@ CONTAINS
         TYPE(Gas_TYP), INTENT(IN)                    :: gas
         TYPE(Fluxes_TYP), INTENT(IN)                 :: fluxes
         !--------------------------------------------------------------------------!
-        INTEGER                                      :: tr, vch, i, j
+        INTEGER                                      :: vch, i, j, u, sta
         !--------------------------------------------------------------------------!
         
+        ! write velocity channel map to fits file
+        sta = 0
         
-        OPEN(unit=1, file=TRIM(basics%path_results)//Getproname(basics)//'_'//'velo_ch_map.dat', &
+        ! get a new u(nit) number
+        call ftgiou(u,sta)
+        ! init fits file
+        call ftinit(u,'!'//TRIM(basics%path_results)//Getproname(basics)//'_velo_ch_map.fits.gz',1,sta)
+        ! write header
+        call ftphpr(u,.true.,-32,3,(/2*model%n_bin_map+1,2*model%n_bin_map+1,gas%i_vel_chan*2+1/),0,1,.true.,sta)
+        ! write array to fits file
+        call ftpprd(u,1,1,(2*model%n_bin_map+1)**2*(gas%i_vel_chan*2+1),fluxes%channel_map(:,:,:,1),sta)
+        ! add other header keywords
+!~         call ftpkyj(u,'EXPOSURE',1500,'Total Exposure Time',sta)
+        ! close the fits file
+        call ftclos(u, sta)
+        ! free the (u)nit number
+        call ftfiou(u, sta)
+        
+        ! write velocity integrated map to fits file
+        sta = 0
+        
+        ! get a new u(nit) number
+        call ftgiou(u,sta)
+        ! init fits file
+        call ftinit(u,'!'//TRIM(basics%path_results)//Getproname(basics)//'_velo_int_map.fits.gz',1,sta)
+        ! write header
+        call ftphpr(u,.true.,-32,2,(/2*model%n_bin_map+1,2*model%n_bin_map+1/),0,1,.true.,sta)
+        ! write array to fits file
+        call ftpprd(u,1,1,(2*model%n_bin_map+1)**2,sum(fluxes%channel_map(:,:,:,1),DIM=3)/ &
+                    real(gas%i_vel_chan, kind=r2)*gas%vel_max*1e-3,sta)
+        ! add other header keywords
+!~         call ftpkyj(u,'EXPOSURE',1500,'Total Exposure Time',sta)
+        ! close the fits file
+        call ftclos(u, sta)
+        ! free the (u)nit number
+        call ftfiou(u, sta)
+        
+        
+        !write full spectrum in ascii format 
+        OPEN(unit=2, file=TRIM(basics%path_results)//Getproname(basics)//'_velo_ch_mapsum.dat', &
             action="write", status="unknown", form="formatted")
-            
-        OPEN(unit=2, file=TRIM(basics%path_results)//Getproname(basics)//'_'//'velo_ch_mapsum.dat', &
-            action="write", status="unknown", form="formatted")
-            
-        OPEN(unit=3, file=TRIM(basics%path_results)//Getproname(basics)//'_'//'velo_ch_mapint.dat', &
-            action="write", status="unknown", form="formatted")
         
-        !write file header
+        ! write file header
+
+
+        DO vch=-gas%i_vel_chan, gas%i_vel_chan
         
-        WRITE(unit=1,fmt='(I6.4,A)') gas%i_vel_chan*2+1, '     #number of velo-channels'
-        WRITE(unit=1,fmt='(I6.4,A)') 2*model%n_bin_map+1 , '   #size of map'
-        WRITE(unit=1,fmt=*) ''
-        
-        WRITE(unit=3,fmt='(I6.4,A)') 2*model%n_bin_map+1 , '   #size of map'
-        WRITE(unit=3,fmt=*) ''
-        
-        
-        !write results
-            
-        DO tr=1,gas%n_tr
-            DO vch=-gas%i_vel_chan, gas%i_vel_chan
-            
-                WRITE(unit=2,fmt='(2(ES15.6E3))')   gas%velo_channel(vch), &
-                                                    sum(fluxes%channel_map(:,:,vch,tr))
-                                                    
-                WRITE(unit=1,fmt=*) ''
-                WRITE (unit=1,fmt='(ES15.6E3,A)') gas%velo_channel(vch), '   #velo-channel'
-                WRITE(unit=1,fmt=*) ''
-                DO i = 0, 2*model%n_bin_map
-                    DO j = 0, 2*model%n_bin_map   
-                        WRITE(unit=1,fmt='(I5,I5,1(ES15.6E3))')   &
-                                i, &
-                                j, &
-                                fluxes%channel_map(i,j,vch,tr)
-                        
-                        IF ( vch == 0 ) THEN 
-                            WRITE(unit=3,fmt='(I5,I5,1(ES15.6E3))')   &
-                                        i, &
-                                        j, &
-                                        sum(fluxes%channel_map(i,j,:,tr))/ &
-                                        real(gas%i_vel_chan, kind=r2)*gas%vel_max*1e-3
-                        END IF
-                    END DO
-                    !WRITE(unit=1,fmt=*) ''
-                    !WRITE(unit=3,fmt=*) ''
-                END DO
-                !WRITE(unit=1,fmt=*) ''
-                !WRITE(unit=3,fmt=*) ''
-            END DO
-            WRITE(unit=2,fmt=*) ' '
-            WRITE(unit=2,fmt=*) ' '
-            
+            WRITE(unit=2,fmt='(2(ES15.6E3))')   gas%velo_channel(vch), &
+                                                sum(fluxes%channel_map(:,:,vch,1))
         END DO
-        CLOSE(unit=1)
+        
         CLOSE(unit=2)
-        CLOSE(unit=3)
+        
     END SUBROUTINE save_ch_map
     
 !~     ! save map (entire stokes vector)
