@@ -84,7 +84,7 @@ contains
                     i_tem_hd2 )
        end if
 
-    simu_var%diff_planck(:) = dust%Q_abs(i_dust_action,:) * ( pt_2 - pt_1 )
+    simu_var%diff_planck(:) = dust%C_abs(i_dust_action,:) * ( pt_2 - pt_1 )
 
     ! ----------------------------------------------------------------------------------------------
     ! difference > 0 ?
@@ -170,7 +170,7 @@ contains
        do nr_cell=1, grid%n_cell
           ! [1] absorption
           ! tbd: if Nv=0 => t=0
-          hd1(:) = dust%Q_abs(i_dust,:)  *  model%ref_unit*grid%grd_d_l(nr_cell,:)
+          hd1(:) = dust%C_abs(i_dust,:)  *  model%ref_unit*grid%grd_d_l(nr_cell,:)
           hd2    = (1.0_r2 / (basics%PIx4 * grid%cell_vol(nr_cell))) * integ1( dust%lam(:), hd1(:), 1, dust%n_lam)
          
           ! [2] find corresponding temperature from QB integral
@@ -227,13 +227,14 @@ contains
     !--------------------------------------------------------------------------!
     ! ---
     !print *, 'here1', grid%Nv_r(simu_var%nr_cell,i_dust_action)
-    if ( grid%Nv_r(simu_var%nr_cell,i_dust_action) > 1.0_r2) then
+    !TbD, check the if case .... sounds arbitrary
+    if ( grid%Nv(simu_var%nr_cell,i_dust_action) > 1.0e-16_r2) then
         ! absorb photon
             !print *,'here'
             i_star_abs(i_dust_action,simu_var%nr_lam,simu_var%nr_cell) = &
                         i_star_abs(i_dust_action,simu_var%nr_lam,simu_var%nr_cell) + simu_var%c_in_akt
             hd1 = integ1( dust%lam(:), i_star_abs(i_dust_action,:,simu_var%nr_cell), 1, dust%n_lam)     ! [W]
-            hd1 = hd1 / grid%Nv_r(simu_var%nr_cell,i_dust_action)                                  ! [W * m^-2]
+            hd1 = hd1 / (grid%Nv(simu_var%nr_cell,i_dust_action)*4.0*PI)                                ! [W]
             !print *,'hd1'
 
             i_tem = MIN(binary_search(hd1,dust%QB(i_dust_action,:))-1,basics%n_tem)

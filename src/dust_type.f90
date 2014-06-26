@@ -276,8 +276,19 @@ CONTAINS
                 !                 radius of the distribution). however -again-, it has no impact
                 !                 on the calculations, whats'o'ever
                 read(unit=1,fmt=*)  this%r_dust(i_dust)
-
-                this%r_dust(i_dust) = this%r_dust(i_dust) * 1.0e-6_r2  ! [micron] -> [m]
+                
+                if (this%sidi_par(i_dust,3)==0.0_r2) then
+                    hd2 = this%sidi_par(i_dust,1)
+                else
+                    hd2 = (1.0_r2+this%sidi_par(i_dust,3)) / (4.0_r2+this%sidi_par(i_dust,3)) &
+                        * (this%sidi_par(i_dust,2)**(4.0_r2+this%sidi_par(i_dust,3)) - &
+                        this%sidi_par(i_dust,1)**(4.0_r2+this%sidi_par(i_dust,3))) &
+                        / (this%sidi_par(i_dust,2)**(1.0_r2+this%sidi_par(i_dust,3)) - &
+                        this%sidi_par(i_dust,1)**(1.0_r2+this%sidi_par(i_dust,3)))
+                    hd2 = hd2**(1.0_r2/3.0_r2)
+                end if
+                this%r_dust(i_dust) = hd2                                 ! [m]
+!~                 this%r_dust(i_dust) = this%r_dust(i_dust) * 1.0e-6_r2  ! [micron] -> [m]
                 if (i_lam == 1) then
                     hd2 = this%r_dust(i_dust)
                 else
@@ -581,11 +592,11 @@ CONTAINS
                 ! tabulating planck function
                 this%planck_tab(i_tem,i_lam) = planck( this%tem_tab(i_tem), this%lam(i_lam))
                  
-                ! individual contributions Q_abs * B(T)
-                QBx(i_lam) =  this%Q_abs(i_dust,i_lam) * this%planck_tab(i_tem,i_lam)
+                ! individual contributions C_abs * B(T)
+                QBx(i_lam) =  this%C_abs(i_dust,i_lam) * this%planck_tab(i_tem,i_lam)
               enddo
 
-              ! integral [W * m^-2]
+              ! integral [W]
               this%QB(i_dust,i_tem) = integ1(this%lam(:), QBx(:), 1, this%n_lam)
            end do
         end do
