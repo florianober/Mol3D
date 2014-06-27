@@ -63,57 +63,48 @@ contains
     nr_lam_old  = simu_var%nr_lam
 
     ! interpolate: tabulated planck function @ t_dust_old
-    pt_1 = ipol2( &
-                real(      i_tem_1,kind=r2),     real(i_tem_1+1,kind=r2), &
-            dust%planck_tab(i_tem_1,:), dust%planck_tab(i_tem_1+1,:), &
-            i_tem_hd1 )
+!~     pt_1 = ipol2( &
+!~                 real(      i_tem_1,kind=r2),     real(i_tem_1+1,kind=r2), &
+!~             dust%planck_tab(i_tem_1,:), dust%planck_tab(i_tem_1+1,:), &
+!~             i_tem_hd1 )
         
        ! interpolate: tabulated planck function @ t_dust(i_dust_action,nr_cell)
     i_tem_hd2 = (t_dust_new - basics%t_dust_min) / basics%d_tem
        !print *,i_tem_hd2
     i_tem_2   = nint( i_tem_hd2 )
 
-    if (i_tem_2 > basics%n_tem) then
-        print *,"Failure : in subroutine immediate(): i_tem > n_tem"
-        print *,"Solution: Chose more photons or fewer grid cells"
-        stop
-    else
-        pt_2   = ipol2( &
-                    real(      i_tem_2,kind=r2),     real(i_tem_2+1,kind=r2), &
-                    dust%planck_tab(i_tem_2,:), dust%planck_tab(i_tem_2+1,:), &
-                    i_tem_hd2 )
-       end if
+!~     if (i_tem_2 > basics%n_tem) then
+!~         print *,"Failure : in subroutine immediate(): i_tem > n_tem"
+!~         print *,"Solution: Chose more photons or fewer grid cells"
+!~         stop
+!~     else
+!~         pt_2   = ipol2( &
+!~                     real(      i_tem_2,kind=r2),     real(i_tem_2+1,kind=r2), &
+!~                     dust%planck_tab(i_tem_2,:), dust%planck_tab(i_tem_2+1,:), &
+!~                     i_tem_hd2 )
+!~        end if
 
-    simu_var%diff_planck(:) = dust%C_abs(i_dust_action,:) * ( pt_2 - pt_1 )
+!~     simu_var%diff_planck(:) = dust%C_abs(i_dust_action,:) * ( pt_2 - pt_1 )
+!~     print *, i_tem_2, t_dust_new
+!~     simu_var%diff_planck(:) = dust%QdB_dT_l(i_dust_action,i_tem_2, :)!*(t_dust_new - t_dust_old)
 
     ! ----------------------------------------------------------------------------------------------
     ! difference > 0 ?
-    if ( sum(abs(simu_var%diff_planck(:))) /= 0.0_r2 ) then
-!~        simu_var%diff_planckx2  = simu_var%diff_planckx2 + 1.0_r2
+!~     if ( sum(abs(simu_var%diff_planck(:))) /= 0.0_r2 ) then
     
        ! normalize the difference-SED
-       simu_var%diff_planck(:) = simu_var%diff_planck(:) / integ1(dust%lam(:), &
-                                 simu_var%diff_planck(:), 1, dust%n_lam)
-       
-       ! chose a wavelength in the difference SED randomly == new wavelength
-       CALL RAN2(rand_nr,rndx)
-       hd1 = 0.0_r2
-       i_lam = 1
-       do
-          i_lam = i_lam + 1
-          
-          hd1 = hd1 +  integ1(dust%lam(:), simu_var%diff_planck(:), i_lam-1, i_lam)
-          if (hd1>=rndx) then
-             exit
-          else
-             cycle
-          end if       
-       enddo
+!~        simu_var%diff_planck(:) = simu_var%diff_planck(:) / integ1(dust%lam(:), &
+!~                                  simu_var%diff_planck(:), 1, dust%n_lam)
 
-    else
-        i_lam = dust%n_lam-1
-       
-    endif
+       ! chose a wavelength in the difference SED randomly == new wavelength
+        CALL RAN2(rand_nr,rndx)
+
+        i_lam = binary_search(rndx,dust%QdB_dT_l_norm(i_dust_action,i_tem_2,:))+1
+
+!~     else
+!~         i_lam = dust%n_lam-1
+!~        
+!~     endif
     simu_var%nr_lam         = i_lam
     simu_var%c_in_akt       = simu_var%c_in_akt * dust%d_lam(nr_lam_old)/dust%d_lam(simu_var%nr_lam)
     simu_var%current_albedo = dust%albedo(:,i_lam)

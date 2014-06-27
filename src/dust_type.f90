@@ -52,6 +52,9 @@ MODULE Dust_type
         REAL(kind=r2), DIMENSION(:,:),POINTER              :: Q_abs
         REAL(kind=r2), DIMENSION(:,:),POINTER              :: albedo
         REAL(kind=r2), DIMENSION(:,:),POINTER              :: QB
+        REAL(kind=r2), DIMENSION(:,:),POINTER              :: QdB_dT
+        REAL(kind=r2), DIMENSION(:,:,:),POINTER            :: QdB_dT_l
+        REAL(kind=r2), DIMENSION(:,:,:),POINTER            :: QdB_dT_l_norm
         REAL(kind=r2), DIMENSION(:,:),POINTER              :: planck_tab
         REAL(kind=r2), DIMENSION(:,:,:,:,:),POINTER        :: SME
         REAL(kind=r2), DIMENSION(:),POINTER                :: sctth
@@ -155,7 +158,10 @@ CONTAINS
             this%C_abs(       1:this%n_dust, 1:this%n_lam ), &
             this%Q_abs(       1:this%n_dust, 1:this%n_lam ), &
             this%albedo(      1:this%n_dust, 1:this%n_lam ), &
-            this%QB(      1:this%n_dust, -1:basics%n_tem ), &
+            this%QdB_dT_l(    1:this%n_dust,0:basics%n_tem, 1:this%n_lam ), &
+            this%QdB_dT_l_norm(    1:this%n_dust,0:basics%n_tem, 1:this%n_lam ), &
+            this%QB(       1:this%n_dust, -1:basics%n_tem ), &
+            this%QdB_dT(       1:this%n_dust, 0:basics%n_tem ), &
             this%planck_tab(  0:basics%n_tem , 1:this%n_lam), &
             this%doRT(       1:this%n_lam ), &
             this%tem_tab(      0:basics%n_tem ), &
@@ -192,6 +198,9 @@ CONTAINS
         this%SCAANG(     :,:,:) = 0
         this%sctth(:)           = 0.0_r2
         this%QB(:,:)            = 0.0_r2
+        this%QdB_dT(:,:)        = 0.0_r2
+        this%QdB_dT_l(:,:,:)    = 0.0_r2
+        this%QdB_dT_l_norm(:,:,:)    = 0.0_r2
         this%tem_tab(:)         = 0.0_r2
         
         this%i_star_emi(:)      = 0.0_r2
@@ -568,10 +577,11 @@ CONTAINS
         
         !------------------------------------------------------------------------!
         TYPE(Dust_TYP)                                 :: this
-        TYPE(Basic_TYP),INTENT(IN)                    :: basics
+        TYPE(Basic_TYP),INTENT(IN)                     :: basics
         !------------------------------------------------------------------------!
         INTEGER                                        :: i_lam, i_dust, i_tem
-        REAL(kind=r2), DIMENSION(:), allocatable    :: QBx
+        REAL(kind=r2), DIMENSION(:), allocatable       :: QBx
+        REAL(kind=r2)                                  :: hd1
         !------------------------------------------------------------------------
         
         ! ---
@@ -583,24 +593,38 @@ CONTAINS
         this%QB(:,-1) = -1.0_r2
         
         do i_dust=1, this%n_dust
-           do i_tem=0, basics%n_tem
-              ! temperature (tabulate)
-              ! tbd: logarithmic distribution
-              this%tem_tab(i_tem) = real(i_tem, kind=r2) * basics%d_tem  +  basics%t_dust_min
+            do i_tem=0, basics%n_tem
+                ! temperature (tabulate)
+                ! tbd: logarithmic distribution
+                this%tem_tab(i_tem) = real(i_tem, kind=r2) * basics%d_tem  +  basics%t_dust_min
               
-              do i_lam=1, this%n_lam
-                ! tabulating planck function
-                this%planck_tab(i_tem,i_lam) = planck( this%tem_tab(i_tem), this%lam(i_lam))
-                 
-                ! individual contributions C_abs * B(T)
-                QBx(i_lam) =  this%C_abs(i_dust,i_lam) * this%planck_tab(i_tem,i_lam)
-              enddo
+!~                 do i_lam=1, this%n_lam
+                    ! tabulating planck function
+                this%planck_tab(i_tem,:) = planck( this%tem_tab(i_tem), this%lam(:))
+                     
+                    ! individual contributions C_abs * B(T)
+                QBx(:) =  this%C_abs(i_dust,:) * this%planck_tab(i_tem,:)
+!~                 enddo
 
-              ! integral [W]
-              this%QB(i_dust,i_tem) = integ1(this%lam(:), QBx(:), 1, this%n_lam)
+                ! integral [W]
+                this%QB(i_dust,i_tem) = integ1(this%lam(:), QBx(:), 1, this%n_lam)
+                  
+                     
+                ! individual contributions C_abs * dB(T)/dT
+                this%QdB_dT_l(i_dust,i_tem,:) =  this%C_abs(i_dust,:) * dB_dT_l(this%tem_tab(i_tem), this%lam(:))
+                ! integral [W]
+                this%QdB_dT(i_dust,i_tem) = integ1(this%lam(:),this%QdB_dT_l(i_dust,i_tem,:) , 1, this%n_lam)
+                
+                ! normalized for the use to get the new wavelength
+                hd1 = 0.0_r2
+                DO i_lam=2, this%n_lam
+                    hd1 = hd1 + integ1(this%lam(:),this%QdB_dT_l(i_dust,i_tem,:)/this%QdB_dT(i_dust,i_tem),i_lam-1,i_lam)
+                    this%QdB_dT_l_norm(i_dust,i_tem,i_lam) =  hd1
+                END DO
+                
            end do
         end do
-        
+
         deallocate(QBx)
         
         ! save QB
@@ -652,6 +676,9 @@ CONTAINS
                     this%albedo, &
                     this%planck_tab, &
                     this%QB, &
+                    this%QdB_dT, &
+                    this%QdB_dT_l, &
+                    this%QdB_dT_l_norm, &
                     this%doRT, &
                     this%i_star_emi, &
                     this%c_in_star, &

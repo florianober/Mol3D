@@ -8,7 +8,7 @@ module math_mod
 
     implicit none
     public :: planck, planckhz, integ1, rad2grad, grad2rad, atan3, atanx, norm,cy2ca, sp2ca, ca2sp, ipol1, ipol2, &
-       arcdis, dasico, gauss_arr, solvestateq, binary_search, get_expo,get_opa,random_planck_frequency
+       arcdis, dasico, gauss_arr, solvestateq, binary_search, get_expo,get_opa,random_planck_frequency,dB_dT_l
     
 contains
 
@@ -71,6 +71,32 @@ contains
         endif
         
     END FUNCTION planck
+
+  ! ################################################################################################
+  ! Temperature deviation of kirchhoff-planck function [dB.lambda.(T/dT]
+  ! (unsoeld, s. 111, [4.61])
+  ! ...
+  ! tem_in      ... temperature   [K]
+  ! lam_in      ... wavelength    [m]
+  ! planck      ... kirchhoff-planck function [W * m^-2 * m^-1/K]
+  ! ---
+    ELEMENTAL FUNCTION dB_dT_l(tem_in, lam_in) result(dB_result)
+  
+        !------------------------------------------------------------------------!
+        real(kind=r1), intent(in)      :: tem_in
+        real(kind=r2), intent(in)      :: lam_in
+        real(kind=r2)                  :: dB_result
+        real(kind=r2),parameter        :: c1 = 2.0_r2 * con_h* con_h * con_c * con_c * con_c /con_k
+        real(kind=r2),parameter        :: c2 = con_h * con_c / con_k
+        !------------------------------------------------------------------------!
+        if ( tem_in .gt. 1.0e-12 .and. c2/(tem_in*lam_in) .lt. 300.0_r2 ) THEN
+            dB_result = c1 / lam_in /lam_in /lam_in/ lam_in /lam_in /lam_in / tem_in / tem_in  &
+                        *exp(c2/(tem_in*lam_in))/ (exp(c2/(tem_in*lam_in))-1.0_r2)**2.0_r2
+        else
+            dB_result = 0.0_r2
+        endif
+
+    END FUNCTION dB_dT_l
 
     ELEMENTAL FUNCTION get_expo(var_in) result(var_out)
         !------------------------------------------------------------------------!

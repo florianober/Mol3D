@@ -228,7 +228,7 @@ CONTAINS
         hd_totalmass =  &
                         ! dust mass
                         sum(grid%Nv(:,1)) * 4.0_r2*PI/3.0_r2 * &
-                            dust%r_dust(i_dust)**3 * dust%den_dust(1)*1.0e+3_r2 / M_sun + &
+                            dust%r_dust(1)**3 * dust%den_dust(1)*1.0e+3_r2 / M_sun + &
                         ! H mass
                         sum(grid%Nv_col(:,1)) *col_p_weight(1)/con_Na*1.0e-3_r2/ M_sun + &
                         ! selected molecule mass
@@ -237,7 +237,7 @@ CONTAINS
 !~         print *, grid%Nv_col(46,1)
         print '(A,ES11.4,A)',' dust mass           : '&
                ,sum(grid%Nv(:,1)) * 4.0_r2*PI/3.0_r2 * &
-                            dust%r_dust(i_dust)**3 * dust%den_dust(1)*1.0e+3_r2 / M_sun, ' M_sun'
+                            dust%r_dust(1)**3 * dust%den_dust(1)*1.0e+3_r2 / M_sun, ' M_sun'
 
         print '(A,ES11.4,A)',' H2 ortho mass       : '&
               ,sum(grid%Nv_col(:,3)) *col_p_weight(1)/con_Na*1.0e-3_r2/ M_sun, ' M_sun'

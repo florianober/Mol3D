@@ -52,7 +52,6 @@ MODULE Grid_type
         REAL(kind=r2),DIMENSION(:,:),POINTER      :: Nv_col        
         REAL(kind=r2),DIMENSION(:),POINTER        :: Nv_mol        
         REAL(kind=r1),DIMENSION(:,:),POINTER      :: lvl_pop        
-        REAL(kind=r2),DIMENSION(:,:),POINTER      :: Nv_r
         !  grd_density: this is the number density of the dust component (from mc3d)
         REAL(kind=r2),DIMENSION(:,:),POINTER      :: grd_dust_density
         !  grd_coldensity: this is the number density of all(!) possible collision partner for the
@@ -281,7 +280,6 @@ CONTAINS
             this%Nv(       0:this%n_cell, 1:n_dust ), &
             this%Nv_col(       0:this%n_cell, 1:6 ), &
             this%Nv_mol(       0:this%n_cell), &
-            this%Nv_r(     0:this%n_cell, 1:n_dust ), &
             this%grd_dust_density( 0:this%n_cell, 1:n_dust ), &
             this%grd_mol_density( 0:this%n_cell), &
             this%grd_col_density( 0:this%n_cell,1:6), &
@@ -310,7 +308,6 @@ CONTAINS
         this%Nv(:,:)              = 0.0_r2
         this%Nv_mol(:)            = 0.0_r2
         this%Nv_col(:,:)          = 0.0_r2
-        this%Nv_r(:,:)            = 0.0_r2
         this%grd_dust_density(:,:)= 0.0_r2
         this%grd_col_density(:,:) = 0.0_r2
         this%grd_mol_density(:)   = 0.0_r2
@@ -349,7 +346,6 @@ CONTAINS
             this%Nv, &
             this%Nv_col, &
             this%Nv_mol, &
-            this%Nv_r, &
             this%grd_dust_density, &
             this%grd_col_density, &
             this%grd_mol_density, &
