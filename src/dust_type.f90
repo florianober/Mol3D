@@ -617,14 +617,22 @@ CONTAINS
                 
                 ! normalized for the use to get the new wavelength
                 hd1 = 0.0_r2
-                DO i_lam=2, this%n_lam
-                    hd1 = hd1 + integ1(this%lam(:),this%QdB_dT_l(i_dust,i_tem,:)/this%QdB_dT(i_dust,i_tem),i_lam-1,i_lam)
-                    this%QdB_dT_l_norm(i_dust,i_tem,i_lam) =  hd1
-                END DO
-                
+                IF (this%QdB_dT(i_dust,i_tem) .lt. 1.0e-301_r2) THEN
+                    this%QdB_dT_l_norm(i_dust,i_tem,:) = 0.0_r2
+                ELSE
+                    DO i_lam=2, this%n_lam
+                        hd1 = hd1 + integ1(this%lam(:),this%QdB_dT_l(i_dust,i_tem,:)/this%QdB_dT(i_dust,i_tem),i_lam-1,i_lam)
+                        this%QdB_dT_l_norm(i_dust,i_tem,i_lam) =  hd1
+                    END DO
+                END IF
            end do
         end do
-
+        
+!~         if (any(isnan(this%QdB_dT_l))) print *,'here 1'
+!~         if (any(isnan(this%QdB_dT))) print *,'here 2'
+!~         if (any(isnan(this%QdB_dT_l_norm))) print *,'here 3'
+!~         if (any(isnan(this%QB))) print *,'here 4'
+!~         stop
         deallocate(QBx)
         
         ! save QB

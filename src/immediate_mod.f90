@@ -270,8 +270,8 @@ contains
     if ( grid%Nv(simu_var%nr_cell,i_dust_action) > 1.0e-16_r2) then
         ! absorb photon
             !print *,'here'
-            i_star_abs(i_dust_action,simu_var%nr_lam,simu_var%nr_cell) = &
-                        i_star_abs(i_dust_action,simu_var%nr_lam,simu_var%nr_cell) + simu_var%energy
+!~             i_star_abs(i_dust_action,simu_var%nr_lam,simu_var%nr_cell) = &
+!~                         i_star_abs(i_dust_action,simu_var%nr_lam,simu_var%nr_cell) + simu_var%energy
 !~             hd1 = integ1( dust%lam(:), i_star_abs(i_dust_action,:,simu_var%nr_cell), 1, dust%n_lam)     ! [W]
 !~             hd1 = hd1 / (grid%Nv(simu_var%nr_cell,i_dust_action)*4.0*PI)                                ! [W]
             !print *,'hd1'
@@ -282,8 +282,8 @@ contains
 !~             hd1    = (grid%cell_energy(i_dust_action,simu_var%nr_cell)/ &
 !~                      (basics%PIx4 * grid%cell_vol(simu_var%nr_cell)))
 
-            
             i_tem = MIN(binary_search(hd1,dust%QB(i_dust_action,:))-1,basics%n_tem)
+
             temp_new = &
                 ( ( (hd1 - dust%QB(i_dust_action,i_tem-1)) / (dust%QB(i_dust_action,i_tem) - dust%QB(i_dust_action,i_tem-1)) ) &
                 + real(i_tem-1,kind=r2) ) &
