@@ -265,7 +265,7 @@ CONTAINS
                     ! initiate simu_type
                     CALL InitSimu(simu_var, 1, 'SimulationVars',dust%n_dust,dust%n_lam)
                     ! 1. start photon (from primary source only)
-                    CALL start_prim(basics, rand_nr, fluxes, dust, simu_var, i_lam)
+                    CALL start_prim(basics, model, rand_nr, fluxes, dust, simu_var, i_lam)
 
                     ! 2. determine & go to next point of interaction
                     CALL next_pos_const(model, rand_nr, grid, dust, simu_var, grd_d_l)
@@ -280,7 +280,7 @@ CONTAINS
                             simu_var%n_interact = simu_var%n_interact +1
 
                             CALL interact(basics,grid, dust, rand_nr, fluxes, simu_var, t_dust, i_star_abs,dt_dust)
-                            CALL next_pos_const(model, rand_nr, grid, dust, simu_var, grd_d_l)
+                            CALL next_pos_const(model, rand_nr, grid, dust, simu_var, grid%grd_d_l)
                             cycle
                         ELSE 
                             IF (simu_var%inside) THEN
@@ -311,7 +311,7 @@ CONTAINS
             grid%delta_t_dust = grid%delta_t_dust+dt_dust
             grid%i_star_abs = grid%i_star_abs+i_star_abs
             grid%t_dust     = grid%t_dust+t_dust
-            grid%grd_d_l    = grid%grd_d_l+grd_d_l
+!~             grid%grd_d_l    = grid%grd_d_l+grd_d_l
 !~         !$OMP END CRITICAL
         DEALLOCATE (t_dust, grd_d_l, i_star_abs)
 !~         !$omp end parallel

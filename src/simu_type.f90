@@ -33,11 +33,11 @@ MODULE simu_type
         REAL(kind=r2), DIMENSION(1:3)                   :: dir_xyz
         REAL(kind=r2), DIMENSION(1:3,1:3)               :: D
         REAL(kind=r2), DIMENSION(1:4)                   :: stokes
-        REAL(kind=r2)                                    :: SINPHI, COSPHI
-        REAL(kind=r2)                                    :: SIN2PH, COS2PH
-        REAL(kind=r2)                                    :: SINTHE, COSTHE
+        REAL(kind=r2)                                   :: SINPHI, COSPHI
+        REAL(kind=r2)                                   :: SIN2PH, COS2PH
+        REAL(kind=r2)                                   :: SINTHE, COSTHE
         
-        REAL(kind=r2)                                    :: c_in_akt 
+        REAL(kind=r2)                                  :: energy
         REAL(kind=r2), DIMENSION(:),POINTER            :: prob_action
         REAL(kind=r2), DIMENSION(:),POINTER            :: current_albedo
         
@@ -94,7 +94,7 @@ CONTAINS
         this%SIN2PH      = 0.0_r2
         this%COS2PH      = 0.0_r2
         
-        this%c_in_akt    = 0.0_r2
+        this%energy    = 0.0_r2
 
         ALLOCATE ( this%prob_action( 1:n_dust), &
                    this%current_albedo( 1:n_dust))

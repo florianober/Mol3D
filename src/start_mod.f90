@@ -28,10 +28,11 @@ contains
   ! ################################################################################################
   ! start photon from primary source
   ! ---
-  SUBROUTINE start_prim(basics,rand_nr,fluxes,dust,simu_var,i_lam)
+  SUBROUTINE start_prim(basics,model,rand_nr,fluxes,dust,simu_var,i_lam)
     
     IMPLICIT NONE
     !--------------------------------------------------------------------------!
+    TYPE(MODEL_TYP),INTENT(IN)                       :: model
     TYPE(Basic_TYP),INTENT(IN)                       :: basics
     TYPE(Randgen_TYP),INTENT(INOUT)                  :: rand_nr
     TYPE(Dust_TYP),INTENT(IN)                        :: dust
@@ -76,11 +77,17 @@ contains
     ! stokes vector
     simu_var%stokes(:) = fluxes%stokes_ini(:)
         
-    simu_var%nr_lam    = i_lam                              ! initial wavelength of photon    
-    simu_var%current_albedo = (dust%C_sca(:,i_lam) / dust%C_ext(:,i_lam))
-    simu_var%c_in_akt  = dust%c_in_star(simu_var%nr_lam)    ! set energy of photon package
-    simu_var%inside    = .true.                            ! photon inside model space
-    simu_var%D(:,:)    = basics%mat_ident3(:,:)             ! initialize rotation matrix
+    simu_var%nr_lam         = i_lam                              ! initial wavelength of photon    
+    simu_var%current_albedo = dust%albedo(:,i_lam)
+    
+    simu_var%energy         = dust%c_in_star(i_lam)
+!~     simu_var%energy         = planck(model%t_star,dust%lam(i_lam))&
+!~                               *PI/con_sigma/(model%t_star*model%t_star*model%t_star*model%t_star)    ! set energy of photon package
+    
+    
+    
+    simu_var%inside         = .true.                             ! photon inside model space
+    simu_var%D(:,:)         = basics%mat_ident3(:,:)             ! initialize rotation matrix
         
     ! ---
     ! [C] apply rotation matrix
@@ -151,10 +158,10 @@ contains
 !~     
 !~     ! ---
 !~     ! 3. set remaining photon parameters 
-!~     nr_lam   = i_lam              ! initial wavelength of photon    
-!~     inside   = .true.             ! photon inside model space
-!~     c_in_akt = c_in_dust(nr_lam)  ! set energy of photon package
-!~     nr_cell  = i_cell             ! set cell number
+!~     simu_var%nr_lam   = i_lam              ! initial wavelength of photon    
+!~     simu_var%inside   = .true.             ! photon inside model space
+!~     simu_var%energy   = c_in_dust(nr_lam)  ! set energy of photon package
+!~     simu_var%nr_cell  = i_cell             ! set cell number
 !~ 
 !~   end subroutine start_cell
 

@@ -116,7 +116,12 @@ contains
 
                 ! c) store information about (fractional) path through last cell
                 grd_d_l(simu_var%nr_cell,simu_var%nr_lam) = grd_d_l(simu_var%nr_cell,simu_var%nr_lam) + &
-                                                                              d_l * simu_var%c_in_akt
+!~                                                                               d_l * simu_var%energy
+                                                            d_l * simu_var%energy * dust%C_abs(1,simu_var%nr_lam) &
+                                                            *model%ref_unit
+                grid%cell_energy(:,simu_var%nr_cell) = grid%cell_energy(:,simu_var%nr_cell)+ &
+                                                         d_l * simu_var%energy * dust%C_abs(:,simu_var%nr_lam) &
+                                                         *model%ref_unit
                 ! d) new point of interaction
                 simu_var%pos_xyz(:) = simu_var%pos_xyz_new(:)
 
@@ -136,7 +141,12 @@ contains
                     !#######################################################
                     ! be careful here
                     grd_d_l(simu_var%nr_cell,simu_var%nr_lam) = grd_d_l(simu_var%nr_cell,simu_var%nr_lam) +& 
-                                                                                  d_l * simu_var%c_in_akt
+!~                                                                                   d_l * simu_var%energy
+                                                               d_l * simu_var%energy * dust%C_abs(1,simu_var%nr_lam) &
+                                                               *model%ref_unit
+                    grid%cell_energy(:,simu_var%nr_cell) = grid%cell_energy(:,simu_var%nr_cell)+ &
+                                                         d_l * simu_var%energy * dust%C_abs(:,simu_var%nr_lam) &
+                                                         *model%ref_unit
                     !#######################################################
                     ! b) set new starting point; adjust optical depth
                     simu_var%pos_xyz(:) = simu_var%pos_xyz_new(:)             
@@ -149,7 +159,11 @@ contains
                     ! ---
                     ! a) store information about (fractional) path through last cell
                     grd_d_l(simu_var%nr_cell,simu_var%nr_lam) = grd_d_l(simu_var%nr_cell,simu_var%nr_lam) + & 
-                                                                                 d_l * simu_var%c_in_akt
+                                                                d_l * simu_var%energy * dust%C_abs(1,simu_var%nr_lam) &
+                                                                *model%ref_unit
+                    grid%cell_energy(:,simu_var%nr_cell) = grid%cell_energy(:,simu_var%nr_cell)+ &
+                                                         d_l * simu_var%energy * dust%C_abs(:,simu_var%nr_lam) &
+                                                         *model%ref_unit
                  
                     ! b) set flag
                     simu_var%inside = .false.
