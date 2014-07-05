@@ -579,7 +579,7 @@ contains
 !~         !--------------------------------------------------------------------------!
 !~         ! ---
 !~         ! 1. normalization to W/m/sr
-!~         !if ((simu_type==2 .or. simu_type==3) .and. ree_type==2) then
+!~         !if ((photon_type==2 .or. photon_type==3) .and. ree_type==2) then
 !~             ! raytracing: default: W/m/sr => no conversion needed
 !~         cnv_Wmsr_result = lum_x
 !~         !else
@@ -735,35 +735,35 @@ contains
         END DO
     END SUBROUTINE solvestateq
     
-    SUBROUTINE vecmat(simu_var)
-        USE simu_type
+    SUBROUTINE vecmat(photon)
+        USE photon_type
         IMPLICIT NONE
         
-        TYPE(Simu_TYP), INTENT(INOUT)                     :: simu_var
+        TYPE(PHOTON_TYP), INTENT(INOUT)                     :: photon
         
         real(kind=r2), dimension(1:3,1:3)                 :: D_help
         REAL(kind=r2)                                      :: R,L,P
         
         ! ---
-        R = -simu_var%SINTHE * simu_var%SINPHI
-        L =  simu_var%SINTHE * simu_var%COSPHI
-        P =  simu_var%COSTHE
+        R = -photon%SINTHE * photon%SINPHI
+        L =  photon%SINTHE * photon%COSPHI
+        P =  photon%COSTHE
 
-        simu_var%dir_xyz(2) = -( simu_var%D(1,1) * R  +  simu_var%D(1,2) * L  +  simu_var%D(1,3) * P )
-        simu_var%dir_xyz(1) =    simu_var%D(2,1) * R  +  simu_var%D(2,2) * L  +  simu_var%D(2,3) * P
-        simu_var%dir_xyz(3) =    simu_var%D(3,1) * R  +  simu_var%D(3,2) * L  +  simu_var%D(3,3) * P
+        photon%dir_xyz(2) = -( photon%D(1,1) * R  +  photon%D(1,2) * L  +  photon%D(1,3) * P )
+        photon%dir_xyz(1) =    photon%D(2,1) * R  +  photon%D(2,2) * L  +  photon%D(2,3) * P
+        photon%dir_xyz(3) =    photon%D(3,1) * R  +  photon%D(3,2) * L  +  photon%D(3,3) * P
 
-        D_help(1,1) =   simu_var%COSPHI
-        D_help(2,1) =   simu_var%SINPHI
+        D_help(1,1) =   photon%COSPHI
+        D_help(2,1) =   photon%SINPHI
         D_help(3,1) =   0.0_r2
-        D_help(1,2) = - simu_var%SINPHI*simu_var%COSTHE
-        D_help(2,2) =   simu_var%COSPHI*simu_var%COSTHE
-        D_help(3,2) = - simu_var%SINTHE
-        D_help(1,3) = - simu_var%SINPHI*simu_var%SINTHE
-        D_help(2,3) =   simu_var%COSPHI*simu_var%SINTHE
-        D_help(3,3) =   simu_var%COSTHE
+        D_help(1,2) = - photon%SINPHI*photon%COSTHE
+        D_help(2,2) =   photon%COSPHI*photon%COSTHE
+        D_help(3,2) = - photon%SINTHE
+        D_help(1,3) = - photon%SINPHI*photon%SINTHE
+        D_help(2,3) =   photon%COSPHI*photon%SINTHE
+        D_help(3,3) =   photon%COSTHE
 
-        simu_var%D = matmul(simu_var%D,D_help)
+        photon%D = matmul(photon%D,D_help)
     end subroutine vecmat
     
     PURE FUNCTION binary_search(var_in, array_in) RESULT (int_result)

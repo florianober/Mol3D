@@ -25,6 +25,7 @@ program mol3d
     USE grid_type
     USE gas_type
     USE dust_type
+    USE source_type
     
     USE initiate, ONLY       : inimol, cleanup
     USE fileio, ONLY         : vis_plane, save_ch_map!, sv_stokes
@@ -41,6 +42,7 @@ program mol3d
     TYPE(Model_TYP)        :: model
     TYPE(Dust_TYP)         :: dust
     TYPE(Gas_TYP)          :: gas
+    TYPE(SOURCES)          :: sources_in
     REAL                   :: t0,t1
     
     !$ double precision omp_get_wtime
@@ -62,7 +64,7 @@ program mol3d
     !--------------------------------------------------------------------------!
     ! 1. initiate code [level 1: model setup]
     !--------------------------------------------------------------------------!    
-        CALL inimol(basics,fluxes, grid, model, dust , gas)
+        CALL inimol(basics,fluxes, grid, model, dust , gas, sources_in)
     !--------------------------------------------------------------------------!
     ! 2. all initialisation done, now set up the grid!
     !--------------------------------------------------------------------------! 
@@ -75,7 +77,7 @@ program mol3d
     !--------------------------------------------------------------------------!
     ! 4. clean up
     !--------------------------------------------------------------------------!
-        CALL cleanup(basics, fluxes, grid, model, dust, gas)
+        CALL cleanup(basics, fluxes, grid, model, dust, gas, sources_in)
     !--------------------------------------------------------------------------!
     ! 5. time measurement
     !--------------------------------------------------------------------------!

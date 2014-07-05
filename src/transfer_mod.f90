@@ -11,7 +11,7 @@ module transfer_mod
     USE dust_type
     USE model_type
     USE randgen_type
-    USE simu_type
+    USE photon_type
     
     USE math_mod
     USE tools_mod
@@ -31,7 +31,7 @@ contains
     ! photon transfer through model space
     ! here: constant density in each ESC is assumed
     ! ---
-    subroutine next_pos_const(model, rand_nr, grid, dust, simu_var,grd_d_l)
+    subroutine next_pos_const(model, rand_nr, grid, dust, photon,grd_d_l)
 
         IMPLICIT NONE
         !--------------------------------------------------------------------------!    
@@ -40,7 +40,7 @@ contains
         TYPE(Model_TYP),INTENT(IN)                        :: model
         TYPE(Dust_TYP),INTENT(IN)                         :: dust
         
-        TYPE(Simu_TYP),INTENT(INOUT)                      :: simu_var
+        TYPE(PHOTON_TYP),INTENT(INOUT)                      :: photon
         !--------------------------------------------------------------------------!
         
         REAL(kind=r2),DIMENSION(1:grid%n_cell, 1:dust%n_lam),INTENT(INOUT)      :: grd_d_l
@@ -62,17 +62,17 @@ contains
 !~         print *,'now'
         DO
             ! 2.1. inside the dust sublimation radius: skip
-            IF (simu_var%nr_cell==0) THEN
+            IF (photon%nr_cell==0) THEN
 !~                 print *, 'here?'
-!~                 CALL path_skip( grid, simu_var,rand_nr)
-                CALL path_skip( grid, simu_var%pos_xyz,simu_var%dir_xyz, &
-                               simu_var%pos_xyz_new,simu_var%nr_cell_new,d_l)
+!~                 CALL path_skip( grid, photon,rand_nr)
+                CALL path_skip( grid, photon%pos_xyz,photon%dir_xyz, &
+                               photon%pos_xyz_new,photon%nr_cell_new,d_l)
 !~                 print *, 'here? huch'
-                simu_var%pos_xyz = simu_var%pos_xyz_new
-                simu_var%nr_cell = simu_var%nr_cell_new
-                IF (.not. check_inside(simu_var%pos_xyz_new(:),grid, model) ) THEN
+                photon%pos_xyz = photon%pos_xyz_new
+                photon%nr_cell = photon%nr_cell_new
+                IF (.not. check_inside(photon%pos_xyz_new(:),grid, model) ) THEN
 !~                     kill_photon = .True.
-                    simu_var%inside = .false.
+                    photon%inside = .false.
                     exit
                 END IF
             END IF
@@ -80,9 +80,9 @@ contains
             ! 2.2. determine: - geometric path length in current cell (d_l [ref_unit]);
             !                 - new entry point in neighbouring cell
             !                 - new cell number
-            CALL path( grid, simu_var%pos_xyz, simu_var%pos_xyz_new, simu_var%nr_cell, &
-                        simu_var%nr_cell_new, d_l, kill_photon, simu_var%dir_xyz)
-            !print *, 'pos',simu_var%pos_xyz
+            CALL path( grid, photon%pos_xyz, photon%pos_xyz_new, photon%nr_cell, &
+                        photon%nr_cell_new, d_l, kill_photon, photon%dir_xyz)
+            !print *, 'pos',photon%pos_xyz
             IF (kill_photon) THEN
                 ! stop transfer of this photon package
                 d_l = 0.0_r2
@@ -91,14 +91,14 @@ contains
 
                 ! move photon package outside model space ! maybe we should generalize this,
                 ! but however it should work this way
-                simu_var%pos_xyz_new(1)   = model%r_ou * 1.00001_r2
-                simu_var%pos_xyz_new(2:3) = 0.0_r2
+                photon%pos_xyz_new(1)   = model%r_ou * 1.00001_r2
+                photon%pos_xyz_new(2:3) = 0.0_r2
               
             ELSE
                 ! 2.3. determine corresponding optical path length        (d_tau)
-                d_tau = (d_l * model%ref_unit) * sum(dust%C_ext(:,simu_var%nr_lam) *&
-                         grid%grd_dust_density(simu_var%nr_cell,:))
-                !print *, 'd_tau', sum(dust%C_ext(:,simu_var%nr_lam)),simu_var%nr_lam
+                d_tau = (d_l * model%ref_unit) * sum(dust%C_ext(:,photon%nr_lam) *&
+                         grid%grd_dust_density(photon%nr_cell,:))
+                !print *, 'd_tau', sum(dust%C_ext(:,photon%nr_lam)),photon%nr_lam
 
             END IF
 
@@ -112,45 +112,45 @@ contains
                 d_l = d_l * tau_end / d_tau
               
                 ! b) consider only fraction of path in current cell (i.e., nr_cell_new = nr_cell)
-                simu_var%pos_xyz_new(:) = simu_var%pos_xyz(:) + simu_var%dir_xyz(:) * d_l
+                photon%pos_xyz_new(:) = photon%pos_xyz(:) + photon%dir_xyz(:) * d_l
 
                 ! c) store information about (fractional) path through last cell
-                grd_d_l(simu_var%nr_cell,simu_var%nr_lam) = grd_d_l(simu_var%nr_cell,simu_var%nr_lam) + &
-!~                                                                               d_l * simu_var%energy
-                                                            d_l * simu_var%energy * dust%C_abs(1,simu_var%nr_lam) &
+                grd_d_l(photon%nr_cell,photon%nr_lam) = grd_d_l(photon%nr_cell,photon%nr_lam) + &
+!~                                                                               d_l * photon%energy
+                                                            d_l * photon%energy * dust%C_abs(1,photon%nr_lam) &
                                                             *model%ref_unit
-!~                 grid%cell_energy(:,simu_var%nr_cell) = grid%cell_energy(:,simu_var%nr_cell)+ &
-!~                                                          d_l * simu_var%energy * dust%C_abs(:,simu_var%nr_lam) &
+!~                 grid%cell_energy(:,photon%nr_cell) = grid%cell_energy(:,photon%nr_cell)+ &
+!~                                                          d_l * photon%energy * dust%C_abs(:,photon%nr_lam) &
 !~                                                          *model%ref_unit
                 ! d) new point of interaction
-                simu_var%pos_xyz(:) = simu_var%pos_xyz_new(:)
+                photon%pos_xyz(:) = photon%pos_xyz_new(:)
 
                 ! e) nr_cell: remains unchanged (photon does not leave current cell)
-                ! simu_var%nr_cell = simu_var%nr_cell_new
+                ! photon%nr_cell = photon%nr_cell_new
 
                 exit
       
             ELSE
-                !print *, 'lower',d_tau, simu_var%nr_cell
+                !print *, 'lower',d_tau, photon%nr_cell
                 ! optical depth has not yet been reached
-                IF ( check_inside(simu_var%pos_xyz_new(:),grid, model) ) THEN
+                IF ( check_inside(photon%pos_xyz_new(:),grid, model) ) THEN
                     ! photon still inside model space
                     ! ---
                     ! a) store information about (fractional) path through last cell
                     
                     !#######################################################
                     ! be careful here
-                    grd_d_l(simu_var%nr_cell,simu_var%nr_lam) = grd_d_l(simu_var%nr_cell,simu_var%nr_lam) +& 
-!~                                                                                   d_l * simu_var%energy
-                                                               d_l * simu_var%energy * dust%C_abs(1,simu_var%nr_lam) &
+                    grd_d_l(photon%nr_cell,photon%nr_lam) = grd_d_l(photon%nr_cell,photon%nr_lam) +& 
+!~                                                                                   d_l * photon%energy
+                                                               d_l * photon%energy * dust%C_abs(1,photon%nr_lam) &
                                                                *model%ref_unit
-!~                     grid%cell_energy(:,simu_var%nr_cell) = grid%cell_energy(:,simu_var%nr_cell)+ &
-!~                                                          d_l * simu_var%energy * dust%C_abs(:,simu_var%nr_lam) &
+!~                     grid%cell_energy(:,photon%nr_cell) = grid%cell_energy(:,photon%nr_cell)+ &
+!~                                                          d_l * photon%energy * dust%C_abs(:,photon%nr_lam) &
 !~                                                          *model%ref_unit
                     !#######################################################
                     ! b) set new starting point; adjust optical depth
-                    simu_var%pos_xyz(:) = simu_var%pos_xyz_new(:)             
-                    simu_var%nr_cell    = simu_var%nr_cell_new
+                    photon%pos_xyz(:) = photon%pos_xyz_new(:)             
+                    photon%nr_cell    = photon%nr_cell_new
                     tau_end    = tau_end - d_tau
                     cycle
 
@@ -158,15 +158,15 @@ contains
                     ! photon already outside model space
                     ! ---
                     ! a) store information about (fractional) path through last cell
-                    grd_d_l(simu_var%nr_cell,simu_var%nr_lam) = grd_d_l(simu_var%nr_cell,simu_var%nr_lam) + & 
-                                                                d_l * simu_var%energy * dust%C_abs(1,simu_var%nr_lam) &
+                    grd_d_l(photon%nr_cell,photon%nr_lam) = grd_d_l(photon%nr_cell,photon%nr_lam) + & 
+                                                                d_l * photon%energy * dust%C_abs(1,photon%nr_lam) &
                                                                 *model%ref_unit
-!~                     grid%cell_energy(:,simu_var%nr_cell) = grid%cell_energy(:,simu_var%nr_cell)+ &
-!~                                                          d_l * simu_var%energy * dust%C_abs(:,simu_var%nr_lam) &
+!~                     grid%cell_energy(:,photon%nr_cell) = grid%cell_energy(:,photon%nr_cell)+ &
+!~                                                          d_l * photon%energy * dust%C_abs(:,photon%nr_lam) &
 !~                                                          *model%ref_unit
                  
                     ! b) set flag
-                    simu_var%inside = .false.
+                    photon%inside = .false.
                     exit
                 END IF
             END IF
@@ -244,10 +244,10 @@ contains
     d_l = d_l +epsilon(1.0_r2)*1.0e6_r2*d_l
     
     pos_xyz_new    = pos_xyz + d_l * dir_xyz
-!~     simu_var%nr_cell_new = get_cell_nr( grid, pos_xyz_new)
+!~     photon%nr_cell_new = get_cell_nr( grid, pos_xyz_new)
     nr_cell_new = get_cell_nr( grid, pos_xyz_new)
     
-!~     simu_var%pos_xyz_new = pos_xyz_new
+!~     photon%pos_xyz_new = pos_xyz_new
   END SUBROUTINE path_skip_cy
   
   subroutine path_skip_sp( grid,pos_xyz,dir_xyz,pos_xyz_new,nr_cell_new,d_l)
@@ -272,8 +272,8 @@ contains
     ! direction     : dir_xyz 
     ! cell number   : nr_cell
     ! ---
-!~     p0_vec(:) = simu_var%pos_xyz(:)
-!~     d_vec(:)  = simu_var%dir_xyz(:)
+!~     p0_vec(:) = photon%pos_xyz(:)
+!~     d_vec(:)  = photon%dir_xyz(:)
 
     ! ---
     ! 1. determine distance to inner shell radius (r_in)
@@ -289,13 +289,13 @@ contains
     !    rem.: entering the inner cell by 1e-4
     d_l = d_l  +  ((grid%co_mx_a(1) - grid%co_mx_a(0)) / 1.0e+4_r2)
 
-!~     simu_var%pos_xyz_new(:) = simu_var%pos_xyz(:) +   d_l * simu_var%dir_xyz(:)
+!~     photon%pos_xyz_new(:) = photon%pos_xyz(:) +   d_l * photon%dir_xyz(:)
     pos_xyz_new(:) = pos_xyz(:) +   d_l * dir_xyz(:)
     
     ! -
     ! 3. determine new cell number
     nr_cell_new = get_cell_nr( grid, pos_xyz_new)
-    !print *, simu_var%pos_xyz
+    !print *, photon%pos_xyz
   end subroutine path_skip_sp
 
 

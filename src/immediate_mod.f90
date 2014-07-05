@@ -9,7 +9,7 @@ MODULE immediate_mod
     USE dust_type
     USE model_type
     USE randgen_type
-    USE simu_type
+    USE photon_type
     USE basic_type
     USE fluxes_type
     
@@ -26,7 +26,7 @@ contains
   ! immediate reemission RT concept (routine from mc3d but modified)
   ! see Bjorkman & Wood 2001, ApJ
   ! ---
-  SUBROUTINE immediate(basics,rand_nr,grid,dust,simu_var, i_dust_action,t_dust, i_star_abs,dt_dust )
+  SUBROUTINE immediate(basics,rand_nr,grid,dust,photon, i_dust_action,t_dust, i_star_abs,dt_dust )
   
     IMPLICIT NONE
     !--------------------------------------------------------------------------!
@@ -35,7 +35,7 @@ contains
     TYPE(Grid_TYP),INTENT(IN)                        :: grid
     TYPE(Dust_TYP),INTENT(IN)                        :: dust
     
-    TYPE(Simu_TYP),INTENT(INOUT)                    :: simu_var
+    TYPE(PHOTON_TYP),INTENT(INOUT)                    :: photon
     !--------------------------------------------------------------------------!
         
     REAL(kind=r1),DIMENSION(0:grid%n_cell,1:dust%n_dust),INTENT(INOUT)      :: t_dust
@@ -52,15 +52,15 @@ contains
     !--------------------------------------------------------------------------!
     
     !1.+ 2. estimate new temperature -> t_dust(nr_cell,i_dust_action) & store old temp
-    CALL immediate_temp( basics, grid,dust,simu_var, i_dust_action, t_dust_old, t_dust_new,&
+    CALL immediate_temp( basics, grid,dust,photon, i_dust_action, t_dust_old, t_dust_new,&
                          t_dust, i_star_abs)
     ! 3. estimate difference in SED
     i_tem_hd1 = (t_dust_old - basics%t_dust_min) / basics%d_tem
-    !print *,t_dust(simu_var%nr_cell,1)
-    dt_dust(simu_var%nr_cell,1) = abs(t_dust_old - t_dust_new) 
+    !print *,t_dust(photon%nr_cell,1)
+    dt_dust(photon%nr_cell,1) = abs(t_dust_old - t_dust_new) 
     i_tem_1   = nint( i_tem_hd1 ) 
     
-    nr_lam_old  = simu_var%nr_lam
+    nr_lam_old  = photon%nr_lam
 
     ! interpolate: tabulated planck function @ t_dust_old
 !~     pt_1 = ipol2( &
@@ -82,17 +82,17 @@ contains
 !~                     i_tem_hd2 )
 !~        end if
 
-!~     simu_var%diff_planck(:) = dust%C_abs(i_dust_action,:) * ( pt_2 - pt_1 )
+!~     photon%diff_planck(:) = dust%C_abs(i_dust_action,:) * ( pt_2 - pt_1 )
 !~     print *, i_tem_2, t_dust_new
-!~     simu_var%diff_planck(:) = dust%QdB_dT_l(i_dust_action,i_tem_2, :)!*(t_dust_new - t_dust_old)
+!~     photon%diff_planck(:) = dust%QdB_dT_l(i_dust_action,i_tem_2, :)!*(t_dust_new - t_dust_old)
 
     ! ----------------------------------------------------------------------------------------------
     ! difference > 0 ?
-!~     if ( sum(abs(simu_var%diff_planck(:))) /= 0.0_r2 ) then
+!~     if ( sum(abs(photon%diff_planck(:))) /= 0.0_r2 ) then
     
        ! normalize the difference-SED
-!~        simu_var%diff_planck(:) = simu_var%diff_planck(:) / integ1(dust%lam(:), &
-!~                                  simu_var%diff_planck(:), 1, dust%n_lam)
+!~        photon%diff_planck(:) = photon%diff_planck(:) / integ1(dust%lam(:), &
+!~                                  photon%diff_planck(:), 1, dust%n_lam)
 
        ! chose a wavelength in the difference SED randomly == new wavelength
         CALL RAN2(rand_nr,rndx)
@@ -112,10 +112,10 @@ contains
 !~         i_lam = dust%n_lam-1
 !~        
 !~     endif
-    simu_var%nr_lam         = i_lam
-    simu_var%energy         = simu_var%energy * dust%d_lam(nr_lam_old)/dust%d_lam(simu_var%nr_lam)
-!~     simu_var%energy         = simu_var%energy
-    simu_var%current_albedo = dust%albedo(:,i_lam)
+    photon%nr_lam         = i_lam
+    photon%energy         = photon%energy * dust%d_lam(nr_lam_old)/dust%d_lam(photon%nr_lam)
+!~     photon%energy         = photon%energy
+    photon%current_albedo = dust%albedo(:,i_lam)
   end subroutine immediate
 
 
@@ -241,7 +241,7 @@ contains
   ! ################################################################################################
   ! estimation of the  dust temperature distribution
   ! ---
-  subroutine immediate_temp( basics,grid,dust,simu_var, i_dust_action, temp_old, temp_new,& 
+  subroutine immediate_temp( basics,grid,dust,photon, i_dust_action, temp_old, temp_new,& 
                              t_dust, i_star_abs)
   
     IMPLICIT NONE
@@ -250,7 +250,7 @@ contains
     TYPE(Grid_TYP),INTENT(IN)                        :: grid
     TYPE(Dust_TYP),INTENT(IN)                        :: dust
     
-    TYPE(Simu_TYP),INTENT(INOUT)                    :: simu_var
+    TYPE(PHOTON_TYP),INTENT(INOUT)                    :: photon
     !--------------------------------------------------------------------------!
         
     REAL(kind=r1),DIMENSION(0:grid%n_cell,1:dust%n_dust),INTENT(INOUT)                  :: t_dust
@@ -265,22 +265,22 @@ contains
     real(kind=r2),INTENT(OUT)                       :: temp_old
     !--------------------------------------------------------------------------!
     ! ---
-    !print *, 'here1', grid%Nv_r(simu_var%nr_cell,i_dust_action)
+    !print *, 'here1', grid%Nv_r(photon%nr_cell,i_dust_action)
     !TbD, check the if case .... sounds arbitrary
-    if ( grid%Nv(simu_var%nr_cell,i_dust_action) > 1.0e-16_r2) then
+    if ( grid%Nv(photon%nr_cell,i_dust_action) > 1.0e-16_r2) then
         ! absorb photon
             !print *,'here'
-!~             i_star_abs(i_dust_action,simu_var%nr_lam,simu_var%nr_cell) = &
-!~                         i_star_abs(i_dust_action,simu_var%nr_lam,simu_var%nr_cell) + simu_var%energy
-!~             hd1 = integ1( dust%lam(:), i_star_abs(i_dust_action,:,simu_var%nr_cell), 1, dust%n_lam)     ! [W]
-!~             hd1 = hd1 / (grid%Nv(simu_var%nr_cell,i_dust_action)*4.0*PI)                                ! [W]
+!~             i_star_abs(i_dust_action,photon%nr_lam,photon%nr_cell) = &
+!~                         i_star_abs(i_dust_action,photon%nr_lam,photon%nr_cell) + photon%energy
+!~             hd1 = integ1( dust%lam(:), i_star_abs(i_dust_action,:,photon%nr_cell), 1, dust%n_lam)     ! [W]
+!~             hd1 = hd1 / (grid%Nv(photon%nr_cell,i_dust_action)*4.0*PI)                                ! [W]
             !print *,'hd1'
-!~             hd1    = (sum(grid%grd_d_l(simu_var%nr_cell,:)) / (basics%PIx4 * grid%cell_vol(simu_var%nr_cell)))
+!~             hd1    = (sum(grid%grd_d_l(photon%nr_cell,:)) / (basics%PIx4 * grid%cell_vol(photon%nr_cell)))
 
-            hd1    = (1.0_r2 / (basics%PIx4 * grid%cell_vol(simu_var%nr_cell))) * &
-                   integ1( dust%lam(:), grid%grd_d_l(simu_var%nr_cell,:), 1, dust%n_lam)
-!~             hd1    = (grid%cell_energy(i_dust_action,simu_var%nr_cell)/ &
-!~                      (basics%PIx4 * grid%cell_vol(simu_var%nr_cell)))
+            hd1    = (1.0_r2 / (basics%PIx4 * grid%cell_vol(photon%nr_cell))) * &
+                   integ1( dust%lam(:), grid%grd_d_l(photon%nr_cell,:), 1, dust%n_lam)
+!~             hd1    = (grid%cell_energy(i_dust_action,photon%nr_cell)/ &
+!~                      (basics%PIx4 * grid%cell_vol(photon%nr_cell)))
 
             i_tem = MIN(binary_search(hd1,dust%QB(i_dust_action,:))-1,basics%n_tem)
 
@@ -295,8 +295,8 @@ contains
                 temp_new = basics%t_dust_min
             end if
         
-            temp_old = t_dust(simu_var%nr_cell,i_dust_action)
-            t_dust(simu_var%nr_cell,i_dust_action)      = temp_new
+            temp_old = t_dust(photon%nr_cell,i_dust_action)
+            t_dust(photon%nr_cell,i_dust_action)      = temp_new
     ELSE
         temp_old = basics%t_dust_min
         temp_new = basics%t_dust_min

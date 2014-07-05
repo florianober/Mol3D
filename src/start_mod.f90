@@ -9,7 +9,7 @@ MODULE start_mod
     USE dust_type
     USE model_type
     USE randgen_type
-    USE simu_type
+    USE photon_type
     USE basic_type
     USE fluxes_type
     
@@ -28,7 +28,7 @@ contains
   ! ################################################################################################
   ! start photon from primary source
   ! ---
-  SUBROUTINE start_prim(basics,model,rand_nr,fluxes,dust,simu_var,i_lam)
+  SUBROUTINE start_prim(basics,model,rand_nr,fluxes,dust,photon,i_lam)
     
     IMPLICIT NONE
     !--------------------------------------------------------------------------!
@@ -38,7 +38,7 @@ contains
     TYPE(Dust_TYP),INTENT(IN)                        :: dust
     TYPE(FLUXES_TYP),INTENT(IN)                      :: fluxes
     
-    TYPE(Simu_TYP),INTENT(INOUT)                    :: simu_var
+    TYPE(PHOTON_TYP),INTENT(INOUT)                    :: photon
     !--------------------------------------------------------------------------!
 
     integer, intent(in)                             :: i_lam
@@ -50,21 +50,21 @@ contains
         ! 1. direction (isotropic)
         CALL RAN2(rand_nr, rndx)
         
-        simu_var%SINPHI = sin( rndx * basics%PIx2 )
-        simu_var%COSPHI = cos( rndx * basics%PIx2 )
-        simu_var%SIN2PH = 2.0_r2 * simu_var%SINPHI * simu_var%COSPHI
-        simu_var%COS2PH = 1.0_r2 - 2.0_r2 * simu_var%SINPHI**2
+        photon%SINPHI = sin( rndx * basics%PIx2 )
+        photon%COSPHI = cos( rndx * basics%PIx2 )
+        photon%SIN2PH = 2.0_r2 * photon%SINPHI * photon%COSPHI
+        photon%COS2PH = 1.0_r2 - 2.0_r2 * photon%SINPHI**2
         
         CALL RAN2(rand_nr, rndx)
         
-        simu_var%SINTHE = sqrt(4.0_r2 * (rndx - rndx**2))
-        simu_var%COSTHE = 1.0_r2 - 2.0_r2*rndx
+        photon%SINTHE = sqrt(4.0_r2 * (rndx - rndx**2))
+        photon%COSTHE = 1.0_r2 - 2.0_r2*rndx
        
         ! 2. starting point: center of coordinate system
-        simu_var%pos_xyz(:) = 0.0_r2
+        photon%pos_xyz(:) = 0.0_r2
 
         ! 3. star is located in inner dust-free region
-        simu_var%nr_cell = 0
+        photon%nr_cell = 0
         
     ELSE
            print *, "Type of emission concept for primary source not known [concept_ps]"
@@ -75,28 +75,28 @@ contains
     ! ---
     ! [B] initialize new photon parameters
     ! stokes vector
-    simu_var%stokes(:) = fluxes%stokes_ini(:)
+    photon%stokes(:) = fluxes%stokes_ini(:)
         
-    simu_var%nr_lam         = i_lam                              ! initial wavelength of photon    
-    simu_var%current_albedo = dust%albedo(:,i_lam)
+    photon%nr_lam         = i_lam                              ! initial wavelength of photon    
+    photon%current_albedo = dust%albedo(:,i_lam)
     
-    simu_var%energy         = dust%c_in_star(i_lam)
-!~     simu_var%energy         = planck(model%t_star,dust%lam(i_lam))&
+    photon%energy         = dust%c_in_star(i_lam)
+!~     photon%energy         = planck(model%t_star,dust%lam(i_lam))&
 !~                               *PI/con_sigma/(model%t_star*model%t_star*model%t_star*model%t_star)    ! set energy of photon package
     
     
     
-    simu_var%inside         = .true.                             ! photon inside model space
-    simu_var%D(:,:)         = basics%mat_ident3(:,:)             ! initialize rotation matrix
+    photon%inside         = .true.                             ! photon inside model space
+    photon%D(:,:)         = basics%mat_ident3(:,:)             ! initialize rotation matrix
         
     ! ---
     ! [C] apply rotation matrix
-    CALL vecmat(simu_var)
+    CALL vecmat(photon)
 
     ! ---
     ! last point of interaction = start position
     
-    simu_var%pos_xyz_li(:) = simu_var%pos_xyz(:)
+    photon%pos_xyz_li(:) = photon%pos_xyz(:)
 
   END SUBROUTINE start_prim
   
@@ -158,10 +158,10 @@ contains
 !~     
 !~     ! ---
 !~     ! 3. set remaining photon parameters 
-!~     simu_var%nr_lam   = i_lam              ! initial wavelength of photon    
-!~     simu_var%inside   = .true.             ! photon inside model space
-!~     simu_var%energy   = c_in_dust(nr_lam)  ! set energy of photon package
-!~     simu_var%nr_cell  = i_cell             ! set cell number
+!~     photon%nr_lam   = i_lam              ! initial wavelength of photon    
+!~     photon%inside   = .true.             ! photon inside model space
+!~     photon%energy   = c_in_dust(nr_lam)  ! set energy of photon package
+!~     photon%nr_cell  = i_cell             ! set cell number
 !~ 
 !~   end subroutine start_cell
 
@@ -169,7 +169,7 @@ contains
   ! ################################################################################################
   ! emission from dust grain at current position
   ! ---
-  SUBROUTINE start_grain(basics,rand_nr,fluxes,simu_var)
+  SUBROUTINE start_grain(basics,rand_nr,fluxes,photon)
     IMPLICIT NONE
     !--------------------------------------------------------------------------!
     TYPE(Basic_TYP),INTENT(IN)                       :: basics
@@ -178,7 +178,7 @@ contains
 !~     TYPE(Dust_TYP),INTENT(IN)                        :: dust
     TYPE(FLUXES_TYP),INTENT(IN)                      :: fluxes
     
-    TYPE(Simu_TYP),INTENT(INOUT)                    :: simu_var
+    TYPE(PHOTON_TYP),INTENT(INOUT)                    :: photon
     !--------------------------------------------------------------------------!
     REAL(kind=r2)                                    :: rndx
     !--------------------------------------------------------------------------!
@@ -189,29 +189,29 @@ contains
 
     ! 2. direction of emission
     CALL RAN2(rand_nr,rndx)
-    simu_var%SINPHI = sin( rndx * basics%PIx2 )
-    simu_var%COSPHI = cos( rndx * basics%PIx2 )
-    simu_var%SIN2PH = 2.0_r2 * simu_var%SINPHI * simu_var%COSPHI
-    simu_var%COS2PH = 1.0_r2 - 2.0_r2 * simu_var%SINPHI**2
+    photon%SINPHI = sin( rndx * basics%PIx2 )
+    photon%COSPHI = cos( rndx * basics%PIx2 )
+    photon%SIN2PH = 2.0_r2 * photon%SINPHI * photon%COSPHI
+    photon%COS2PH = 1.0_r2 - 2.0_r2 * photon%SINPHI**2
     
     CALL RAN2(rand_nr,rndx)
-    simu_var%SINTHE = sqrt(4.0_r2 * (rndx - rndx**2))
-    simu_var%COSTHE = 1.0_r2 - 2.0_r2*rndx
+    photon%SINTHE = sqrt(4.0_r2 * (rndx - rndx**2))
+    photon%COSTHE = 1.0_r2 - 2.0_r2*rndx
 
     ! ---
     ! [B] initialize new photon parameters
     ! stokes vector
-    simu_var%stokes(:) = fluxes%stokes_ini(:)
+    photon%stokes(:) = fluxes%stokes_ini(:)
 
     ! photon inside model space
-    simu_var%inside    = .true.
+    photon%inside    = .true.
 
     ! initialize rotation matrix
-    simu_var%D(:,:)    = basics%mat_ident3(:,:)
+    photon%D(:,:)    = basics%mat_ident3(:,:)
     
     ! ---
     ! [C] apply rotation matrix
-    CALL vecmat(simu_var)
+    CALL vecmat(photon)
 
   END SUBROUTINE start_grain
 

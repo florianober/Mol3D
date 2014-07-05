@@ -10,6 +10,8 @@ MODULE initiate
     USE grid_type, ONLY    : Grid_TYP, InitGrid, CloseGrid
     USE dust_type, ONLY    : Dust_TYP, InitDust, CloseDust
     USE gas_type, ONLY     : Gas_TYP, InitGas, CloseGas
+!~     USE source_type, ONLY  : SOURCES, InitSources, CloseSources
+    USE source_type
     
     USE parser_mod
     USE fileio, ONLY       : save_input
@@ -25,7 +27,7 @@ MODULE initiate
   
 CONTAINS
 
-SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas)
+SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
 
     IMPLICIT NONE
     
@@ -36,6 +38,7 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas)
     TYPE(Model_TYP)                                  :: model
     TYPE(Dust_TYP)                                   :: dust
     TYPE(Gas_TYP)                                    :: gas
+    TYPE(SOURCES)                                    :: sources_in
     !--------------------------------------------------------------------------!
     
     CHARACTER(len=256)                               :: proname
@@ -75,7 +78,7 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas)
     
     INTEGER, ALLOCATABLE, DIMENSION(:)               :: tr_cat
     
-    INTEGER                                          :: simu_type
+    INTEGER                                          :: photon_type
     INTEGER                                          :: i_arg
     INTEGER                                          :: n_a
     INTEGER                                          :: n_b
@@ -105,13 +108,15 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas)
     LOGICAL                                          :: do_raytr
     LOGICAL                                          :: do_velo_ch_map
     LOGICAL                                          :: do_continuum_map
+    LOGICAL                                          :: source_test
     !--------------------------------------------------------------------------!
     INTENT(INOUT)                                    :: basics, &
                                                         fluxes, &
                                                         grid, & 
                                                         model, &
                                                         dust, &
-                                                        gas
+                                                        gas, &
+                                                        sources_in
     
 
     print *, "Code initialization [level 1]"
@@ -237,7 +242,7 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas)
         do_raytr = .False.
     END IF
     
-    CALL InitBasic(basics,simu_type,'Reemission map',proname,r_path, concept_ps, calc_tmp, old_proname, &
+    CALL InitBasic(basics,photon_type,'Reemission map',proname,r_path, concept_ps, calc_tmp, old_proname, &
                     old_model, &
                     project_2D, do_raytr,do_continuum_map,do_velo_ch_map, n_tem, t_dust_min, t_dust_max, &
                     num_core, pluto_data)
@@ -503,8 +508,11 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas)
                   dust%n_lam,gas%egy_lvl)
     !--------------------------------------------------------------------------! 
     
-    
-    
+    CALL InitSources(sources_in,1,'sources',1)
+    CALL AddSources(sources_in,model%l_star,(/0.0_r2,0.0_r2,0.0_r2/))
+    CALL AddSources(sources_in,model%l_star,(/0.0_r2,0.0_r2,0.0_r2/))
+    print *, SourcesInitialized(sources_in)
+    !--------------------------------------------------------------------------! 
     ! Stokes vector: Unpolarized radiation (assumed initial state)
     n_dust_emi = 0
     CALL parse('flux_unit',flux_unit,new_input_file)
@@ -525,7 +533,7 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas)
     
 end subroutine inimol
 
-SUBROUTINE cleanup(basics ,fluxes ,grid , model, dust, gas)
+SUBROUTINE cleanup(basics ,fluxes ,grid , model, dust, gas, sources_in)
 
     IMPLICIT NONE
     
@@ -536,13 +544,15 @@ SUBROUTINE cleanup(basics ,fluxes ,grid , model, dust, gas)
     TYPE(Model_TYP)                                  :: model
     TYPE(Dust_TYP)                                   :: dust
     TYPE(gas_TYP)                                    :: gas
+    TYPE(SOURCES)                                    :: sources_in
     !--------------------------------------------------------------------------!
     INTENT(INOUT)                                    :: basics, &
                                                         fluxes, &
                                                         grid, & 
                                                         model, &
                                                         dust, &
-                                                        gas
+                                                        gas, &
+                                                        sources_in
                                                     
     CALL CloseBasic(basics)
     CALL CloseDust(dust)
@@ -550,6 +560,8 @@ SUBROUTINE cleanup(basics ,fluxes ,grid , model, dust, gas)
     CALL CloseGrid(grid)
     CALL CloseModel(model)
     CALL CloseGas(gas)
+    CALL CloseSources(sources_in)
+    
 
 END SUBROUTINE cleanup
 

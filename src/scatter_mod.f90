@@ -9,7 +9,7 @@ MODULE scatter_mod
     USE dust_type
     USE model_type
     USE randgen_type
-    USE simu_type
+    USE photon_type
     USE basic_type
     USE fluxes_type
     
@@ -28,7 +28,7 @@ CONTAINS
   ! ################################################################################################
   ! Scattering [1]: Determination of the scattering direction
   ! ---
-  SUBROUTINE scatter(basics,rand_nr,dust,simu_var, i_dust_sca )
+  SUBROUTINE scatter(basics,rand_nr,dust,photon, i_dust_sca )
   
     IMPLICIT NONE
     !--------------------------------------------------------------------------!
@@ -36,14 +36,14 @@ CONTAINS
     TYPE(Randgen_TYP),INTENT(INOUT)                  :: rand_nr
     TYPE(Dust_TYP),INTENT(IN)                        :: dust
     
-    TYPE(Simu_TYP),INTENT(INOUT)                    :: simu_var
+    TYPE(PHOTON_TYP),INTENT(INOUT)                    :: photon
     !--------------------------------------------------------------------------!
     integer, intent(in)                             :: i_dust_sca
     
     !--------------------------------------------------------------------------!
     ! ---
     IF      (dust%aniiso == 1) then         ! * anisotropic scattering *
-        CALL miesca(basics,rand_nr,dust,simu_var, i_dust_sca )
+        CALL miesca(basics,rand_nr,dust,photon, i_dust_sca )
     ELSE IF (dust%aniiso == 2) then         ! * isotropic scattering   *
         !call isosca()
         PRINT *, 'TbD, not implemented yet'
@@ -72,7 +72,7 @@ CONTAINS
   ! and the scattering angle theta.
   ! PHI = 0...360 degr.,  THETA = 0...180 degr.
   ! ---
-  SUBROUTINE miesca(basics,rand_nr,dust,simu_var, i_dust)
+  SUBROUTINE miesca(basics,rand_nr,dust,photon, i_dust)
   
     IMPLICIT NONE
     !--------------------------------------------------------------------------!
@@ -81,7 +81,7 @@ CONTAINS
     !TYPE(Grid_TYP),INTENT(INOUT)                     :: grid
     TYPE(Dust_TYP),INTENT(IN)                        :: dust
     
-    TYPE(Simu_TYP),INTENT(INOUT)                    :: simu_var
+    TYPE(PHOTON_TYP),INTENT(INOUT)                    :: photon
     !--------------------------------------------------------------------------!
     integer, intent(in)                             :: i_dust
     integer                                          :: lot_th 
@@ -96,16 +96,16 @@ CONTAINS
     ! LOT=1 shows to THETA=0 degree and LOT=x shows to THETA=(x-1) * DANG
     ! degree.
     CALL RAN2(rand_nr,rndx)
-    lot_th = dust%SCAANG(i_dust, simu_var%nr_lam, nint(real(dust%nrndpt,kind=r2)*rndx) )
+    lot_th = dust%SCAANG(i_dust, photon%nr_lam, nint(real(dust%nrndpt,kind=r2)*rndx) )
     ANGLE  = (lot_th-1) * dust%D_ANG
-    simu_var%SINTHE = sin(ANGLE)
-    simu_var%COSTHE = cos(ANGLE)
+    photon%SINTHE = sin(ANGLE)
+    photon%COSTHE = cos(ANGLE)
 
     !                      *** PHI'-Determination ***
     ! Parameter  PHIPAR  declares deviation from an uniform distribution
     ! of the azimuthal angles PHI'. 
-    PHIPAR = ( sqrt(simu_var%stokes(2)**2 + simu_var%stokes(3)**2) / simu_var%stokes(1) ) * &
-        real(-dust%SME(1,2,i_dust,simu_var%nr_lam,lot_th) / dust%SME(1,1,i_dust,simu_var%nr_lam,lot_th), kind=r2)
+    PHIPAR = ( sqrt(photon%stokes(2)**2 + photon%stokes(3)**2) / photon%stokes(1) ) * &
+        real(-dust%SME(1,2,i_dust,photon%nr_lam,lot_th) / dust%SME(1,1,i_dust,photon%nr_lam,lot_th), kind=r2)
 
     CALL RAN2(rand_nr,rndx)
 
@@ -147,25 +147,25 @@ CONTAINS
        ! following connection:  phi = phi' + 180 deg - gamma ; 
        ! gamma=Uein/Qein.
        GAMMA = 0.0_r2 ! not sure if needed
-       if (simu_var%stokes(2) /= 0.0_r2) then
-          GAMMA  = 0.5_r2 * atan2(simu_var%stokes(3),simu_var%stokes(2))
-          if  (simu_var%stokes(3) < 0.0_r2) then
+       if (photon%stokes(2) /= 0.0_r2) then
+          GAMMA  = 0.5_r2 * atan2(photon%stokes(3),photon%stokes(2))
+          if  (photon%stokes(3) < 0.0_r2) then
              GAMMA = PI + GAMMA
           endif
        else
-          if     (simu_var%stokes(3) < 0.0_r2) then
+          if     (photon%stokes(3) < 0.0_r2) then
              GAMMA = basics%PIx34    ! GAMMA = PI * 3.0_r2/4.0_r2
-          elseif (simu_var%stokes(3) > 0.0_r2) then
+          elseif (photon%stokes(3) > 0.0_r2) then
              GAMMA = basics%PI4      ! GAMMA = PI / 4.0_r2
           endif
        endif
        PHI = PI - GAMMA + PHI
     endif
 
-    simu_var%SINPHI = sin(PHI)
-    simu_var%COSPHI = cos(PHI)
-    simu_var%SIN2PH = 2.0_r2 * simu_var%SINPHI * simu_var%COSPHI
-    simu_var%COS2PH = 1.0_r2 - 2.0_r2 * simu_var%SINPHI**2
+    photon%SINPHI = sin(PHI)
+    photon%COSPHI = cos(PHI)
+    photon%SIN2PH = 2.0_r2 * photon%SINPHI * photon%COSPHI
+    photon%COS2PH = 1.0_r2 - 2.0_r2 * photon%SINPHI**2
   END SUBROUTINE miesca
 
 

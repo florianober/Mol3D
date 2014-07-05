@@ -10,7 +10,7 @@ MODULE temp_mod
     USE model_type
     USE gas_type
     USE fluxes_type
-    USE simu_type
+    USE photon_type
     
     USE transfer_mod
     USE start_mod
@@ -212,7 +212,7 @@ CONTAINS
         REAL(kind=r2),DIMENSION(:,:,:),ALLOCATABLE    :: i_star_abs
         
         !# shared variables
-        TYPE(Simu_TYP)                                    :: simu_var
+        TYPE(PHOTON_TYP)                                    :: photon
         
         !--------------------------------------------------------------------------! 
         ! ---
@@ -229,7 +229,7 @@ CONTAINS
 
 !~         !$ call omp_set_num_threads( basics%num_core )
         
-!~         !$omp parallel PRIVATE(i_phot,seed,simu_var,rand_nr,t_dust,grd_d_l,i_star_abs)
+!~         !$omp parallel PRIVATE(i_phot,seed,photon,rand_nr,t_dust,grd_d_l,i_star_abs)
         
         ALLOCATE( t_dust(0:grid%n_cell,1:dust%n_dust), &
                   dt_dust(0:grid%n_cell,1:dust%n_dust), &
@@ -262,34 +262,34 @@ CONTAINS
                 
 !~                 !$omp do schedule(static)
                 DO i_phot=1,model%n_star_emi
-                    ! initiate simu_type
-                    CALL InitSimu(simu_var, 1, 'SimulationVars',dust%n_dust,dust%n_lam)
+                    ! initiate photon
+                    CALL InitPhoton(photon, 1, 'Photon',dust%n_dust,dust%n_lam)
                     ! 1. start photon (from primary source only)
-                    CALL start_prim(basics, model, rand_nr, fluxes, dust, simu_var, i_lam)
+                    CALL start_prim(basics, model, rand_nr, fluxes, dust, photon, i_lam)
 
                     ! 2. determine & go to next point of interaction
-                    CALL next_pos_const(model, rand_nr, grid, dust, simu_var, grd_d_l)
+                    CALL next_pos_const(model, rand_nr, grid, dust, photon, grd_d_l)
 
                     ! 3. transfer through model space
                     !    if still inside model space: interaction
                     !                                 + go to next position
                     !                           else: observe photon leaving the model space
-                    simu_var%n_interact = 0
+                    photon%n_interact = 0
                     DO
-                        IF (simu_var%inside .and. (simu_var%n_interact < n_interact_max)) THEN
-                            simu_var%n_interact = simu_var%n_interact +1
+                        IF (photon%inside .and. (photon%n_interact < n_interact_max)) THEN
+                            photon%n_interact = photon%n_interact +1
 
-                            CALL interact(basics,grid, dust, rand_nr, fluxes, simu_var, t_dust, i_star_abs,dt_dust)
-                            CALL next_pos_const(model, rand_nr, grid, dust, simu_var, grid%grd_d_l)
+                            CALL interact(basics,grid, dust, rand_nr, fluxes, photon, t_dust, i_star_abs,dt_dust)
+                            CALL next_pos_const(model, rand_nr, grid, dust, photon, grid%grd_d_l)
                             cycle
                         ELSE 
-                            IF (simu_var%inside) THEN
+                            IF (photon%inside) THEN
                                 kill_photon_count = kill_photon_count +1 
                             END IF
                             EXIT
                         END IF
                     END DO
-                    CALL CloseSimu(simu_var)
+                    CALL ClosePhoton(photon)
                 END DO
 !~                 !$omp end do nowait
             END IF
@@ -333,7 +333,7 @@ CONTAINS
 !~   ! ################################################################################################
 !~   ! simulation of primary source radiation:  
 !~   ! ---------------------------------------
-!~   !       simu_type = 4: calculation of primary source scattered light map
+!~   !       photon_type = 4: calculation of primary source scattered light map
 !~   !                   5: calculation of primary source SED
 !~   ! ---
 !~   subroutine primary_scatt()
@@ -362,7 +362,7 @@ CONTAINS
 !~        print *,"   - wavelength           : ", i_lam_map, " / ", n_lam_map
 !~ 
 !~        do i_phot=1, nint(n_star_emi)
-!~           if (simu_type==4) then
+!~           if (photon_type==4) then
 !~              if ( modulo(i_phot,i_phot_show)==0 ) then
 !~                 print *,"     - photon counter [%] : ", &
 !~                      nint( 100.0_r2 * real(i_phot,kind=r2) / n_star_emi )
@@ -394,7 +394,7 @@ CONTAINS
 !~ 
 !~     ! ---
 !~     ! prepare & save final results
-!~     select case(simu_type)
+!~     select case(photon_type)
 !~    
 !~     case(4)
 !~        ! save scattered light maps
@@ -437,7 +437,7 @@ CONTAINS
 !~     
 !~     ! ---
 !~     ! 2. save results
-!~     select case(simu_type)
+!~     select case(photon_type)
 !~     case(2)
 !~        call sv_stokes_map()
 !~     case(3)

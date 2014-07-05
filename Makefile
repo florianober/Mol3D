@@ -158,13 +158,14 @@ MODULE_SRC = 	basic_type.f90 \
 		math_mod.f90 \
 		var_globalnew.f90 \
 		common_type.f90 \
+		source_type.f90 \
 		randgen_type.f90 \
 		fluxes_type.f90 \
 		model_type.f90 \
 		grid_type.f90 \
 		gas_type.f90 \
 		dust_type.f90 \
-		simu_type.f90 \
+		photon_type.f90 \
 		interact_mod.f90 \
 		start_mod.f90 \
 		immediate_mod.f90 \

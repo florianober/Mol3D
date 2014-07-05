@@ -1,9 +1,8 @@
 !----------------------------------------------------------------------------!
-! def Simu_TYP: This type contains all variables needed for the actual simulations
-!               These variables may and should change throught simulation
+! def PHOTON_TYP: This type includes all informations of the active photon
 ! inspired by fosite by T. Illenseer 2011
 !----------------------------------------------------------------------------!
-MODULE simu_type
+MODULE photon_type
   
     USE datatype
     USE var_globalnew
@@ -17,7 +16,7 @@ MODULE simu_type
     PRIVATE
     ! 
     !--------------------------------------------------------------------------!
-    TYPE Simu_TYP
+    TYPE PHOTON_TYP
         TYPE(Common_TYP) :: mtype                      ! -----------------     !
         !-----------------------------------------------------------------------!
         LOGICAL                                          :: inside
@@ -42,26 +41,26 @@ MODULE simu_type
         REAL(kind=r2), DIMENSION(:),POINTER            :: current_albedo
         
 
-    END TYPE Simu_TYP
+    END TYPE PHOTON_TYP
     SAVE
     !--------------------------------------------------------------------------!
     
     PUBLIC :: &
         ! types
-        Simu_TYP, &
+        PHOTON_TYP, &
         ! methods
-        InitSimu, &
-        CloseSimu, &
-        GetSimuType, &
-        GetSimuName, &
-        SimuInitialized
+        InitPhoton, &
+        ClosePhoton, &
+        GetPhotonType, &
+        GetPhotonName, &
+        PhotonInitialized
     !--------------------------------------------------------------------------!
 CONTAINS
 
-    SUBROUTINE InitSimu(this, ut, un, n_dust, n_lam)
+    SUBROUTINE InitPhoton(this, ut, un, n_dust, n_lam)
         IMPLICIT NONE
         !------------------------------------------------------------------------!
-        TYPE(Simu_TYP)        :: this
+        TYPE(PHOTON_TYP)        :: this
         
         INTEGER               :: ut, n_dust, n_lam
         
@@ -101,48 +100,48 @@ CONTAINS
         this%prob_action(:)   = 0.0_r2
         this%current_albedo   = 0.0_r2
 
-    END SUBROUTINE InitSimu
+    END SUBROUTINE InitPhoton
 
 
-    SUBROUTINE CloseSimu(this)
+    SUBROUTINE ClosePhoton(this)
         IMPLICIT NONE
         !------------------------------------------------------------------------!
-        TYPE(Simu_TYP), INTENT(INOUT) :: this
+        TYPE(PHOTON_TYP), INTENT(INOUT) :: this
         !------------------------------------------------------------------------!
         CALL CloseCommon(this%mtype)
         
         DEALLOCATE(this%prob_action)
         
-    END SUBROUTINE CloseSimu
+    END SUBROUTINE ClosePhoton
 
 
-    PURE FUNCTION GetSimuType(this) RESULT(ut)
+    PURE FUNCTION GetPhotonType(this) RESULT(ut)
         IMPLICIT NONE
         !------------------------------------------------------------------------!
-        TYPE(Simu_TYP), INTENT(IN) :: this
+        TYPE(PHOTON_TYP), INTENT(IN) :: this
         INTEGER :: ut
         !------------------------------------------------------------------------!
         ut = GetType_common(this%mtype)
-    END FUNCTION GetSimuType
+    END FUNCTION GetPhotonType
 
 
-    PURE FUNCTION GetSimuName(this) RESULT(un)
+    PURE FUNCTION GetPhotonName(this) RESULT(un)
         IMPLICIT NONE
         !------------------------------------------------------------------------!
-        TYPE(Simu_TYP), INTENT(IN) :: this
+        TYPE(PHOTON_TYP), INTENT(IN) :: this
         CHARACTER(LEN=32) :: un
         !------------------------------------------------------------------------!
         un = GetName_common(this%mtype)
-    END FUNCTION GetSimuName
+    END FUNCTION GetPhotonName
 
-    PURE FUNCTION SimuInitialized(this) RESULT(i)
+    PURE FUNCTION PhotonInitialized(this) RESULT(i)
         IMPLICIT NONE
           !------------------------------------------------------------------------!
-          TYPE(Simu_TYP), INTENT(IN) :: this
+          TYPE(PHOTON_TYP), INTENT(IN) :: this
           LOGICAL :: i
           !------------------------------------------------------------------------!
           i = Initialized_common(this%mtype)
-    END FUNCTION SimuInitialized
+    END FUNCTION PhotonInitialized
     
 
-End Module simu_type
+End Module photon_type
