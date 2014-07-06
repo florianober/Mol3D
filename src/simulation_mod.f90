@@ -10,6 +10,7 @@ MODULE simulation_mod
     USE grid_type
     USE gas_type
     USE dust_type
+    USE source_type
     
     USE grd_mod
     USE math_mod
@@ -31,7 +32,7 @@ MODULE simulation_mod
     !--------------------------------------------------------------------------!
 CONTAINS
 
-    SUBROUTINE run_simu(basics, fluxes ,grid , model, dust, gas)
+    SUBROUTINE run_simu(basics, fluxes ,grid , model, dust, gas, sources_in)
     
     IMPLICIT NONE
     !--------------------------------------------------------------------------!
@@ -41,6 +42,7 @@ CONTAINS
     TYPE(Model_TYP),INTENT(IN)                       :: model
     TYPE(Dust_TYP),INTENT(IN)                        :: dust
     TYPE(Gas_TYP),INTENT(INOUT)                      :: gas
+    TYPE(SOURCES),INTENT(IN)                         :: sources_in
     
     TYPE(l_list), POINTER                            :: pixel_list => null()
     TYPE(Pixel_TYP), POINTER                         :: pixel_p => null()
@@ -72,7 +74,7 @@ CONTAINS
     
     ! --- calculate or set temperature
     print *,' setting temperature distribution'
-    CALL set_temperature(basics, grid, model, dust, gas, fluxes)
+    CALL set_temperature(basics, grid, model, dust, gas, sources_in,fluxes)
     
     ! --- save all results for later use
     ! first save the model itself

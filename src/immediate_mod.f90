@@ -113,7 +113,8 @@ contains
 !~        
 !~     endif
     photon%nr_lam         = i_lam
-    photon%energy         = photon%energy * dust%d_lam(nr_lam_old)/dust%d_lam(photon%nr_lam)
+!~     print *, i_lam
+!~     photon%energy         = photon%energy * dust%d_lam(nr_lam_old)/dust%d_lam(photon%nr_lam)
 !~     photon%energy         = photon%energy
     photon%current_albedo = dust%albedo(:,i_lam)
   end subroutine immediate
@@ -195,45 +196,29 @@ contains
     !--------------------------------------------------------------------------!
     integer                                          :: i_dust, i_tem, nr_cell
     real(kind=r2)                                    :: hd2
-!~     real(kind=r2), allocatable, dimension(:)         :: hd1
-    real(kind=r2)                                    :: hd1
     !--------------------------------------------------------------------------!
     
     ! ---
     print *, "    final temperature calculation [solution 2] ..."
 !~     allocate( hd1(1:dust%n_lam) )
-
+    hd2 = 0.0_r2
     do i_dust=1, dust%n_dust
-       do nr_cell=1, grid%n_cell
-          ! [1] absorption
-          ! tbd: if Nv=0 => t=0
-!~           hd1 =  sum(model%ref_unit*grid%grd_d_l(nr_cell,:))
-          hd2    = (1.0_r2 / (basics%PIx4 * grid%cell_vol(nr_cell))) * &
-                   integ1( dust%lam(:), grid%grd_d_l(nr_cell,:), 1, dust%n_lam)
-!~           hd2    = (sum(grid%grd_d_l(nr_cell,:)) / (basics%PIx4 * grid%cell_vol(nr_cell)))
+        do nr_cell=1, grid%n_cell
+            ! [1] absorption
+            ! tbd: if Nv=0 => t=0
+            hd2    =  (grid%cell_energy_sum(i_dust,nr_cell) )&
+                    / (basics%PIx4 * grid%cell_vol(nr_cell))
          
-          ! [2] find corresponding temperature from QB integral
-          ! tbd: apply faster search algorithm
-          ! tbd: interpolate: to get smooth temperature distribution instead of "steps"
-          i_tem = 0
-          do 
-             if ( dust%QB(i_dust,i_tem) > hd2 ) then
-                exit
-             else
-                i_tem = i_tem + 1
-                if (i_tem == basics%n_tem) then
-                   exit
-                end if
-                cycle
-             end if
-          end do
-          grid%t_dust(nr_cell,i_dust) =  dust%tem_tab(i_tem)
+            ! [2] find corresponding temperature from QB integral
+            i_tem = MIN(binary_search(hd2,dust%QB(i_dust,:))-1,basics%n_tem)
 
-       end do
+            grid%t_dust(nr_cell,i_dust) = &
+                ( ( (hd2 - dust%QB(i_dust,i_tem-1)) / (dust%QB(i_dust,i_tem) - dust%QB(i_dust,i_tem-1)) ) &
+                + real(i_tem-1,kind=r2) ) &
+                * basics%d_tem
+        end do
     end do
 
-    ! clean up
-!~     deallocate( hd1 )
 
   end subroutine temp_final2
   
@@ -269,18 +254,8 @@ contains
     !TbD, check the if case .... sounds arbitrary
     if ( grid%Nv(photon%nr_cell,i_dust_action) > 1.0e-16_r2) then
         ! absorb photon
-            !print *,'here'
-!~             i_star_abs(i_dust_action,photon%nr_lam,photon%nr_cell) = &
-!~                         i_star_abs(i_dust_action,photon%nr_lam,photon%nr_cell) + photon%energy
-!~             hd1 = integ1( dust%lam(:), i_star_abs(i_dust_action,:,photon%nr_cell), 1, dust%n_lam)     ! [W]
-!~             hd1 = hd1 / (grid%Nv(photon%nr_cell,i_dust_action)*4.0*PI)                                ! [W]
-            !print *,'hd1'
-!~             hd1    = (sum(grid%grd_d_l(photon%nr_cell,:)) / (basics%PIx4 * grid%cell_vol(photon%nr_cell)))
-
-            hd1    = (1.0_r2 / (basics%PIx4 * grid%cell_vol(photon%nr_cell))) * &
-                   integ1( dust%lam(:), grid%grd_d_l(photon%nr_cell,:), 1, dust%n_lam)
-!~             hd1    = (grid%cell_energy(i_dust_action,photon%nr_cell)/ &
-!~                      (basics%PIx4 * grid%cell_vol(photon%nr_cell)))
+            hd1    = (grid%cell_energy_sum(i_dust_action,photon%nr_cell)/ &
+                     (basics%PIx4 * grid%cell_vol(photon%nr_cell)))
 
             i_tem = MIN(binary_search(hd1,dust%QB(i_dust_action,:))-1,basics%n_tem)
 

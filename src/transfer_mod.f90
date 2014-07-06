@@ -31,7 +31,7 @@ contains
     ! photon transfer through model space
     ! here: constant density in each ESC is assumed
     ! ---
-    subroutine next_pos_const(model, rand_nr, grid, dust, photon,grd_d_l)
+    subroutine next_pos_const(model, rand_nr, grid, dust, photon)
 
         IMPLICIT NONE
         !--------------------------------------------------------------------------!    
@@ -43,7 +43,7 @@ contains
         TYPE(PHOTON_TYP),INTENT(INOUT)                      :: photon
         !--------------------------------------------------------------------------!
         
-        REAL(kind=r2),DIMENSION(1:grid%n_cell, 1:dust%n_lam),INTENT(INOUT)      :: grd_d_l
+!~         REAL(kind=r2),DIMENSION(1:grid%n_cell, 1:dust%n_lam),INTENT(INOUT)      :: grd_d_l
         !--------------------------------------------------------------------------
             
         logical                                            :: kill_photon
@@ -115,13 +115,12 @@ contains
                 photon%pos_xyz_new(:) = photon%pos_xyz(:) + photon%dir_xyz(:) * d_l
 
                 ! c) store information about (fractional) path through last cell
-                grd_d_l(photon%nr_cell,photon%nr_lam) = grd_d_l(photon%nr_cell,photon%nr_lam) + &
-!~                                                                               d_l * photon%energy
-                                                            d_l * photon%energy * dust%C_abs(1,photon%nr_lam) &
-                                                            *model%ref_unit
-!~                 grid%cell_energy(:,photon%nr_cell) = grid%cell_energy(:,photon%nr_cell)+ &
-!~                                                          d_l * photon%energy * dust%C_abs(:,photon%nr_lam) &
-!~                                                          *model%ref_unit
+!~                 grd_d_l(photon%nr_cell,photon%nr_lam) = grd_d_l(photon%nr_cell,photon%nr_lam) + &
+!~                                                             d_l * photon%energy * dust%C_abs(1,photon%nr_lam) &
+!~                                                             *model%ref_unit
+                grid%cell_energy_sum(:,photon%nr_cell) = grid%cell_energy_sum(:,photon%nr_cell)+ &
+                                                         d_l * photon%energy * dust%C_abs(:,photon%nr_lam) &
+                                                         *model%ref_unit
                 ! d) new point of interaction
                 photon%pos_xyz(:) = photon%pos_xyz_new(:)
 
@@ -140,13 +139,12 @@ contains
                     
                     !#######################################################
                     ! be careful here
-                    grd_d_l(photon%nr_cell,photon%nr_lam) = grd_d_l(photon%nr_cell,photon%nr_lam) +& 
-!~                                                                                   d_l * photon%energy
-                                                               d_l * photon%energy * dust%C_abs(1,photon%nr_lam) &
-                                                               *model%ref_unit
-!~                     grid%cell_energy(:,photon%nr_cell) = grid%cell_energy(:,photon%nr_cell)+ &
-!~                                                          d_l * photon%energy * dust%C_abs(:,photon%nr_lam) &
-!~                                                          *model%ref_unit
+!~                     grd_d_l(photon%nr_cell,photon%nr_lam) = grd_d_l(photon%nr_cell,photon%nr_lam) +& 
+!~                                                                d_l * photon%energy * dust%C_abs(1,photon%nr_lam) &
+!~                                                                *model%ref_unit
+                    grid%cell_energy_sum(:,photon%nr_cell) = grid%cell_energy_sum(:,photon%nr_cell)+ &
+                                                         d_l * photon%energy * dust%C_abs(:,photon%nr_lam) &
+                                                         *model%ref_unit
                     !#######################################################
                     ! b) set new starting point; adjust optical depth
                     photon%pos_xyz(:) = photon%pos_xyz_new(:)             
@@ -158,12 +156,12 @@ contains
                     ! photon already outside model space
                     ! ---
                     ! a) store information about (fractional) path through last cell
-                    grd_d_l(photon%nr_cell,photon%nr_lam) = grd_d_l(photon%nr_cell,photon%nr_lam) + & 
-                                                                d_l * photon%energy * dust%C_abs(1,photon%nr_lam) &
-                                                                *model%ref_unit
-!~                     grid%cell_energy(:,photon%nr_cell) = grid%cell_energy(:,photon%nr_cell)+ &
-!~                                                          d_l * photon%energy * dust%C_abs(:,photon%nr_lam) &
-!~                                                          *model%ref_unit
+!~                     grd_d_l(photon%nr_cell,photon%nr_lam) = grd_d_l(photon%nr_cell,photon%nr_lam) + & 
+!~                                                                 d_l * photon%energy * dust%C_abs(1,photon%nr_lam) &
+!~                                                                 *model%ref_unit
+                    grid%cell_energy_sum(:,photon%nr_cell) = grid%cell_energy_sum(:,photon%nr_cell)+ &
+                                                         d_l * photon%energy * dust%C_abs(:,photon%nr_lam) &
+                                                         *model%ref_unit
                  
                     ! b) set flag
                     photon%inside = .false.

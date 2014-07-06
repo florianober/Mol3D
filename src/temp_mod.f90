@@ -11,6 +11,7 @@ MODULE temp_mod
     USE gas_type
     USE fluxes_type
     USE photon_type
+    USE source_type
     
     USE transfer_mod
     USE start_mod
@@ -37,7 +38,7 @@ CONTAINS
   !
   ! ---
   
-    SUBROUTINE set_temperature(basics,grid,model,dust,gas,fluxes)
+    SUBROUTINE set_temperature(basics,grid,model,dust,gas,sources_in,fluxes)
 
 
     IMPLICIT NONE
@@ -49,7 +50,7 @@ CONTAINS
     TYPE(Dust_TYP),INTENT(IN)                        :: dust
     TYPE(Gas_TYP),INTENT(INOUT)                      :: gas
     TYPE(Fluxes_TYP) ,INTENT(IN)                     :: fluxes
-    
+    TYPE(SOURCES),INTENT(IN)                         :: sources_in
     !--------------------------------------------------------------------------!  
     REAL(kind=r2), DIMENSION(1:3)                  :: caco
     REAL(kind=r2), DIMENSION(1:3)                  :: moco
@@ -65,7 +66,7 @@ CONTAINS
     !--------------------------------------------------------------------------! 
     IF (.not. basics%old_model) THEN
         IF ( basics%calc_tmp) THEN
-            CALL primary_temp(basics,grid,model,dust,fluxes)
+            CALL primary_temp(basics,grid,model,dust,sources_in,fluxes)
         ELSE IF (.not. basics%calc_tmp) THEN
             print *, '  using analytical temperature distribution'
             i_cell = 0
@@ -185,7 +186,7 @@ CONTAINS
 
     END FUNCTION Get_temp
   
-    SUBROUTINE primary_temp(basics,grid,model,dust,fluxes)
+    SUBROUTINE primary_temp(basics,grid,model,dust,sources_in,fluxes)
 
 
         IMPLICIT NONE
@@ -196,6 +197,7 @@ CONTAINS
         TYPE(Grid_TYP),INTENT(INOUT)                     :: grid
         TYPE(Model_TYP),INTENT(IN)                       :: model
         TYPE(Dust_TYP),INTENT(IN)                        :: dust
+        TYPE(SOURCES),INTENT(IN)                         :: sources_in
     !~     TYPE(Gas_TYP),INTENT(INOUT)                      :: gas
     
         TYPE(Randgen_TYP)                                 :: rand_nr
@@ -248,51 +250,48 @@ CONTAINS
         !print *, 'here'
         CALL InitRandgen(rand_nr,seed,'RAN2')
         !--------------------------------------------------------------------------! 
-        
-        DO i_lam=1,dust%n_lam
-            ! start photons with this wavelength?
-            IF (dust%doRT(i_lam)) THEN
+!~         DO lucy = 1,5
+        DO i_phot=1,model%n_star_emi
             ! show progress
 !~                 !$OMP MASTER
-                IF (modulo(i_lam, i_lam_show)==0 .or. i_lam==dust%n_lam) THEN
+            IF (modulo(i_phot, 100) == 0 .or. i_phot==model%n_star_emi) THEN
 !~                     print *,"   - wavelength : ", i_lam, " / ", dust%n_lam
-                    write (*,'(A,I3,A,I3,A)') "   - wavelength : ", i_lam, " / ", dust%n_lam, char(27)//'[A'
-                END IF
-!~                 !$OMP END MASTER
-                
-!~                 !$omp do schedule(static)
-                DO i_phot=1,model%n_star_emi
-                    ! initiate photon
-                    CALL InitPhoton(photon, 1, 'Photon',dust%n_dust,dust%n_lam)
-                    ! 1. start photon (from primary source only)
-                    CALL start_prim(basics, model, rand_nr, fluxes, dust, photon, i_lam)
-
-                    ! 2. determine & go to next point of interaction
-                    CALL next_pos_const(model, rand_nr, grid, dust, photon, grd_d_l)
-
-                    ! 3. transfer through model space
-                    !    if still inside model space: interaction
-                    !                                 + go to next position
-                    !                           else: observe photon leaving the model space
-                    photon%n_interact = 0
-                    DO
-                        IF (photon%inside .and. (photon%n_interact < n_interact_max)) THEN
-                            photon%n_interact = photon%n_interact +1
-
-                            CALL interact(basics,grid, dust, rand_nr, fluxes, photon, t_dust, i_star_abs,dt_dust)
-                            CALL next_pos_const(model, rand_nr, grid, dust, photon, grid%grd_d_l)
-                            cycle
-                        ELSE 
-                            IF (photon%inside) THEN
-                                kill_photon_count = kill_photon_count +1 
-                            END IF
-                            EXIT
-                        END IF
-                    END DO
-                    CALL ClosePhoton(photon)
-                END DO
-!~                 !$omp end do nowait
+!~                     write (*,'(A,I3,A,I3,A)') "   - wavelength : ", i_lam, " / ", dust%n_lam, char(27)//'[A'
+                    write (*,'(A,I9,A,I9,A)') "   - photon : ", i_phot, " / ", model%n_star_emi, char(27)//'[A'
             END IF
+!~             !$OMP END MASTER
+!~             
+!~             !$omp do schedule(static)
+            ! initiate photon
+            
+            CALL InitPhoton(photon, 1, 'Photon',dust%n_dust)
+            ! 1. start photon (from primary source only)
+            CALL start_prim(basics,grid, model, rand_nr, fluxes, dust, photon, sources_in)
+
+            ! 2. determine & go to next point of interaction
+            CALL next_pos_const(model, rand_nr, grid, dust, photon)
+
+            ! 3. transfer through model space
+            !    if still inside model space: interaction
+            !                                 + go to next position
+            !                           else: observe photon leaving the model space
+            photon%n_interact = 0
+            DO
+                IF (photon%inside .and. (photon%n_interact < n_interact_max)) THEN
+                    photon%n_interact = photon%n_interact +1
+
+                    CALL interact(basics,grid, dust, rand_nr, fluxes, photon, t_dust, i_star_abs,dt_dust)
+                    CALL next_pos_const(model, rand_nr, grid, dust, photon)
+                    cycle
+                ELSE 
+                    IF (photon%inside) THEN
+                        kill_photon_count = kill_photon_count +1 
+                    END IF
+                    EXIT
+                END IF
+            END DO
+            CALL ClosePhoton(photon)
+!~                 !$omp end do nowait
         END DO
         print *, ' photon transfer finished     '
         
@@ -300,29 +299,12 @@ CONTAINS
            
         ! [solution 2] apply mean intensity method
         !              => higher accuracy: from now on this temperature distribution will be used
-
-!~         !$ print *,grd_d_l(141,40), 'd_l'
-!~         !$ print *,t_dust(45,1), 'temp'
-        !print *, i_star_abs
 !~         !$OMP CRITICAL
-!~             !$ print *,grd_d_l(141,40), 'd_l'
-!~             !$ print *,t_dust(45,1), 'temp'
-!~             !$ print *,i_star_abs(1,40,45), 'i_star_abs'
             grid%delta_t_dust = grid%delta_t_dust+dt_dust
-            grid%i_star_abs = grid%i_star_abs+i_star_abs
-            grid%t_dust     = grid%t_dust+t_dust
-!~             grid%grd_d_l    = grid%grd_d_l+grd_d_l
 !~         !$OMP END CRITICAL
         DEALLOCATE (t_dust, grd_d_l, i_star_abs)
 !~         !$omp end parallel
         
-!~         !$ grid%grd_d_l(:,:)      = grid%grd_d_l(:,:)/basics%num_core
-!~         !$ grid%i_star_abs(:,:,:) = grid%i_star_abs(:,:,:)/basics%num_core
-!~         !$ grid%t_dust(:,:)       = grid%t_dust(:,:)/basics%num_core
-!~         print *,''
-!~         print * ,grid%grd_d_l(141,40), 'd_l global'
-!~         print * ,grid%t_dust(45,1), 'temp global'
-!~         print * ,grid%i_star_abs(1,40,45), 'i_star_abs global'
         CALL temp_final2(basics, model, grid, dust)
         !stop
         ! save SED (quick&dirty SED)

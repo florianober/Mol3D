@@ -158,7 +158,6 @@ MODULE_SRC = 	basic_type.f90 \
 		math_mod.f90 \
 		var_globalnew.f90 \
 		common_type.f90 \
-		source_type.f90 \
 		randgen_type.f90 \
 		fluxes_type.f90 \
 		model_type.f90 \
@@ -167,13 +166,13 @@ MODULE_SRC = 	basic_type.f90 \
 		dust_type.f90 \
 		photon_type.f90 \
 		interact_mod.f90 \
-		start_mod.f90 \
 		immediate_mod.f90 \
 		scatter_mod.f90 \
 		initiate.f90 \
 		tools_mod.f90 \
 		string_mod.f90 \
 		model_mod.f90 \
+		source_type.f90 \
 		grd_mod.f90 \
 		fileio.f90 \
 		simulation_mod.f90 \
@@ -181,6 +180,7 @@ MODULE_SRC = 	basic_type.f90 \
 		lvlpop_mod.f90 \
 		temp_mod.f90 \
 		error_mod.f90 \
+		start_mod.f90 \
 		linkedlist_mod.f90 \
 		parser_mod.f90
 #

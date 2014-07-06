@@ -12,6 +12,7 @@ MODULE start_mod
     USE photon_type
     USE basic_type
     USE fluxes_type
+    USE source_type
     
     USE math_mod
     !USE tools_mod
@@ -26,22 +27,25 @@ MODULE start_mod
 contains
 
   ! ################################################################################################
-  ! start photon from primary source
+  ! start photon from source
   ! ---
-  SUBROUTINE start_prim(basics,model,rand_nr,fluxes,dust,photon,i_lam)
+  SUBROUTINE start_prim(basics,grid,model,rand_nr,fluxes,dust,photon, sources_in)
     
     IMPLICIT NONE
     !--------------------------------------------------------------------------!
     TYPE(MODEL_TYP),INTENT(IN)                       :: model
+    TYPE(Grid_TYP),INTENT(IN)                        :: grid
     TYPE(Basic_TYP),INTENT(IN)                       :: basics
     TYPE(Randgen_TYP),INTENT(INOUT)                  :: rand_nr
     TYPE(Dust_TYP),INTENT(IN)                        :: dust
     TYPE(FLUXES_TYP),INTENT(IN)                      :: fluxes
+    TYPE(SOURCES),INTENT(IN)                          :: sources_in
     
-    TYPE(PHOTON_TYP),INTENT(INOUT)                    :: photon
+    TYPE(PHOTON_TYP),INTENT(INOUT)                   :: photon
     !--------------------------------------------------------------------------!
 
-    integer, intent(in)                             :: i_lam
+    integer                                          :: i_lam
+    integer                                          :: i_source
     REAL(kind=r2)                                    :: rndx
     !--------------------------------------------------------------------------!
 
@@ -59,12 +63,20 @@ contains
         
         photon%SINTHE = sqrt(4.0_r2 * (rndx - rndx**2))
         photon%COSTHE = 1.0_r2 - 2.0_r2*rndx
-       
-        ! 2. starting point: center of coordinate system
-        photon%pos_xyz(:) = 0.0_r2
+        
+        ! 2. get new source
+        CALL RAN2(rand_nr,rndx)
+        i_source = GetNewSource(sources_in,rndx)
+        ! 3. get new wavelength
+        CALL RAN2(rand_nr,rndx)
+        i_lam = GetNewSource(sources_in,rndx)
+        
+        
+        ! 4. starting point = location of source
+        photon%pos_xyz(:) = sources_in%source(i_source)%pos_xyz
 
-        ! 3. star is located in inner dust-free region
-        photon%nr_cell = 0
+        ! 5. star is located in inner dust-free region
+        photon%nr_cell = get_cell_nr(grid,photon%pos_xyz(:))
         
     ELSE
            print *, "Type of emission concept for primary source not known [concept_ps]"
@@ -75,14 +87,16 @@ contains
     ! ---
     ! [B] initialize new photon parameters
     ! stokes vector
-    photon%stokes(:) = fluxes%stokes_ini(:)
+    photon%stokes(:) = fluxes%stokes_ini(:)                    !starting with unpolarized photon
         
     photon%nr_lam         = i_lam                              ! initial wavelength of photon    
     photon%current_albedo = dust%albedo(:,i_lam)
     
-    photon%energy         = dust%c_in_star(i_lam)
-!~     photon%energy         = planck(model%t_star,dust%lam(i_lam))&
-!~                               *PI/con_sigma/(model%t_star*model%t_star*model%t_star*model%t_star)    ! set energy of photon package
+!~     photon%energy         = dust%c_in_star(i_lam)
+!~     photon%energy         = sources_in%source(i_source)%Luminosity/&
+!~                            (model%n_star_emi*sources_in%source_cpf(i_source))    ! set energy of photon package
+    photon%energy         = sources_in%L_total/&
+                           (model%n_star_emi)  ! set energy of photon package
     
     
     

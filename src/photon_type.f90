@@ -57,17 +57,17 @@ MODULE photon_type
     !--------------------------------------------------------------------------!
 CONTAINS
 
-    SUBROUTINE InitPhoton(this, ut, un, n_dust, n_lam)
+    SUBROUTINE InitPhoton(this, ut, un, n_dust)
         IMPLICIT NONE
         !------------------------------------------------------------------------!
         TYPE(PHOTON_TYP)        :: this
         
-        INTEGER               :: ut, n_dust, n_lam
+        INTEGER               :: ut, n_dust
         
         CHARACTER(LEN=*)      :: un
         
         !------------------------------------------------------------------------!
-        INTENT(IN)            :: ut,un ,n_dust , n_lam
+        INTENT(IN)            :: ut,un ,n_dust
         INTENT(INOUT)         :: this
         !------------------------------------------------------------------------!
         CALL InitCommon(this%mtype,ut,un)

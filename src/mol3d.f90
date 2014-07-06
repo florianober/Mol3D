@@ -72,7 +72,7 @@ program mol3d
     !--------------------------------------------------------------------------!
     ! 3. run simulation
     !--------------------------------------------------------------------------!
-        CALL run_simu(basics, fluxes, grid, model, dust, gas)
+        CALL run_simu(basics, fluxes, grid, model, dust, gas, sources_in)
     
     !--------------------------------------------------------------------------!
     ! 4. clean up
