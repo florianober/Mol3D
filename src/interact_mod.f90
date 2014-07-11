@@ -30,7 +30,7 @@ contains
   ! ################################################################################################
   ! interaction: steering routine
   ! ---
-  SUBROUTINE interact(basics,grid, dust, rand_nr, fluxes, photon, t_dust, i_star_abs,dt_dust)
+  SUBROUTINE interact(basics,grid, dust, rand_nr, fluxes, photon, t_dust)
   
     IMPLICIT NONE
     !--------------------------------------------------------------------------!
@@ -45,14 +45,12 @@ contains
     !--------------------------------------------------------------------------!
 
     REAL(kind=r1),DIMENSION(0:grid%n_cell,1:dust%n_dust),INTENT(INOUT)      :: t_dust
-    REAL(kind=r1),DIMENSION(0:grid%n_cell,1:dust%n_dust),INTENT(INOUT)      :: dt_dust
-    REAL(kind=r2),DIMENSION(1:dust%n_dust, 1:dust%n_lam, 1:grid%n_cell),INTENT(INOUT)    :: i_star_abs
     !--------------------------------------------------------------------------!
     ! ---
 !~     select case(photon_type)
 !~ 
 !~     case (1)
-       CALL interact_temp(basics,grid,dust,rand_nr,fluxes,photon, t_dust, i_star_abs,dt_dust)
+       CALL interact_temp(basics,grid,dust,rand_nr,fluxes,photon, t_dust)
 !~ 
 !~     case (2,3,4,5)
 !~        call interact_prim()
@@ -96,7 +94,7 @@ contains
   ! interaction type 2: temperature calculation:
   !                     interaction in immediate reemission scheme
   ! ---
-  subroutine interact_temp(basics,grid,dust,rand_nr,fluxes,photon,t_dust, i_star_abs,dt_dust)
+  subroutine interact_temp(basics,grid,dust,rand_nr,fluxes,photon,t_dust)
 
     
     IMPLICIT NONE
@@ -112,8 +110,6 @@ contains
     !--------------------------------------------------------------------------!
         
     REAL(kind=r1),DIMENSION(0:grid%n_cell,1:dust%n_dust),INTENT(INOUT)      :: t_dust
-    REAL(kind=r1),DIMENSION(0:grid%n_cell,1:dust%n_dust),INTENT(INOUT)      :: dt_dust
-    REAL(kind=r2),DIMENSION(1:dust%n_dust, 1:dust%n_lam, 1:grid%n_cell),INTENT(INOUT)    :: i_star_abs
     !--------------------------------------------------------------------------!
     integer                                           :: i_dust_action 
     REAL(kind=r2)                                     :: rndx
@@ -136,7 +132,7 @@ contains
         ! --- ---
         CALL vecmat(photon)
     ELSE                
-        CALL immediate( basics, rand_nr, grid,dust, photon, i_dust_action,t_dust, i_star_abs,dt_dust )
+        CALL immediate( basics, rand_nr, grid,dust, photon, i_dust_action,t_dust)
         CALL start_grain(basics, rand_nr, fluxes, photon)
     END IF
   end subroutine interact_temp

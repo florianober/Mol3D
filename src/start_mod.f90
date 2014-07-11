@@ -22,14 +22,14 @@ MODULE start_mod
     !--------------------------------------------------------------------------!
     PRIVATE
     !--------------------------------------------------------------------------!
-    PUBLIC  :: start_prim, start_grain!, start_cell, trafo
+    PUBLIC  :: start_photon, start_grain!, start_cell, trafo
 
 contains
 
   ! ################################################################################################
   ! start photon from source
   ! ---
-  SUBROUTINE start_prim(basics,grid,model,rand_nr,fluxes,dust,photon, sources_in)
+  SUBROUTINE start_photon(basics,grid,model,rand_nr,fluxes,dust,photon, sources_in)
     
     IMPLICIT NONE
     !--------------------------------------------------------------------------!
@@ -39,7 +39,7 @@ contains
     TYPE(Randgen_TYP),INTENT(INOUT)                  :: rand_nr
     TYPE(Dust_TYP),INTENT(IN)                        :: dust
     TYPE(FLUXES_TYP),INTENT(IN)                      :: fluxes
-    TYPE(SOURCES),INTENT(IN)                          :: sources_in
+    TYPE(SOURCES),INTENT(IN)                         :: sources_in
     
     TYPE(PHOTON_TYP),INTENT(INOUT)                   :: photon
     !--------------------------------------------------------------------------!
@@ -69,8 +69,7 @@ contains
         i_source = GetNewSource(sources_in,rndx)
         ! 3. get new wavelength
         CALL RAN2(rand_nr,rndx)
-        i_lam = GetNewSource(sources_in,rndx)
-        
+        i_lam = GetNewLam(sources_in,i_source,rndx)
         
         ! 4. starting point = location of source
         photon%pos_xyz(:) = sources_in%source(i_source)%pos_xyz
@@ -94,7 +93,7 @@ contains
     
 !~     photon%energy         = dust%c_in_star(i_lam)
 !~     photon%energy         = sources_in%source(i_source)%Luminosity/&
-!~                            (model%n_star_emi*sources_in%source_cpf(i_source))    ! set energy of photon package
+!~                            (model%n_star_emi*sources_in%source_cdf(i_source))    ! set energy of photon package
     photon%energy         = sources_in%L_total/&
                            (model%n_star_emi)  ! set energy of photon package
     
@@ -112,7 +111,7 @@ contains
     
     photon%pos_xyz_li(:) = photon%pos_xyz(:)
 
-  END SUBROUTINE start_prim
+  END SUBROUTINE start_photon
   
 
   ! ################################################################################################
@@ -188,8 +187,6 @@ contains
     !--------------------------------------------------------------------------!
     TYPE(Basic_TYP),INTENT(IN)                       :: basics
     TYPE(Randgen_TYP),INTENT(INOUT)                  :: rand_nr
-!~     TYPE(Grid_TYP),INTENT(IN)                        :: grid
-!~     TYPE(Dust_TYP),INTENT(IN)                        :: dust
     TYPE(FLUXES_TYP),INTENT(IN)                      :: fluxes
     
     TYPE(PHOTON_TYP),INTENT(INOUT)                    :: photon

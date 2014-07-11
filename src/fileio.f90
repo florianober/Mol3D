@@ -180,7 +180,7 @@ CONTAINS
                     caco(3) = -model%r_ou+(0.5 + i_y) * dxy
                     IF ( check_inside(caco,grid,model) ) THEN
                         i_cell = get_cell_nr(grid,caco)
-                        write(unit=1,fmt='(11(ES15.6E3))') &
+                        write(unit=1,fmt='(10(ES15.6E3))') &
                             caco(2), &
                             caco(3), &
                             grid%grd_dust_density(i_cell,1), &
@@ -188,16 +188,14 @@ CONTAINS
                             grid%grd_col_density(i_cell,1:3), &
                             grid%t_dust(i_cell,1), &
                             grid%t_gas(i_cell), &
-                            grid%absvelo(i_cell), &
-                            grid%delta_t_dust(i_cell,1)
+                            grid%absvelo(i_cell)
                     ELSE
-                        write(unit=1,fmt='(11(ES15.6E3))') &
+                        write(unit=1,fmt='(10(ES15.6E3))') &
                             caco(2), &
                             caco(3), &
                             0.0_r2, &
                             0.0_r2, &
                             0.0_r2,0.0_r2,0.0_r2, &
-                            0.0_r2, &
                             0.0_r2, &
                             0.0_r2, &
                             0.0_r2
@@ -219,7 +217,7 @@ CONTAINS
                     caco(3) = 0.0_r2
                     IF ( check_inside(caco,grid,model) ) THEN
                         i_cell = get_cell_nr(grid,caco)
-                        write(unit=1,fmt='(11(ES15.6E3))') &
+                        write(unit=1,fmt='(10(ES15.6E3))') &
                             caco(1), &
                             caco(2), &
                             grid%grd_dust_density(i_cell,1), &
@@ -227,16 +225,14 @@ CONTAINS
                             grid%grd_col_density(i_cell,1:3), &
                             grid%t_dust(i_cell,1), &
                             grid%t_gas(i_cell), &
-                            grid%absvelo(i_cell), &
-                            grid%delta_t_dust(i_cell,1)
+                            grid%absvelo(i_cell)
                     ELSE
-                        write(unit=1,fmt='(11(ES15.6E3))') &
+                        write(unit=1,fmt='(10(ES15.6E3))') &
                             caco(1), &
                             caco(2), &
                             0.0_r2, &
                             0.0_r2, &
                             0.0_r2,0.0_r2,0.0_r2, &
-                            0.0_r2, &
                             0.0_r2, &
                             0.0_r2, &
                             0.0_r2
@@ -258,7 +254,7 @@ CONTAINS
                     caco(3) = -model%r_ou+(0.5 + i_y) * dxy
                     IF ( check_inside(caco,grid,model) ) THEN
                         i_cell = get_cell_nr(grid,caco)
-                        write(unit=1,fmt='(11(ES15.6E3))') &
+                        write(unit=1,fmt='(10(ES15.6E3))') &
                             caco(1), &
                             caco(3), &
                             grid%grd_dust_density(i_cell,1), &
@@ -266,16 +262,14 @@ CONTAINS
                             grid%grd_col_density(i_cell,1:3), &
                             grid%t_dust(i_cell,1), &
                             grid%t_gas(i_cell), &
-                            grid%absvelo(i_cell), &
-                            grid%delta_t_dust(i_cell,1)
+                            grid%absvelo(i_cell)
                     ELSE
-                        write(unit=1,fmt='(11(ES15.6E3))') &
+                        write(unit=1,fmt='(10(ES15.6E3))') &
                             caco(1), &
                             caco(3), &
                             0.0_r2, &
                             0.0_r2, &
                             0.0_r2,0.0_r2,0.0_r2, &
-                            0.0_r2, &
                             0.0_r2, &
                             0.0_r2, &
                             0.0_r2
@@ -502,13 +496,14 @@ CONTAINS
         call ftfiou(u, sta)
         
         
-        WRITE(unit=2,fmt='(A)') '#wavelength [m]    flux [Jy]'
-        WRITE(unit=2,fmt=*) ''
+
 
         
         !write sed in ascii format
         OPEN(unit=2, file=TRIM(basics%path_results)//Getproname(basics)//'_continuum_sed.dat', &
             action="write", status="unknown", form="formatted")
+        WRITE(unit=2,fmt='(A)') '#wavelength [m]    flux [Jy]'
+        WRITE(unit=2,fmt=*) ''
         DO i_lam =1, dust%n_lam
             WRITE (unit=2,fmt='(2(ES15.6E3))') dust%lam(i_lam), sum(fluxes%continuum_map(:,:,i_lam))
 

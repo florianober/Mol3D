@@ -76,7 +76,6 @@ MODULE Grid_type
         REAL(kind=r1),DIMENSION(:,:),POINTER      :: velo
         REAL(kind=r1),DIMENSION(:),POINTER        :: absvelo
         REAL(kind=r2),DIMENSION(:,:),POINTER      :: cellmidcaco
-        REAL(kind=r2),DIMENSION(:,:,:),POINTER    :: i_star_abs
         REAL(kind=r2),DIMENSION(:,:),POINTER      :: cell_energy
         REAL(kind=r2),DIMENSION(:,:),POINTER      :: cell_energy_sum
         REAL(kind=r1),DIMENSION(:,:),POINTER      :: t_dust
@@ -296,7 +295,6 @@ CONTAINS
             this%delta_t_dust(  0:this%n_cell, 1:n_dust ), &
             this%t_gas(  0:this%n_cell), &
             this%grd_d_l( 1:this%n_cell, 1:n_lam ) , &
-            this%i_star_abs( 1:n_dust, 1:n_lam, 1:this%n_cell), &
             this%lvl_pop( 0:this%n_cell, 1:egy_lvl ) )
             
         this%nh_n_dust = n_dust
@@ -323,7 +321,6 @@ CONTAINS
         this%delta_t_dust(:,:)    = 0.0
         this%t_gas(:)             = 0.0
         this%grd_d_l(:,:)         = 0.0_r2
-        this%i_star_abs(:,:,:)    = 0.0_r2
         this%d_l_min              = 0.0_r2
         this%dir_xyz(:)           = 0.0_r2
         this%cell_energy(:,:)     = 0.0_r2
@@ -366,8 +363,7 @@ CONTAINS
             this%grd_d_l, &
             this%lvl_pop, &
             this%cell_energy, &
-            this%cell_energy_sum, &
-            this%i_star_abs)
+            this%cell_energy_sum)
         
         
     END SUBROUTINE CloseGrid
@@ -524,12 +520,7 @@ CONTAINS
         h_ph = atan3(caco(2),caco(1))
 
         ! 1.1 get i_r
-        
-        ! --
-        !dr1 = (this%co_mx_a(this%n(1)) - this%co_mx_a(0) ) * (this%sf-1.0_r2)/ (this%sf**this%n(1) - 1.0_r2)
-        !i_r = floor( log(1.0_r2 + (this%sf-1.0_r2)*(h_r-this%co_mx_a(0))/dr1) / log(this%sf) )  + 1
-        
-        
+
         IF (this%n(1) == 1) THEN
             i_r = 1
         ELSE IF (h_r < this%co_mx_a(0) )THEN
@@ -567,7 +558,7 @@ CONTAINS
     END FUNCTION get_cell_nr_cy
     
   ! ################################################################################################
-  ! determine cell number from sperical coordinates. still used from mc3d, should be rewritten
+  ! determine cell number from cartesian coordinates. 
   ! ---
     FUNCTION get_cell_nr_sp(this,caco) RESULT(get_cell_nr_result)
         USE datatype
@@ -598,7 +589,7 @@ CONTAINS
             i_th = binary_search(spco(2),this%co_mx_b)
         END IF
         IF ( i_th .gt. this%n(2)) THEN
-			i_th = this%n(2)			
+            i_th = this%n(2)
         END IF
         
         ! ---
@@ -627,54 +618,6 @@ CONTAINS
 
     END FUNCTION get_cell_nr_sp
     
-!  ! ################################################################################################
-!  ! determine cell number from cartesian coordinate
-!  ! using an analytical expression;
-!  ! only applicable in grids - without local subgrids
-!  !                          - where cell boundaries in r direction are described by step factor sf
-!  ! ---
-!  function get_cell_nr2(caco) result(get_cell_nr2_result)
-!    use datatype
-!    use var_global
-!    use math_mod
 
-!    real(kind=r2), dimension(:), intent(in) :: caco
-!    integer :: get_cell_nr2_result
-!    integer :: i_r, i_th, i_ph
-!    real(kind=r2) :: hd_r, hd_th, hd_ph
-!    ! ---
-!    ! r
-!    hd_r = norm(caco)
-!    if (hd_r <= r_ou) then
-!       i_r = floor( log(1.0_r2 + (sf-1.0_r2)*(hd_r-r_in)/dr1) / log(sf) )  + 1
-!    else
-!       i_r = n(1)
-!    end if
-
-!    ! th
-!    if (n(2) > 1) then
-!       hd_th = atan2( caco(3), sqrt(caco(1)**2 + caco(2)**2))
-!       i_th = floor( real(n(2),kind=r2) * (hd_th + PI2)/PI ) +1
-!       if (i_th > n(2)) then
-!          i_th = n(2)
-!       end if
-!    else
-!       i_th = 1
-!    end if
-
-!    ! ph
-!    if (n(3) > 1) then
-!       hd_ph = atan3( caco(2), caco(1) )
-!       i_ph = floor( real(n(3),kind=r2) * hd_ph/PIx2       ) +1
-!       if (i_ph > n(3)) then
-!          i_ph = n(3)
-!       end if
-!    else
-!       i_ph = 1
-!    end if
-
-!    get_cell_nr2_result = cell_idx2nr( i_r, i_th, i_ph )
-
-!  end function get_cell_nr2
 
 End Module Grid_type

@@ -22,7 +22,7 @@ MODULE source_type
         !-----------------------------------------------------------------------!
         REAL(kind=r2)                                        :: Luminosity
         REAL(kind=r2),DIMENSION(1:3)                         :: pos_xyz
-        REAL(kind=r2),DIMENSION(:),POINTER                   :: wave_cpf
+        REAL(kind=r2),DIMENSION(:),POINTER                   :: wave_cdf
         INTEGER                                              :: s_type
 
     END TYPE SOURCE_TYP
@@ -33,7 +33,7 @@ MODULE source_type
         !-----------------------------------------------------------------------!
         REAL(kind=r2)                                        :: L_total
         TYPE(SOURCE_TYP),DIMENSION(:),POINTER                :: source
-        REAL(kind=r2),DIMENSION(:),POINTER                   :: source_cpf
+        REAL(kind=r2),DIMENSION(:),POINTER                   :: source_cdf
         REAL(kind=r2),DIMENSION(:),POINTER                   :: lam
         
         INTEGER                                              :: n_sources
@@ -102,32 +102,32 @@ CONTAINS
             ALLOCATE(source_tmp(1:i_source))
             source_tmp(1:this%n_sources) = this%source
             DEALLOCATE(this%source)
-            DEALLOCATE(this%source_cpf)
+            DEALLOCATE(this%source_cdf)
             ALLOCATE(this%source(1:i_source), &
-                     this%source_cpf(1:i_source))
-            this%source_cpf = 0.0_r2
+                     this%source_cdf(1:i_source))
+            this%source_cdf = 0.0_r2
             this%source = source_tmp
             DEALLOCATE(source_tmp)
             
         ELSE
             ALLOCATE(this%source(1:i_source), &
-                     this%source_cpf(1:i_source))
+                     this%source_cdf(1:i_source))
         END IF
         
         IF (s_type == 1) THEN 
             ! source is a point star
             !
 !~             L = con_sigma*T_star**4*PI*4.0_r2*R_star**2
-            ALLOCATE(this%source(i_source)%wave_cpf(1:this%n_lam))
-            this%source(i_source)%wave_cpf(:) = 0.0_r2
+            ALLOCATE(this%source(i_source)%wave_cdf(1:this%n_lam))
+            this%source(i_source)%wave_cdf(:) = 0.0_r2
             L = 0.0_r2
             L = integ1(this%lam(:),PI * 4.0_r2 * PI * R_star**2 * planck(T_star,this%lam(:)) , 1, this%n_lam)
             DO i = 1,this%n_lam
                 
                 IF ( i == 1) THEN
-                    this%source(i_source)%wave_cpf(i) = 0.0_r2 
+                    this%source(i_source)%wave_cdf(i) = 0.0_r2 
                 ELSE 
-                    this%source(i_source)%wave_cpf(i) = this%source(i_source)%wave_cpf(i-1) + &
+                    this%source(i_source)%wave_cdf(i) = this%source(i_source)%wave_cdf(i-1) + &
                                 integ1(this%lam(:),PI * 4.0_r2 * PI * R_star**2 * planck(T_star,this%lam(:)) , i-1, i) /&
                                 L
                 END IF
@@ -144,14 +144,14 @@ CONTAINS
 !~         print *, L
        
         
-        ! update source cpf
+        ! update source cdf
         this%L_total = sum(this%source(:)%Luminosity)
          
         DO i = 1,i_source
             IF (i == 1) THEN
-                this%source_cpf(i) = this%source(i)%Luminosity /this%L_total
+                this%source_cdf(i) = this%source(i)%Luminosity /this%L_total
             ELSE
-                this%source_cpf(i) = this%source_cpf(i-1) + this%source(i)%Luminosity /this%L_total
+                this%source_cdf(i) = this%source_cdf(i-1) + this%source(i)%Luminosity /this%L_total
             END IF
         END DO
         
@@ -201,7 +201,7 @@ CONTAINS
         IF (this%n_sources == 1) THEN
             i = 1
         ELSE
-            i = binary_search(rndx, this%source_cpf) +1
+            i = binary_search(rndx, this%source_cdf)+1
         END IF
         
     
@@ -217,8 +217,7 @@ CONTAINS
         INTEGER                   :: i
         !------------------------------------------------------------------------!
 
-        i = MIN(binary_search(rndx, this%source(i_source)%wave_cpf) +1,this%n_lam)
-        
+        i = binary_search(rndx, this%source(i_source)%wave_cdf)+1
     
     END FUNCTION GetNewLam
 

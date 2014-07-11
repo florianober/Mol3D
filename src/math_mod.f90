@@ -175,12 +175,14 @@ contains
   end function integ1
   
   subroutine random_planck_frequency(nu,T, rand_nr)
-!~     use datatype
+    
     use randgen_type
     ! Random frequency sampled from a planck function with temperature T
 
     ! The algorithm is taken from 'Sampling a random variable distributed
     ! according to planck's law' by Barnett and Canfield
+    ! note: this function is created by Robitaille and belongs to the HYPERION code.
+    !            It is implemented just for testing, it is not used in the Mol3d code.
 
     implicit none
 

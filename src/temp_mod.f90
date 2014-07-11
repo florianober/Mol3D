@@ -205,16 +205,11 @@ CONTAINS
         !--------------------------------------------------------------------------!  
 
         INTEGER                                          :: i_lam, i_phot
-        INTEGER                                          :: seed
+        INTEGER                                          :: seed, k_phot
 !~         !$ INTEGER omp_get_thread_num 
-        
-        REAL(kind=r1),DIMENSION(:,:),ALLOCATABLE      :: t_dust
-        REAL(kind=r1),DIMENSION(:,:),ALLOCATABLE      :: dt_dust
-        REAL(kind=r2),DIMENSION(:,:),ALLOCATABLE      :: grd_d_l
-        REAL(kind=r2),DIMENSION(:,:,:),ALLOCATABLE    :: i_star_abs
-        
+                
         !# shared variables
-        TYPE(PHOTON_TYP)                                    :: photon
+        TYPE(PHOTON_TYP)                                 :: photon
         
         !--------------------------------------------------------------------------! 
         ! ---
@@ -233,40 +228,30 @@ CONTAINS
         
 !~         !$omp parallel PRIVATE(i_phot,seed,photon,rand_nr,t_dust,grd_d_l,i_star_abs)
         
-        ALLOCATE( t_dust(0:grid%n_cell,1:dust%n_dust), &
-                  dt_dust(0:grid%n_cell,1:dust%n_dust), &
-                   grd_d_l(1:grid%n_cell,1:dust%n_lam),&
-                   i_star_abs(1:dust%n_dust,1:dust%n_lam,1:grid%n_cell) )
-
-        t_dust        = grid%t_dust
-        !dt_dust        = grid%delta_t_dust
-        dt_dust        = 0.0
-        i_star_abs    = grid%i_star_abs
-        grd_d_l(:,:)  = grid%grd_d_l
         
         ! initialize random number generator
-        seed = 1
+        seed = -1
 !~         !$ seed = omp_get_thread_num()+1
         !print *, 'here'
         CALL InitRandgen(rand_nr,seed,'RAN2')
         !--------------------------------------------------------------------------! 
-!~         DO lucy = 1,5
+!~         DO lucy = 1,5 ! TbD, in future we will use lucy iterations again, 
+                         !      -> parallelisation should be more efficient
+        k_phot = model%n_star_emi/100
         DO i_phot=1,model%n_star_emi
             ! show progress
 !~                 !$OMP MASTER
-            IF (modulo(i_phot, 100) == 0 .or. i_phot==model%n_star_emi) THEN
-!~                     print *,"   - wavelength : ", i_lam, " / ", dust%n_lam
-!~                     write (*,'(A,I3,A,I3,A)') "   - wavelength : ", i_lam, " / ", dust%n_lam, char(27)//'[A'
-                    write (*,'(A,I9,A,I9,A)') "   - photon : ", i_phot, " / ", model%n_star_emi, char(27)//'[A'
+            IF (modulo(i_phot, k_phot) == 0 .or. i_phot==model%n_star_emi) THEN
+                    write (*,'(A,I3,A)') "   - photon : ", int(i_phot/real(model%n_star_emi)*100.0), ' % done...'//char(27)//'[A'
             END IF
 !~             !$OMP END MASTER
-!~             
 !~             !$omp do schedule(static)
+
             ! initiate photon
-            
             CALL InitPhoton(photon, 1, 'Photon',dust%n_dust)
+            
             ! 1. start photon (from primary source only)
-            CALL start_prim(basics,grid, model, rand_nr, fluxes, dust, photon, sources_in)
+            CALL start_photon(basics,grid, model, rand_nr, fluxes, dust, photon, sources_in)
 
             ! 2. determine & go to next point of interaction
             CALL next_pos_const(model, rand_nr, grid, dust, photon)
@@ -280,7 +265,7 @@ CONTAINS
                 IF (photon%inside .and. (photon%n_interact < n_interact_max)) THEN
                     photon%n_interact = photon%n_interact +1
 
-                    CALL interact(basics,grid, dust, rand_nr, fluxes, photon, t_dust, i_star_abs,dt_dust)
+                    CALL interact(basics,grid, dust, rand_nr, fluxes, photon, grid%t_dust)
                     CALL next_pos_const(model, rand_nr, grid, dust, photon)
                     cycle
                 ELSE 
@@ -294,15 +279,14 @@ CONTAINS
 !~                 !$omp end do nowait
         END DO
         print *, ' photon transfer finished     '
-        
         ! prepare & save final results
            
         ! [solution 2] apply mean intensity method
         !              => higher accuracy: from now on this temperature distribution will be used
 !~         !$OMP CRITICAL
-            grid%delta_t_dust = grid%delta_t_dust+dt_dust
+!~             grid%t_dust = t_dust
 !~         !$OMP END CRITICAL
-        DEALLOCATE (t_dust, grd_d_l, i_star_abs)
+!~         DEALLOCATE (t_dust)
 !~         !$omp end parallel
         
         CALL temp_final2(basics, model, grid, dust)
