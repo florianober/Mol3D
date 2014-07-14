@@ -45,7 +45,7 @@ contains
     real(kind=r2) :: t_dust_new, hd1, rndx
     !--------------------------------------------------------------------------!
     
-    !1.+ 2. estimate new temperature -> t_dust(nr_cell,i_dust_action) & store old temp
+    !1.+ 2. estimate new temperature index -> i_tem
     CALL immediate_temp( basics, grid,dust,photon, i_dust, i_tem)
                          
     ! ----------------------------------------------------------------------------------------------
@@ -128,9 +128,9 @@ contains
          
             ! [2] find corresponding temperature from QB integral
             i_tem = MIN(binary_search(hd2,dust%QB(:,i_dust))-1,basics%n_tem)
-
+            ! interpolate
             grid%t_dust(nr_cell,i_dust) = &
-                ( ( (hd2 - dust%QB(i_tem-1,i_dust)) / (dust%QB(i_tem,i_dust) - dust%QB(i_tem-1,i_dust)) ) &
+            ( ( (hd2 - dust%QB(i_tem-1,i_dust)) / (dust%QB(i_tem,i_dust) - dust%QB(i_tem-1,i_dust)) ) &
                 + real(i_tem-1,kind=r2) ) &
                 * basics%d_tem
         end do
@@ -160,16 +160,18 @@ contains
     !--------------------------------------------------------------------------!
     ! ---
     !TbD, check the if case .... sounds a bit arbitrary (from mc3d .....)
-    if ( grid%Nv(photon%nr_cell,i_dust) > 1.0e-16_r2) then
+!~     if ( grid%Nv(photon%nr_cell,i_dust) > 1.0e-16_r2) then
         ! absorb photon
             hd1    = (grid%cell_energy_sum(i_dust,photon%nr_cell,1)/ &
                      (basics%PIx4 * grid%cell_vol(photon%nr_cell)))
 
             i_tem = MIN(binary_search(hd1,dust%QB(:,i_dust))-1,basics%n_tem)
-            
-    ELSE
-        i_tem = 0
-    END IF
+!~             IF (photon%nr_cell == 450) THEN
+!~             print *, i_tem
+!~             END IF
+!~     ELSE
+!~         i_tem = 0
+!~     END IF
   end subroutine immediate_temp
   
 end module immediate_mod

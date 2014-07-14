@@ -135,14 +135,14 @@ CONTAINS
                     CONTINUE
                 ELSE
                     IF (grid%t_gas(i_cell) .lt. MINVAL(gas%col_alltemps(:,k)) ) THEN
-                    hi_i = 1
+                        hi_i = 1
                     
                     ELSE IF (grid%t_gas(i_cell) .gt. MAXVAL(gas%col_alltemps(:,k)) ) THEN
                     
-                    hi_i = gas%col_temps - 1
+                        hi_i = gas%col_temps - 1
                     ELSE
 
-                    hi_i = binary_search(REAL(grid%t_gas(i_cell),kind=r2), REAL(gas%col_alltemps(:,k),kind=r2))
+                        hi_i = binary_search(REAL(grid%t_gas(i_cell),kind=r2), REAL(gas%col_alltemps(:,k),kind=r2))
                     END IF
                             
                     col_mtr_tmp_ul(:) = &
@@ -158,7 +158,7 @@ CONTAINS
                             gas%energylevel(gas%col_lower(:,k))*con_c*100.0_r2)  &
                             /(con_k*grid%t_gas(i_cell)))
                             
-                    grid%col_finalcolmatrixup(:,i_cell) =   grid%col_finalcolmatrixup(:,i_cell) + &
+                    grid%col_finalcolmatrixup(:,i_cell)  =  grid%col_finalcolmatrixup(:,i_cell) + &
                                                             col_mtr_tmp_ul(:)
                     grid%col_finalcolmatrixlow(:,i_cell) =  grid%col_finalcolmatrixlow(:,i_cell) + &
                                                             col_mtr_tmp_lu(:)
@@ -235,7 +235,7 @@ CONTAINS
         
         ! initialize random number generator
         seed = -1
-!~         !$ seed = omp_get_thread_num()+1
+!~         !$ seed = omp_get_thread_num()*(-1)
         !print *, 'here'
         CALL InitRandgen(rand_nr,seed,'RAN2')
         !--------------------------------------------------------------------------! 
