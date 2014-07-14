@@ -118,7 +118,7 @@ contains
 !~                 grd_d_l(photon%nr_cell,photon%nr_lam) = grd_d_l(photon%nr_cell,photon%nr_lam) + &
 !~                                                             d_l * photon%energy * dust%C_abs(1,photon%nr_lam) &
 !~                                                             *model%ref_unit
-                grid%cell_energy_sum(:,photon%nr_cell) = grid%cell_energy_sum(:,photon%nr_cell)+ &
+                grid%cell_energy_sum(:,photon%nr_cell,1) = grid%cell_energy_sum(:,photon%nr_cell,1)+ &
                                                          d_l * photon%energy * dust%C_abs(:,photon%nr_lam) &
                                                          *model%ref_unit
                 ! d) new point of interaction
@@ -142,7 +142,7 @@ contains
 !~                     grd_d_l(photon%nr_cell,photon%nr_lam) = grd_d_l(photon%nr_cell,photon%nr_lam) +& 
 !~                                                                d_l * photon%energy * dust%C_abs(1,photon%nr_lam) &
 !~                                                                *model%ref_unit
-                    grid%cell_energy_sum(:,photon%nr_cell) = grid%cell_energy_sum(:,photon%nr_cell)+ &
+                    grid%cell_energy_sum(:,photon%nr_cell,1) = grid%cell_energy_sum(:,photon%nr_cell,1)+ &
                                                          d_l * photon%energy * dust%C_abs(:,photon%nr_lam) &
                                                          *model%ref_unit
                     !#######################################################
@@ -159,7 +159,7 @@ contains
 !~                     grd_d_l(photon%nr_cell,photon%nr_lam) = grd_d_l(photon%nr_cell,photon%nr_lam) + & 
 !~                                                                 d_l * photon%energy * dust%C_abs(1,photon%nr_lam) &
 !~                                                                 *model%ref_unit
-                    grid%cell_energy_sum(:,photon%nr_cell) = grid%cell_energy_sum(:,photon%nr_cell)+ &
+                    grid%cell_energy_sum(:,photon%nr_cell,1) = grid%cell_energy_sum(:,photon%nr_cell,1)+ &
                                                          d_l * photon%energy * dust%C_abs(:,photon%nr_lam) &
                                                          *model%ref_unit
                  

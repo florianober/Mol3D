@@ -775,8 +775,8 @@ contains
         REAL(kind=r2), DIMENSION(:), INTENT(IN)       :: array_in
         REAL(kind=r2), INTENT(IN)                     :: var_in
         
-        INTEGER                                        :: int_result
-        INTEGER                                        :: L, R, MID
+        INTEGER                                       :: int_result
+        INTEGER                                       :: L, R, MID
         !------------------------------------------------------------------------!
         int_result = 0
         L = 1
@@ -785,9 +785,8 @@ contains
             int_result = R
         ELSE
             DO WHILE (L .le. R )
-                MID = INT((L+R)/2)
+                MID = INT((L+R)*0.5)
                 IF (var_in .ge. array_in(MID) .and. var_in .le. array_in(MID+1) ) THEN
-                    !print *, var_in,  array_in(MID) ,array_in(MID+1), MID
                     int_result = MID
                     EXIT
                 ELSE

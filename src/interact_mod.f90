@@ -30,27 +30,23 @@ contains
   ! ################################################################################################
   ! interaction: steering routine
   ! ---
-  SUBROUTINE interact(basics,grid, dust, rand_nr, fluxes, photon, t_dust)
+  SUBROUTINE interact(basics,grid, dust, rand_nr, fluxes, photon)
   
     IMPLICIT NONE
     !--------------------------------------------------------------------------!
     TYPE(Basic_TYP),INTENT(IN)                       :: basics
     TYPE(Randgen_TYP),INTENT(INOUT)                  :: rand_nr
     TYPE(Grid_TYP),INTENT(IN)                        :: grid
-    !TYPE(Model_TYP),INTENT(IN)                        :: model
     TYPE(Dust_TYP),INTENT(IN)                        :: dust
-    TYPE(Fluxes_TYP),INTENT(IN)                       :: fluxes
+    TYPE(Fluxes_TYP),INTENT(IN)                      :: fluxes
     
-    TYPE(PHOTON_TYP),INTENT(INOUT)                     :: photon
+    TYPE(PHOTON_TYP),INTENT(INOUT)                   :: photon
     !--------------------------------------------------------------------------!
 
-    REAL(kind=r1),DIMENSION(0:grid%n_cell,1:dust%n_dust),INTENT(INOUT)      :: t_dust
-    !--------------------------------------------------------------------------!
-    ! ---
 !~     select case(photon_type)
 !~ 
 !~     case (1)
-       CALL interact_temp(basics,grid,dust,rand_nr,fluxes,photon, t_dust)
+       CALL interact_temp(basics,grid,dust,rand_nr,fluxes,photon)
 !~ 
 !~     case (2,3,4,5)
 !~        call interact_prim()
@@ -94,7 +90,7 @@ contains
   ! interaction type 2: temperature calculation:
   !                     interaction in immediate reemission scheme
   ! ---
-  subroutine interact_temp(basics,grid,dust,rand_nr,fluxes,photon,t_dust)
+  subroutine interact_temp(basics,grid,dust,rand_nr,fluxes,photon)
 
     
     IMPLICIT NONE
@@ -102,17 +98,13 @@ contains
     TYPE(Basic_TYP),INTENT(IN)                       :: basics
     TYPE(Randgen_TYP),INTENT(INOUT)                  :: rand_nr
     TYPE(Grid_TYP),INTENT(IN)                        :: grid
-!~     TYPE(Model_TYP),INTENT(IN)                       :: model
     TYPE(Dust_TYP),INTENT(IN)                        :: dust
     TYPE(Fluxes_TYP),INTENT(IN)                      :: fluxes
     
-    TYPE(PHOTON_TYP),INTENT(INOUT)                     :: photon
+    TYPE(PHOTON_TYP),INTENT(INOUT)                   :: photon
     !--------------------------------------------------------------------------!
-        
-    REAL(kind=r1),DIMENSION(0:grid%n_cell,1:dust%n_dust),INTENT(INOUT)      :: t_dust
-    !--------------------------------------------------------------------------!
-    integer                                           :: i_dust_action 
-    REAL(kind=r2)                                     :: rndx
+    integer                                          :: i_dust_action 
+    REAL(kind=r2)                                    :: rndx
     
     !--------------------------------------------------------------------------!
     ! ---
@@ -132,7 +124,7 @@ contains
         ! --- ---
         CALL vecmat(photon)
     ELSE                
-        CALL immediate( basics, rand_nr, grid,dust, photon, i_dust_action,t_dust)
+        CALL immediate( basics, rand_nr, grid,dust, photon, i_dust_action)
         CALL start_grain(basics, rand_nr, fluxes, photon)
     END IF
   end subroutine interact_temp

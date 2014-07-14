@@ -66,6 +66,10 @@ CONTAINS
     !--------------------------------------------------------------------------! 
     IF (.not. basics%old_model) THEN
         IF ( basics%calc_tmp) THEN
+            IF (.not. SourcesInitialized(sources_in)) THEN
+                print *, 'ERROR: There is no source defined'
+                stop
+            END IF
             CALL primary_temp(basics,grid,model,dust,sources_in,fluxes)
         ELSE IF (.not. basics%calc_tmp) THEN
             print *, '  using analytical temperature distribution'
@@ -204,7 +208,7 @@ CONTAINS
         
         !--------------------------------------------------------------------------!  
 
-        INTEGER                                          :: i_lam, i_phot
+        INTEGER                                          :: i_lam, i_phot, i_dust
         INTEGER                                          :: seed, k_phot
 !~         !$ INTEGER omp_get_thread_num 
                 
@@ -265,7 +269,7 @@ CONTAINS
                 IF (photon%inside .and. (photon%n_interact < n_interact_max)) THEN
                     photon%n_interact = photon%n_interact +1
 
-                    CALL interact(basics,grid, dust, rand_nr, fluxes, photon, grid%t_dust)
+                    CALL interact(basics, grid, dust, rand_nr, fluxes, photon)
                     CALL next_pos_const(model, rand_nr, grid, dust, photon)
                     cycle
                 ELSE 
@@ -288,8 +292,11 @@ CONTAINS
 !~         !$OMP END CRITICAL
 !~         DEALLOCATE (t_dust)
 !~         !$omp end parallel
-        
-        CALL temp_final2(basics, model, grid, dust)
+        DO i_dust=1,dust%n_dust
+            grid%cell_energy(i_dust,:) = grid%cell_energy_sum(i_dust,:,1)/ (basics%PIx4 * grid%cell_vol(:))
+            grid%cell_energy_sum(i_dust,:,:) = 0.0_r2
+        END DO
+        CALL temp_final2(basics, grid, dust)
         !stop
         ! save SED (quick&dirty SED)
         !  call sv_stokes_sed()     

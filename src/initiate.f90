@@ -509,16 +509,9 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
     !--------------------------------------------------------------------------! 
     
     CALL InitSources(sources_in,1,'sources',dust)
-    CALL AddSources(sources_in,model%t_star,model%r_star,(/0.0_r2,0.0_r2,0.0_r2/),1)
-!~     CALL AddSources(sources_in,model%t_star,model%r_star,(/0.0_r2,0.0_r2,0.0_r2/),1)
-!~     CALL AddSources(sources_in,2000.0,model%r_star/10.0,(/15.0_r2,0.0_r2,0.0_r2/),1)
-!~     print *, sources_in%L_total
-!~     print *, sources_in%n_sources
-!~     print *, GetNewLam(sources_in,1,1.0_r2)
-    IF (.not. SourcesInitialized(sources_in)) THEN
-        print *, 'ERROR: There is no source defined'
-        stop
-    END IF
+    CALL AddSources(sources_in,1,(/0.0_r2,0.0_r2,0.0_r2/), R_star=model%r_star, T_star=model%t_star)
+!~     CALL AddSources(sources_in,2,(/0.0_r2,0.0_r2,0.0_r2/), T_star=model%T_star, L_star=model%l_star*1.111111)
+
     !--------------------------------------------------------------------------! 
     ! Stokes vector: Unpolarized radiation (assumed initial state)
     n_dust_emi = 0
