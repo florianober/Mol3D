@@ -24,7 +24,8 @@ c = 299792458.
 k = 1.3806488e-23
 sigma = 5.6704e-8
 
-R_sun = 1392700000./2.          # Radius of the sun
+AU    = 1.496e+11
+R_sun = 0.6960e+9        # Radius of the sun
 L_sun = 3.85e+26
 M_sun = 1.9891e+30
 parsec = 3.08567758e16          # meters of 1 parsec
@@ -477,8 +478,9 @@ def blackbody(wavel,temp):
     # Compute the blackbody flux for a temperature 'temp' and a (or an array of)
     # wavelength 'lambda'. Flux in W/m2/wavelength (m)
     #-----------------------------------
-
+    
     bb = (2.*h*c**2./wavel**5.)*(1./(exp((h*c)/(wavel*k*temp))-1)) #=> EN W.m-2.m-1
+    
     return bb
     
 def blackbody_hz(freq,temp):

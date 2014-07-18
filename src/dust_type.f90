@@ -466,11 +466,11 @@ CONTAINS
           IF (con_c/gas%trans_freq(gas%tr_cat(tr)) .GT. MAXVAL(this%lam)) THEN
                this%cont_map(tr) = MAXLOC(this%lam, 1) !position of the maximum wavelength in the array lam
                print *, 'WARNING: the central wavelength of the gas is higher than the maximum &
-                                  wavelength provided by the choosen dust-catalogue'
+                                &  wavelength provided by the choosen dust-catalogue'
             ELSEIF (con_c/gas%trans_freq(gas%tr_cat(tr)) .LT. MINVAL(this%lam)) THEN
                  this%cont_map(tr) = MINLOC(this%lam, 1) !position of the minimum wavelength in the array lam
                  print *, 'WARNING: the central wavelength of the gas is lower than the minimum &
-                                    wavelength provided by the choosen dust-catalogue'
+                                   & wavelength provided by the choosen dust-catalogue'
             ELSE
             hi1 = binary_search(con_c/gas%trans_freq(gas%tr_cat(tr)),this%lam(:))
             
@@ -597,25 +597,21 @@ CONTAINS
                 ! temperature (tabulate)
                 ! tbd: logarithmic distribution
                 this%tem_tab(i_tem) = real(i_tem, kind=r2) * basics%d_tem  +  basics%t_dust_min
-              
-!~                 do i_lam=1, this%n_lam
-                    ! tabulating planck function
+                ! tabulating planck function
                 this%planck_tab(:,i_tem) = planck( this%tem_tab(i_tem), this%lam(:))
                      
                     ! individual contributions C_abs * B(T)
                 QBx(:) =  this%C_abs(i_dust,:) * this%planck_tab(:,i_tem)
-!~                 enddo
 
                 ! integral [W]
                 this%QB(i_tem,i_dust) = integ1(this%lam(:), QBx(:), 1, this%n_lam)
-                  
                      
-                ! individual contributions C_abs * dB(T)/dT
+                ! individual contributions C_abs * dB(T)/dT (needed for Bjorkman & Wood temperature correction)
                 this%QdB_dT_l(:,i_tem,i_dust) =  this%C_abs(i_dust,:) * dB_dT_l(this%tem_tab(i_tem), this%lam(:))
                 ! integral [W]
                 this%QdB_dT(i_tem,i_dust) = integ1(this%lam(:),this%QdB_dT_l(:,i_tem,i_dust) , 1, this%n_lam)
                 
-                ! normalized for the use to get the new wavelength
+                ! normalize -> cdf ->  used to get the new wavelength in B & W approach
                 hd1 = 0.0_r2
                 IF (this%QdB_dT(i_tem,i_dust) .lt. 1.0e-301_r2) THEN
                     this%QdB_dT_l_cdf(:,i_tem,i_dust) = 0.0_r2
@@ -627,8 +623,6 @@ CONTAINS
                 END IF
            end do
         end do
-        
-
         deallocate(QBx)
         
         ! set wavelength intervals

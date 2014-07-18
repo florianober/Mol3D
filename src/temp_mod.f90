@@ -296,7 +296,7 @@ CONTAINS
             grid%cell_energy(i_dust,:) = grid%cell_energy_sum(i_dust,:,1)/ (basics%PIx4 * grid%cell_vol(:))
             grid%cell_energy_sum(i_dust,:,:) = 0.0_r2
         END DO
-        CALL temp_final2(basics, grid, dust)
+        CALL temp_final(basics, grid, dust)
         !stop
         ! save SED (quick&dirty SED)
         !  call sv_stokes_sed()     

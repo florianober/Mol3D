@@ -87,7 +87,7 @@ CONTAINS
         !------------------------------------------------------------------------!
         TYPE(SOURCES)                              :: this
         INTEGER                                    :: i_source, s_type, i
-        REAL(kind=r2)                              :: L
+        REAL(kind=r2)                              :: L, B
         REAL(kind=r1),OPTIONAL                     :: R_star,L_star
         REAL(kind=r1)                              :: T_star
         REAL(kind=r2),DIMENSION(1:3)               :: pos_xyz
@@ -98,6 +98,8 @@ CONTAINS
         INTENT(IN)            :: pos_xyz, s_type, R_star,T_star
         !------------------------------------------------------------------------!
         i_source = this%n_sources + 1
+        B = 0.0_r2
+        L = 0.0_r2
         
         IF (this%n_sources > 0) THEN
             ALLOCATE(source_tmp(1:i_source))
@@ -120,41 +122,52 @@ CONTAINS
             !
             ALLOCATE(this%source(i_source)%wave_cdf(1:this%n_lam))
             this%source(i_source)%wave_cdf(:) = 0.0_r2
-            IF (present(L_star)) THEN
-                L = L_star
-            ELSE
-    !~             L = con_sigma*T_star**4*PI*4.0_r2*R_star**2
-                L = integ1(this%lam(:),PI * 4.0_r2 * PI * R_star**2 * planck(T_star,this%lam(:)) , 1, this%n_lam)
-            END IF
+
+            B = integ1(this%lam(:),planck(T_star,this%lam(:)) , 1, this%n_lam)
             DO i = 1,this%n_lam
                 
                 IF ( i == 1) THEN
                     this%source(i_source)%wave_cdf(i) = 0.0_r2 
                 ELSE 
                     this%source(i_source)%wave_cdf(i) = this%source(i_source)%wave_cdf(i-1) + &
-                                integ1(this%lam(:),PI * 4.0_r2 * PI * R_star**2 * planck(T_star,this%lam(:)) , i-1, i) /&
-                                L
+                                integ1(this%lam(:), planck(T_star,this%lam(:)) , i-1, i) /&
+                                B
                 END IF
             END DO
-         
+            
+            IF (present(L_star)) THEN
+                L = L_star
+            ELSE
+                IF (present(R_star)) THEN
+                    L = integ1(this%lam(:),PI * 4.0_r2 * PI * R_star**2 * planck(T_star,this%lam(:)) , 1, this%n_lam)
+                ELSE
+                    print *,'ERROR: star radius not given'
+                    return
+                END IF
+            END IF
+            
         ELSE IF (s_type == 2) THEN
             ! source is a point source, but given is the luminosity and Temperature
             !
             ALLOCATE(this%source(i_source)%wave_cdf(1:this%n_lam))
             this%source(i_source)%wave_cdf(:) = 0.0_r2
             
+            B = integ1(this%lam(:),planck(T_star,this%lam(:)) , 1, this%n_lam)
             DO i = 1,this%n_lam
-                L = integ1(this%lam(:),planck(T_star,this%lam(:)) , 1, this%n_lam)
                 IF ( i == 1) THEN
                     this%source(i_source)%wave_cdf(i) = 0.0_r2 
                 ELSE 
                     this%source(i_source)%wave_cdf(i) = this%source(i_source)%wave_cdf(i-1) + &
                                 integ1(this%lam(:),planck(T_star,this%lam(:)) , i-1, i) /&
-                                L
+                                B
                 END IF
             END DO
-            IF (.not. present(L_star)) RETURN
-            L = L_star
+            IF (present(L_star)) THEN
+                L = L_star
+            ELSE
+                print *,'ERROR: star luminosity not given'
+                return
+            END IF
         ELSE
             print *, 'ERROR: source type not implemented'
             stop

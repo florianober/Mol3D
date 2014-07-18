@@ -43,18 +43,8 @@ contains
     TYPE(PHOTON_TYP),INTENT(INOUT)                   :: photon
     !--------------------------------------------------------------------------!
 
-!~     select case(photon_type)
-!~ 
-!~     case (1)
-       CALL interact_temp(basics,grid,dust,rand_nr,fluxes,photon)
-!~ 
-!~     case (2,3,4,5)
-!~        call interact_prim()
-!~ 
-!~     case default
-!~        print *,"<!> subroutine interact: wrong input parameter. stopped."
-!~        call stop_mc3d()
-!~     end select
+    CALL interact_temp(basics,grid,dust,rand_nr,fluxes,photon)
+
     
     ! update last point of interaction
     photon%pos_xyz_li(:) = photon%pos_xyz(:)
@@ -101,22 +91,23 @@ contains
     TYPE(Dust_TYP),INTENT(IN)                        :: dust
     TYPE(Fluxes_TYP),INTENT(IN)                      :: fluxes
     
-    TYPE(PHOTON_TYP),INTENT(INOUT)                   :: photon
+    TYPE(PHOTON_TYP),INTENT(INOUT)                     :: photon
     !--------------------------------------------------------------------------!
-    integer                                          :: i_dust_action 
-    REAL(kind=r2)                                    :: rndx
+        
+    integer                                           :: i_dust
+    REAL(kind=r2)                                     :: rndx
     
     !--------------------------------------------------------------------------!
     ! ---
     ! 1. select dust species for interaction
-    CALL dust_select( grid,dust,rand_nr,photon,i_dust_action)      
+    CALL dust_select( grid,dust,rand_nr,photon,i_dust)      
     
     ! 2. select type of interaction
     CALL RAN2(rand_nr, rndx)
-    IF ( rndx < photon%current_albedo(i_dust_action) ) then               
+    IF ( rndx < photon%current_albedo(i_dust) ) then               
 
        ! 2.1 scattering
-        CALL scatter( basics, rand_nr, dust, photon, i_dust_action )
+        CALL scatter( basics, rand_nr, dust, photon, i_dust )
         ! --- ---
         ! tbd: call trafo( i_dust_action )
         !      to be implemented to correctly consider the polarization state
@@ -124,7 +115,7 @@ contains
         ! --- ---
         CALL vecmat(photon)
     ELSE                
-        CALL immediate( basics, rand_nr, grid,dust, photon, i_dust_action)
+        CALL immediate( basics, rand_nr, grid,dust, photon, i_dust)
         CALL start_grain(basics, rand_nr, fluxes, photon)
     END IF
   end subroutine interact_temp
@@ -143,7 +134,7 @@ contains
     
     TYPE(PHOTON_TYP),INTENT(INOUT)                    :: photon
     !--------------------------------------------------------------------------!
-    integer,INTENT(OUT)                             :: i_dust_action 
+    integer,INTENT(OUT)                              :: i_dust_action 
     REAL(kind=r2)                                    :: rndx
     real(kind=r2) :: hd1, hd2
     !--------------------------------------------------------------------------!

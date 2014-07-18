@@ -57,21 +57,17 @@ contains
         ! 1. determine optical depth (distance) to next point of interaction
         CALL RAN2(rand_nr,rndx)
         tau_end = -log(1.0_r2 - rndx)
-        !print *, 'tau', tau_end,'rndx', rndx
+
         ! 2. go to next point of interaction
-!~         print *,'now'
         DO
             ! 2.1. inside the dust sublimation radius: skip
             IF (photon%nr_cell==0) THEN
-!~                 print *, 'here?'
-!~                 CALL path_skip( grid, photon,rand_nr)
+
                 CALL path_skip( grid, photon%pos_xyz,photon%dir_xyz, &
                                photon%pos_xyz_new,photon%nr_cell_new,d_l)
-!~                 print *, 'here? huch'
                 photon%pos_xyz = photon%pos_xyz_new
                 photon%nr_cell = photon%nr_cell_new
                 IF (.not. check_inside(photon%pos_xyz_new(:),grid, model) ) THEN
-!~                     kill_photon = .True.
                     photon%inside = .false.
                     exit
                 END IF
@@ -82,7 +78,6 @@ contains
             !                 - new cell number
             CALL path( grid, photon%pos_xyz, photon%pos_xyz_new, photon%nr_cell, &
                         photon%nr_cell_new, d_l, kill_photon, photon%dir_xyz)
-            !print *, 'pos',photon%pos_xyz
             IF (kill_photon) THEN
                 ! stop transfer of this photon package
                 d_l = 0.0_r2
@@ -91,7 +86,7 @@ contains
 
                 ! move photon package outside model space ! maybe we should generalize this,
                 ! but however it should work this way
-                photon%pos_xyz_new(1)   = model%r_ou * 1.00001_r2
+                photon%pos_xyz_new(1)   = model%r_ou * 1.01_r2
                 photon%pos_xyz_new(2:3) = 0.0_r2
               
             ELSE
@@ -115,9 +110,6 @@ contains
                 photon%pos_xyz_new(:) = photon%pos_xyz(:) + photon%dir_xyz(:) * d_l
 
                 ! c) store information about (fractional) path through last cell
-!~                 grd_d_l(photon%nr_cell,photon%nr_lam) = grd_d_l(photon%nr_cell,photon%nr_lam) + &
-!~                                                             d_l * photon%energy * dust%C_abs(1,photon%nr_lam) &
-!~                                                             *model%ref_unit
                 grid%cell_energy_sum(:,photon%nr_cell,1) = grid%cell_energy_sum(:,photon%nr_cell,1)+ &
                                                          d_l * photon%energy * dust%C_abs(:,photon%nr_lam) &
                                                          *model%ref_unit
@@ -139,9 +131,7 @@ contains
                     
                     !#######################################################
                     ! be careful here
-!~                     grd_d_l(photon%nr_cell,photon%nr_lam) = grd_d_l(photon%nr_cell,photon%nr_lam) +& 
-!~                                                                d_l * photon%energy * dust%C_abs(1,photon%nr_lam) &
-!~                                                                *model%ref_unit
+
                     grid%cell_energy_sum(:,photon%nr_cell,1) = grid%cell_energy_sum(:,photon%nr_cell,1)+ &
                                                          d_l * photon%energy * dust%C_abs(:,photon%nr_lam) &
                                                          *model%ref_unit
@@ -156,9 +146,6 @@ contains
                     ! photon already outside model space
                     ! ---
                     ! a) store information about (fractional) path through last cell
-!~                     grd_d_l(photon%nr_cell,photon%nr_lam) = grd_d_l(photon%nr_cell,photon%nr_lam) + & 
-!~                                                                 d_l * photon%energy * dust%C_abs(1,photon%nr_lam) &
-!~                                                                 *model%ref_unit
                     grid%cell_energy_sum(:,photon%nr_cell,1) = grid%cell_energy_sum(:,photon%nr_cell,1)+ &
                                                          d_l * photon%energy * dust%C_abs(:,photon%nr_lam) &
                                                          *model%ref_unit
@@ -469,7 +456,7 @@ contains
   END SUBROUTINE path_cy
   
   
-  SUBROUTINE path_sp( grid, pos_xyz, pos_xyz_new, nr_cell, nr_cell_new, d_l, kill_photon, dir_xyz)
+  SUBROUTINE path_sp( grid, p0_vec, pos_xyz_new, nr_cell, nr_cell_new, d_l, kill_photon, d_vec)
     
     IMPLICIT NONE
     !--------------------------------------------------------------------------!
@@ -477,22 +464,23 @@ contains
     !--------------------------------------------------------------------------!
     
     real(kind=r2),               intent(out)         :: d_l
-    real(kind=r2), dimension(1:3), intent(in)        :: pos_xyz
+    real(kind=r2), dimension(1:3), intent(in)        :: p0_vec
     real(kind=r2), dimension(1:3), intent(out)       :: pos_xyz_new
-    real(kind=r2), dimension(1:3), intent(in)        :: dir_xyz
+    real(kind=r2), dimension(1:3), intent(in)        :: d_vec
     
     
     integer,                     intent(in)           :: nr_cell
     integer,                     intent(out)          :: nr_cell_new
+    integer                                           :: nr_cell_new2
 
     logical,                     intent(out)          :: kill_photon
-    !logical                                           :: show_error
     !--------------------------------------------------------------------------!
-    integer                                           :: hi1, i1, p_i1
+    integer                                           :: hi1
+    integer                                           :: i_th, i_ph, i_r
     integer, dimension(1)                             :: hi_arr1
     real(kind=r2) :: hd_r1, hd_ph1, hd_th1, hd1, hd2, hd3, hd4, hd5, hd6, hd7
-    real(kind=r2), dimension(1:6)                     :: d_lx, d_lx_sel
-    real(kind=r2), dimension(1:3)                     :: p0_vec, d_vec
+    real(kind=r2), dimension(1:6)                     :: d_lx
+!~     real(kind=r2), dimension(1:3)                     :: p0_vec, d_vec
     !real(kind=r2), dimension(1:3)                     :: spco
     real(kind=r2), dimension(1:2)                     :: hd_arr1
     
@@ -504,10 +492,7 @@ contains
     ! starting point: pos_xyz (grid type variable)
     ! direction     : dir_xyz (grid type variable)
     ! cell number   : nr_cell (grid type variable)
-    p0_vec(:) = pos_xyz(:)
-    d_vec(:)  = dir_xyz(:)
 
-    
     ! ---
     ! 1. determine distance to the boundaries of the cell
     ! 1.1. r_min, r_max
@@ -517,12 +502,12 @@ contains
     hd1 = dot_product(p0_vec, d_vec)
     hd2 = dot_product(p0_vec,p0_vec)
 
-    hd3 = hd1**2 - (hd2-(hd_r1**2))
-    if (hd3 < 0.0_r2) then
+    hd3 = hd1*hd1 - (hd2-(hd_r1*hd_r1))
+    if (hd3 < -1.0e-15_r2) then
        d_lx(1) = -1.0_r2
     else
-       hd_arr1(1) = -hd1 + sqrt(hd3)
-       hd_arr1(2) = -hd1 - sqrt(hd3)
+       hd_arr1(1) = -hd1 + sqrt(abs(hd3))
+       hd_arr1(2) = -hd1 - sqrt(abs(hd3))
        if (hd_arr1(1)<0.0_r2 .or. hd_arr1(2)<0.0_r2) then
           d_lx(1) = maxval(hd_arr1(:))
        else
@@ -532,12 +517,12 @@ contains
 
     ! outer boundary:
     hd_r1 = grid%co_mx_a( grid%cell_nr2idx(1,nr_cell)    )
-    hd3 = hd1**2 - (hd2-(hd_r1**2))
-    if (hd3 < 0.0_r2) then
+    hd3 = hd1*hd1 - (hd2-(hd_r1*hd_r1))
+    if (hd3 < -1.0e-15_r2) then
        d_lx(2) = -1.0_r2
     else
-       hd_arr1(1) = -hd1 + sqrt(hd3)
-       hd_arr1(2) = -hd1 - sqrt(hd3)
+       hd_arr1(1) = -hd1 + sqrt(abs(hd3))
+       hd_arr1(2) = -hd1 - sqrt(abs(hd3))
        if (hd_arr1(1)<0.0_r2 .or. hd_arr1(2)<0.0_r2) then
           d_lx(2) = maxval(hd_arr1(:))
        else
@@ -565,11 +550,11 @@ contains
        hd6 = hd4/hd2
        
        hd7 = hd5**2 - hd6
-       if (hd7 < 0.0_r2) then
+       if (hd7 < -1.0e-13_r2) then
           d_lx(3) = -1.0_r2
        else
-          hd_arr1(1) = -hd5 + sqrt(hd7)
-          hd_arr1(2) = -hd5 - sqrt(hd7)
+          hd_arr1(1) = -hd5 + sqrt(abs(hd7))
+          hd_arr1(2) = -hd5 - sqrt(abs(hd7))
           if (hd_arr1(1)<0.0_r2 .or. hd_arr1(2)<0.0_r2) then
              d_lx(3) = maxval(hd_arr1(:))
           else
@@ -588,11 +573,13 @@ contains
        hd6 = hd4/hd2
        
        hd7 = hd5**2 - hd6
-       if (hd7 < 0.0_r2) then
+       if (hd7 < -1.0e-13_r2) then
           d_lx(4) = -1.0_r2
+!~           print *, hd7, hd5**2, hd6
        else
-          hd_arr1(1) = -hd5 + sqrt(hd7)
-          hd_arr1(2) = -hd5 - sqrt(hd7)
+!~           print *, hd5
+          hd_arr1(1) = -hd5 + sqrt(abs(hd7))
+          hd_arr1(2) = -hd5 - sqrt(abs(hd7))
           if (hd_arr1(1)<0.0_r2 .or. hd_arr1(2)<0.0_r2) then
              d_lx(4) = maxval(hd_arr1(:))
           else
@@ -601,9 +588,9 @@ contains
        end if
        
        ! define sign of step width in <th> direction
-       if      (dir_xyz(3)>0.0_r2) then
+       if      (d_vec(3)>0.0_r2) then
           d_lx(3) = -abs(d_lx(3))
-       else if (dir_xyz(3)<0.0_r2) then
+       else if (d_vec(3)<0.0_r2) then
           d_lx(4) = -abs(d_lx(4))
        end if
     else
@@ -656,27 +643,17 @@ contains
     end if
 
     ! determine d_l
-    d_lx_sel = 0.0_r2
-    p_i1 = 0
-    do i1=1, 6
-       if (d_lx(i1) > 0.0_r2) then
-          p_i1 = p_i1 + 1
-          d_lx_sel(p_i1) = d_lx(i1)
-       end if
-    end do
-    hi_arr1 = minloc( d_lx_sel(1:p_i1) )
+    
+    hi_arr1 = minloc(d_lx, MASK = d_lx .GT. 0.0_r2)
     hi1     = hi_arr1(1)
-    
-    
-    d_l = d_lx_sel(hi1) +1.0e6_r2*epsilon(d_l)
-    
+
+    d_l = d_lx(hi1) +1.0e6_r2*epsilon(d_l)
     ! check: is the calculated step width large than the minimum allowed step width?
     if (d_l < grid%d_l_min) then
        ! step width too small
        kill_photon       = .true.
        kill_photon_count = kill_photon_count +1
        d_l = d_l+1.0e5_r2*epsilon(d_l) 
-       !print *, 'here'
 !~        if (show_error) then
 !~           print *, "*** problem in sr path():"
 !~           print *, "*** calculated current step width too small"
@@ -688,17 +665,45 @@ contains
 
     ! -
     ! 3.new position
-    pos_xyz_new(:) = pos_xyz(:)  +  d_l * dir_xyz(:)
+    pos_xyz_new(:) = p0_vec(:)  +  d_l * d_vec(:)
     ! 
     ! 4. new cell number
-    !spco        = ca2sp(pos_xyz_new)
-    !IF (norm(pos_xyz_new(:)) .gt. grid%co_mx_a(grid%n(1)) ) THEN  
+    ! a) use the generic routine
     nr_cell_new = get_cell_nr( grid,pos_xyz_new )
-    !ELSE
-    !    nr_cell_new = nr_cell
-    !    kill_photon = .true.
-    !    kill_photon_count = kill_photon_count +1
-    !END IF
+    
+    ! b) use the cell id's (should be much faster)
+!~     IF (hi1 == 1 ) THEN
+!~         nr_cell_new2 = nr_cell - grid%n(2)*grid%n(3)
+!~     ELSEIF (hi1 == 2 ) THEN
+!~         nr_cell_new2 = nr_cell + grid%n(2)*grid%n(3)
+!~     ELSEIF (hi1 == 3 ) THEN
+!~         nr_cell_new2 = nr_cell - grid%n(3)
+!~     ELSEIF (hi1 == 4 ) THEN
+!~         nr_cell_new2 = nr_cell + grid%n(3)
+!~     ELSEIF (hi1 == 5 ) THEN
+!~         nr_cell_new2 = nr_cell - 1
+!~     ELSEIF (hi1 == 6 ) THEN
+!~         nr_cell_new2 = nr_cell + 1
+!~     END IF
+!~     print *, nr_cell_new
+!~     IF (grid%cell_nr2idx(2,nr_cell)+1 /= grid%cell_nr2idx(2,nr_cell_new) .and. &
+!~         grid%cell_nr2idx(2,nr_cell)-1 /= grid%cell_nr2idx(2,nr_cell_new) .and. &
+!~         grid%cell_nr2idx(2,nr_cell) /= grid%cell_nr2idx(2,nr_cell_new) .and. &
+!~         grid%cell_nr2idx(2,nr_cell_new) /= 0 ) THEN
+!~         print *, d_lx
+!~         print *, 'pos:'
+!~         print *, ca2sp(p0_vec)
+!~         print *, ca2sp(pos_xyz_new)
+!~         print *, d_vec
+!~         
+!~         print *, grid%cell_nr2idx(:,nr_cell)
+!~         print *, grid%cell_nr2idx(:,nr_cell_new)
+!~         print *, nr_cell
+!~         print *, nr_cell_new
+!~         
+!~         stop
+!~     END IF
+!~     print *, ''
   end subroutine path_sp
 
 end module transfer_mod

@@ -173,6 +173,7 @@ def present_plane(file_path):
                     pic[k,j,l-2] = row[l]
                 
     m_range = [k_min,k_max,j_min,j_max]
+    pic += 1e-250
     xlab = 'distance [AU]'
     ylab = xlab
     ext = file_path[-6:-4]+'-plane'
@@ -196,51 +197,16 @@ def present_plane(file_path):
     #-------------------------------------------------
     #  Velocity
     
-    plt.figure('Velocity, '+ext)
-    plt.title('Velocity, '+ext)
-    plt.xlabel(xlab)
-    plt.ylabel(ylab)
-    #~ cont = [10,20,25,30,35,40]
-    #~ cont = [10,20,25,30,35,40]*2
-
-    CS = plt.contour(pic[:,:,7],linewidths=1,colors='k',extent=m_range)
-    plt.clabel(CS,inline=1,fmt='%2.1f', fontsize=10)
-    plt.imshow(pic[:,:,7],extent=m_range,origin='lower',interpolation='None',cmap=plt.cm.jet)
-    #~ plt.clim(0,200)
-    plt.colorbar().set_label('Velocity [km/s]')
-    
-    #-------------------------------------------------
-    #  error in Temperature
-    if pic.shape[2] > 8:
-        plt.figure('Temperature error, '+ext)
-        plt.title('Temperature error, '+ext)
-        plt.xlabel(xlab)
-        plt.ylabel(ylab)
-        
-        plt.imshow(pic[:,:,8],extent=m_range,origin='lower',interpolation='None',cmap=plt.cm.jet)
-        plt.colorbar().set_label('delta Temperature [K]')
-    #~ 
-    #-------------------------------------------------
-    #  counts/volume
-    
-    #~ plt.figure('photon counts/volume, '+ext)
-    #~ plt.title('photon counts/volume, '+ext)
+    #~ plt.figure('Velocity, '+ext)
+    #~ plt.title('Velocity, '+ext)
     #~ plt.xlabel(xlab)
     #~ plt.ylabel(ylab)
-    #~ 
-    #~ plt.imshow(pic[:,:,8],extent=m_range,origin='lower',interpolation='None',cmap=plt.cm.jet)
-    #~ plt.colorbar().set_label('arbitrary')
-    #~ 
-    #~ #-------------------------------------------------
-    #~ #  counts
-    #~ 
-    #~ plt.figure('photon counts, '+ext)
-    #~ plt.title('photon counts, '+ext)
-    #~ plt.xlabel(xlab)
-    #~ plt.ylabel(ylab)
-    #~ 
-    #~ plt.imshow(pic[:,:,9],extent=m_range,origin='lower',interpolation='None',cmap=plt.cm.jet)
-    #~ plt.colorbar().set_label('arbitrary')
+#~ 
+    #~ CS = plt.contour(pic[:,:,7],linewidths=1,colors='k',extent=m_range)
+    #~ plt.clabel(CS,inline=1,fmt='%2.1f', fontsize=10)
+    #~ plt.imshow(pic[:,:,7],extent=m_range,origin='lower',interpolation='None',cmap=plt.cm.jet)
+    #~ plt.colorbar().set_label('Velocity [km/s]')
+    
     
     #-------------------------------------------------
     #  molecule density
@@ -259,6 +225,24 @@ def present_plane(file_path):
     plt.colorbar().set_label('molecule density lg [cm^-3]')
     #~ plt.figure('Molecule number density distribution cut, '+ext)
     #~ plt.plot(pic[:,200,1])
+        #-------------------------------------------------
+    #  H2 density
+    
+    data = np.log10(pic[:,:,2]*1e-6)
+    plt.figure('H2 number density distribution, '+ext)
+    plt.title('H2 number density distribution, '+ext)
+    plt.xlabel(xlab)
+    plt.ylabel(ylab)
+    cont = np.round(np.linspace(7.4,8.3,4.),1)
+    cont = [7.8,7.5,7.0,6.0]
+    
+    CS = plt.contour(data,cont,linewidths=1,colors='k',extent=m_range)
+    plt.clabel(CS,inline=1,fmt='%2.1f', fontsize=10)
+    plt.imshow(data,extent=m_range,origin='lower',interpolation='None',cmap=plt.cm.jet)
+    plt.clim(3,9)
+    plt.colorbar().set_label('H2 number density lg [cm^-3]')
+    
+    
     
 if __name__ == "__main__":
     

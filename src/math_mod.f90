@@ -785,7 +785,7 @@ contains
             int_result = R
         ELSE
             DO WHILE (L .le. R )
-                MID = INT((L+R)*0.5)
+                MID = INT((L+R)/2)
                 IF (var_in .ge. array_in(MID) .and. var_in .le. array_in(MID+1) ) THEN
                     int_result = MID
                     EXIT

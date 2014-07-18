@@ -9,6 +9,7 @@ objects and routines to access Mol3d data (output)
 from numpy import zeros, argmax, array
 from astropy.convolution import convolve_fft
 from astropy.convolution import Gaussian2DKernel
+from astropy.io import fits as pf
 import os.path
 import helper as hlp
 
@@ -20,7 +21,7 @@ f.close()
 
 resulting_files = array(['_cell_boundaries.dat','_input_file.dat','_model.dat','_temp_x.dat',
                         '_velo_ch_map.dat','_velo_ch_mapint.dat','_velo_ch_mapsum.dat',
-                        '_visual_xy.dat','_visual_xz.dat','_visual_yz.dat'])
+                        '_visual_xy.dat','_visual_xz.dat','_visual_yz.dat','_velo_ch_map.fits.gz'])
 
 # some routines to read mol3d results from file
 
@@ -74,6 +75,20 @@ def load_mol3d_fullvchmap(file_path,return_all=False):
             return pic,vch
         else:
             return pic
+            
+def load_mol3d_vchmap(file_path,return_all=False):
+        fits = pf.open(file_path)
+        
+        data   = fits[0].data
+        header = fits[0].header
+        
+        fits.close()
+        
+        if return_all:
+            
+            return data, header
+        else:
+            return data
             
 def load_mol3d_continuum_map(file_path,return_all=False):
         map_in = open(file_path)
@@ -210,14 +225,18 @@ class mol3d:
             print('ERROR: Could not find results')
         
         
-    def load_velo_ch_map(self):
-        self.__velochmap = load_mol3d_fullvchmap(path_results+self.__pname+'_velo_ch_map.dat')
+    def load_velo_ch_map(self,typ):
+
+        self.__velochmap = load_mol3d_vchmap(path_results+self.__pname+typ)
         
     def return_velo_ch_map(self):
         if self.__velochmap == []:
-            
-            if self.__files[4]:
-                self.load_velo_ch_map()
+            # load map into memory, first try open the fits file (much faster)
+            if self.__files[10]:
+                self.__velochmap = load_mol3d_vchmap(path_results+self.__pname+resulting_files[10])
+            # if the fits file is not available try open the ascii file (older versions/results)  
+            elif self.__files[4]:
+                self.__velochmap = load_mol3d_fullvchmap(path_results+self.__pname+resulting_files[4])
             else:
                 pass
         else:
