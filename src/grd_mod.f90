@@ -558,6 +558,7 @@ CONTAINS
         REAL(kind=r2)                               :: value_in
         
         Character(256)                              :: waste
+        Character(256)                              :: fmt_kind
         !------------------------------------------------------------------------!
         SELECT CASE(GetGridType(grid))
         
@@ -779,6 +780,127 @@ CONTAINS
             end do
 
             close(unit=1)
+
+	CASE(9)
+	    ! ---
+            ! This case is for a very general input of a spherical grid, coordinates defined in external files
+            ! The style of the input file has to be consistent
+
+            ! 1 r
+            open(unit=1, file="input/grid/spherical_r.dat", &
+                    action="read", status="unknown", form="formatted")
+
+            ! read header lines
+            read(unit=1,fmt=*) i_abc ! number of r cells
+            IF ( i_abc /= grid%n(1)  ) STOP("ERROR: No of r_cells are not consistent")           
+
+            read(unit=1,fmt=*) fmt_kind
+            DO i_r = 0, grid%n(1)
+                read(unit=1,fmt=*) value_in
+                IF ( TRIM(fmt_kind) == 'log10' ) THEN
+                    grid%co_mx_a(i_r) = 10.0**(value_in)
+                ELSEIF (TRIM(fmt_kind) == 'linear' ) THEN
+                    grid%co_mx_a(i_r) = value_in
+                ELSE
+                    PRINT *, "ERROR: coordinate r has no known kind"
+                    STOP
+                END IF
+            END DO
+            close(unit=1)
+            ! test for consistency
+            IF ( abs(model%r_in - grid%co_mx_a(0)) .gt. 1.0e3_r2*epsilon(model%r_in) ) THEN
+                PRINT *, "ERROR: Inner rim given in input file is not consistent with the grid"
+                PRINT *, "r_in               : ", model%r_in
+                PRINT *, "innerst cell bound : ", grid%co_mx_a(0)
+                STOP
+            ELSEIF ( abs(model%r_ou - grid%co_mx_a(grid%n(1))) .gt. 1.0e3_r2*epsilon(model%r_ou) ) THEN
+                PRINT *, "ERROR: Outer rim given in input file is not consistent with the grid"
+                PRINT *, "r_ou             : ", model%r_in
+                PRINT *, "outer cell bound : ", grid%co_mx_a(grid%n(1))
+                STOP
+            END IF
+ 
+
+            ! ---
+            ! 2 th
+            open(unit=1, file="input/grid/spherical_theta.dat", &
+                    action="read", status="unknown", form="formatted")
+
+            ! read header lines
+            read(unit=1,fmt=*) i_abc ! number of th cells
+            IF ( i_abc /= grid%n(2)  ) STOP("ERROR: No of th_cells are not consistent")
+
+            read(unit=1,fmt=*) fmt_kind
+
+            DO i_th = 0, grid%n(2)
+                read(unit=1,fmt=*) value_in
+                IF ( TRIM(fmt_kind) == 'log10' ) THEN
+                    grid%co_mx_b(i_th) = 10.0**(value_in)
+                ELSEIF (TRIM(fmt_kind) == 'linear' ) THEN
+                    grid%co_mx_b(i_th) = value_in
+                ELSE
+                    PRINT *, "ERROR: coordinate theta has no known kind"
+                    STOP
+                END IF
+            END DO
+            close(unit=1)
+
+            ! test for consistency
+            ! co_mx_b(  0 ) = -PI/2    (- 90°)
+            ! co_mx_b(n(2)) =  PI/2    (  90°)
+
+            IF ( abs(PI/2 + grid%co_mx_b(0)) .gt. 1.0e3_r2*epsilon(PI) ) THEN
+                PRINT *, "ERROR: lower theta coordinate is not -PI/2"
+                PRINT *, "lowest cell boundary : ", grid%co_mx_b(0)
+                STOP
+            ELSEIF ( abs(PI/2 - grid%co_mx_b(grid%n(2))) .gt. 1.0e3_r2*epsilon(PI) ) THEN
+                PRINT *, "ERROR: upper theta coordinate is not PI/2"
+                PRINT *, "upper cell boundary : ", grid%co_mx_b(grid%n(2))
+                STOP
+            END IF
+
+
+            ! ---
+            ! 3 phi
+            ! co_mx_c(  0 ) = 0    (  0°)
+            ! co_mx_c(n(3)) = 2xPI (360°)
+            open(unit=1, file="input/grid/spherical_phi.dat", &
+                    action="read", status="unknown", form="formatted")
+            
+            ! read header lines
+            read(unit=1,fmt=*) i_abc ! number of th cells
+            IF ( i_abc /= grid%n(3)  ) STOP("ERROR: No of phi_cells are not consistent")
+
+            read(unit=1,fmt=*) fmt_kind
+
+            DO i_ph = 0, grid%n(3)
+                read(unit=1,fmt=*) value_in
+                IF ( TRIM(fmt_kind) == 'log10' ) THEN
+                    grid%co_mx_c(i_ph) = 10.0**(value_in)
+                ELSEIF (TRIM(fmt_kind) == 'linear' ) THEN
+                    grid%co_mx_c(i_ph) = value_in
+                ELSE
+                    PRINT *, "ERROR: coordinate phi has no known kind"
+                    STOP
+                END IF
+            END DO
+            close(unit=1)
+
+            ! test for consistency
+            ! co_mx_c(  0 ) = 0         (   0°)
+            ! co_mx_c(n(3)) = 2 * PI    ( 360°)
+
+            IF ( abs(grid%co_mx_c(0)) .gt. 1.0e3_r2*epsilon(PI) ) THEN
+                PRINT *, "ERROR: lower phi coordinate is not 0.0"
+                PRINT *, "lowest cell boundary : ", grid%co_mx_c(0)
+                STOP
+            ELSEIF ( abs(2.0 * PI - grid%co_mx_c(grid%n(3))) .gt. 1.0e3_r2*epsilon(PI) ) THEN
+                PRINT *, "ERROR: upper theta coordinate is not 2 * PI"
+                PRINT *, "upper cell boundary : ", grid%co_mx_c(grid%n(3))
+                STOP
+            END IF
+
+
         END SELECT
     
     END SUBROUTINE set_boundaries_sp

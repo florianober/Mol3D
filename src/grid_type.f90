@@ -230,9 +230,36 @@ CONTAINS
                 
                 close(unit=1)
                 this%sf     = 1.0
+
+            CASE(9)
+                ! 
+                ! read no of cells from file
+                ! we do some consistency checks later 
+                ! Note, the files included here, should be no real files but sym links!
+ 
+                open(unit=1, file="input/grid/spherical_r.dat", &
+                    action="read", status="unknown", form="formatted")
+ 
+                read(unit=1, fmt=*) this%n(1)
+                close(unit=1)
+
+                this%sf     = 1.000
+
+                open(unit=1, file="input/grid/spherical_theta.dat", &
+                    action="read", status="unknown", form="formatted")
+
+                read(unit=1, fmt=*) this%n(2)
+                close(unit=1)
+ 
+                open(unit=1, file="input/grid/spherical_phi.dat", &
+                    action="read", status="unknown", form="formatted")
+
+                read(unit=1, fmt=*) this%n(3)
+                close(unit=1)
+
                 
             CASE DEFAULT
-                print *, 'selected coordinate type not found. try grid_type = [1,2]'
+                print *, 'selected coordinate type not found. try grid_type = [1,2,3,4,9]'
                 stop
             END SELECT
             
