@@ -66,13 +66,13 @@ CONTAINS
             IF ( i .gt. grid%n(2) ) THEN
                 WRITE(b,fmt='(A)') ''
             ELSE
-                WRITE(b,fmt='(F16.8)') grid%co_mx_b(i)
+                WRITE(b,fmt='(F16.12)') grid%co_mx_b(i)
             END IF
             
             IF ( i .gt. grid%n(3) ) THEN
                 WRITE(c,fmt='(A)') ''
             ELSE
-                WRITE(c,fmt='(F16.8)') grid%co_mx_c(i)
+                WRITE(c,fmt='(F16.12)') grid%co_mx_c(i)
             END IF
             
 !~             write(unit=1,fmt='(I5,3(F16.8))') i,a,b,c

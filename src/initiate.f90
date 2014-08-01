@@ -101,7 +101,6 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
     INTEGER                                          :: num_core !number of cores used in parallel part
     INTEGER,DIMENSION(8)                             :: dtime
     
-    LOGICAL                                          :: project_2D
     LOGICAL                                          :: calc_tmp
     LOGICAL                                          :: old_model
     LOGICAL                                          :: pluto_data  !remark: this should be removed
@@ -149,9 +148,8 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
     acc_select_level  = 1.0e-6
     i_lam_show        = 10
     t_dust_min        = 0
-    t_dust_max        = 2000.0
+    t_dust_max        = 3000.0
     n_interact_max    = 100000
-    project_2D = .TRUE.                  ! old parameter from mc3d
     
     show_error = .False.                             ! show some minor warnings
     velo_type  = 1                                   ! analytical velocity distri
@@ -244,7 +242,7 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
     
     CALL InitBasic(basics,photon_type,'Reemission map',proname,r_path, concept_ps, calc_tmp, old_proname, &
                     old_model, &
-                    project_2D, do_raytr,do_continuum_map,do_velo_ch_map, n_tem, t_dust_min, t_dust_max, &
+                    do_raytr,do_continuum_map,do_velo_ch_map, n_tem, t_dust_min, t_dust_max, &
                     num_core, pluto_data)
     !--------------------------------------------------------------------------! 
     
@@ -448,6 +446,7 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
         CALL parse('n_b',n_b,input_file) 
         CALL parse('n_c',n_c,input_file)
         CALL parse('sf',sf,input_file) 
+        
         IF (pluto_data) THEN
             model%r_in = sf*model%r_in
             model%r_ou = sf*model%r_ou
@@ -509,9 +508,9 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
     !--------------------------------------------------------------------------! 
     
     CALL InitSources(sources_in,1,'sources',dust)
-    CALL AddSources(sources_in,1,(/0.0_r2,0.0_r2,0.0_r2/), R_star=model%r_star, T_star=model%t_star)
-!~     CALL AddSources(sources_in,2,(/0.0_r2,0.0_r2,0.0_r2/), T_star=model%T_star, L_star=model%l_star*1.111111)
-
+!~     CALL AddSources(sources_in,1,(/0.0_r2,0.0_r2,0.0_r2/), R_star=model%r_star*1.44, T_star=model%t_star)
+    CALL AddSources(sources_in,2,(/0.0_r2,0.0_r2,0.0_r2/), T_star=model%T_star, L_star=REAL(L_sun*1.907343,kind=r1))
+    print '(A,F5.2,A)'," Total Luminosity included: ", sources_in%L_total/L_sun, " L_sun"
     !--------------------------------------------------------------------------! 
     ! Stokes vector: Unpolarized radiation (assumed initial state)
     n_dust_emi = 0

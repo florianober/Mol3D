@@ -36,7 +36,8 @@ if path_results == '':
     f = open('path_result.dat')
     path_results = f.readline().split()[0]
     f.close()
-    
+
+#~ print(path_results)
 
 def make_model(path_results,p_name):
     

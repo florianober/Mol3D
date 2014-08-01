@@ -157,7 +157,7 @@ CONTAINS
             CASE(1,2,3)
                 ! case 1 logarithm r spaced grid
                 ! case 2 linear r spaced grid
-                ! we can use the same definitions
+                !  thus we can use the same definitions
                 this%n(1)   = n_a
                 this%sf     = sf
                 this%n(2)   = n_b

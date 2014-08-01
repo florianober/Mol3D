@@ -207,9 +207,14 @@ CONTAINS
         TYPE(Randgen_TYP)                                 :: rand_nr
         
         !--------------------------------------------------------------------------!  
-
+        logical                                          :: kill_photon
         INTEGER                                          :: i_lam, i_phot, i_dust
         INTEGER                                          :: seed, k_phot
+        INTEGER                                          :: nr_cell_new, nr_cell
+        REAL(kind=r2),DIMENSION(1:3)                     :: pos_xyz_new
+        REAL(kind=r2),DIMENSION(1:3)                     :: pos_xyz
+        REAL(kind=r2),DIMENSION(1:3)                     :: dir_xyz
+        REAL(kind=r2)                                    :: d_l
 !~         !$ INTEGER omp_get_thread_num 
                 
         !# shared variables
@@ -226,7 +231,6 @@ CONTAINS
         !--------------------------------------------------------------------------!
         grid%t_dust(:,:)  = basics%t_dust_min
         grid%t_dust(0,:)  = 0.0_r2
-
 
 !~         !$ call omp_set_num_threads( basics%num_core )
         

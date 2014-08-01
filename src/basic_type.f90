@@ -59,7 +59,6 @@ MODULE basic_type
         CHARACTER(len=256)                :: pronam_old
         CHARACTER(len=256)                :: path_results
         LOGICAL                           :: MCRT
-        LOGICAL                           :: project_2D
         LOGICAL                           :: calc_tmp
         LOGICAL                           :: old_model
         LOGICAL                           :: pluto_data
@@ -84,7 +83,7 @@ MODULE basic_type
     !--------------------------------------------------------------------------!
 CONTAINS
 
-    SUBROUTINE InitBasic(this, ut, un, pname, presult, concept, calc_tmp,old_pname, old_model, project_2D, &
+    SUBROUTINE InitBasic(this, ut, un, pname, presult, concept, calc_tmp,old_pname, old_model, &
                             do_raytr, do_continuum_map,do_velo_ch_map,n_tem, t_dust_min, t_dust_max, num_core,pluto_data)
         IMPLICIT NONE
         !------------------------------------------------------------------------!
@@ -103,7 +102,6 @@ CONTAINS
         REAL(kind=r1)         :: t_dust_max
         REAL(kind=r1)         :: t_dust_min
         
-        LOGICAL               :: project_2D
         LOGICAL               :: calc_tmp
         LOGICAL               :: old_model
         LOGICAL               :: pluto_data
@@ -112,7 +110,7 @@ CONTAINS
         LOGICAL               :: do_velo_ch_map
 
         !------------------------------------------------------------------------!
-        INTENT(IN)          :: ut,un,presult, pname, concept, project_2D, num_core, &
+        INTENT(IN)          :: ut,un,presult, pname, concept, num_core, &
                                 n_tem, t_dust_max, t_dust_min, calc_tmp,old_model,old_pname, &
                                 pluto_data,do_continuum_map,do_velo_ch_map
         INTENT(INOUT)       :: this
@@ -165,7 +163,6 @@ CONTAINS
 
 
         this%MCRT       = .false.
-        this%project_2D = project_2D
         this%n_tem = n_tem
         this%t_dust_max = t_dust_max
         this%t_dust_min = t_dust_min

@@ -188,7 +188,8 @@ CONTAINS
             END DO
             PRINT '(A,I7,A,I7,A)', '   do raytrace with ',no_pixel,' Pixel (', &
                           no_pixel-(2*model%n_bin_map +1)**2, ' subpixel)' 
-            
+            PRINT '(A,F11.2,A)',' wavelength dust:   ',dust%lam(dust%cont_map(1)) *1e6, ' micron'
+            PRINT '(A,F11.2,A)',' central wavelength:',con_c/gas%trans_freq(gas%tr_cat(1))*1e6, ' micron'
             
             IF (basics%do_velo_ch_map ) THEN
                 ALLOCATE (inten_px (1:no_pixel,-gas%i_vel_chan:gas%i_vel_chan,1:gas%n_tr))

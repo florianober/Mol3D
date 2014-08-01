@@ -13,8 +13,8 @@ email: fober@astrophysik.uni-kiel.de
 import math
 import numpy as np
 from astropy.io import fits as pf
-from astropy.coordinates import ICRS
-from astropy import units as u
+from astropy.coordinates import SkyCoord
+
 from datetime import datetime, timedelta
 
 ### some global constants are defined here:
@@ -95,7 +95,8 @@ def write_image2fits(image,header='',file_name='example.fits',quiet=True):
         hdulist.writeto(file_name,clobber=True)
         print(('fits file succesfully written: %s' %file_name)) 
 
-def create_CASA_fits(map_in,out_name='standard.fits',position='4h33m16.50s 22d53m20.40s',resolution=1.0e-7,freq=345.8e9,deltafreq=1.0e6):
+def create_CASA_fits(map_in,out_name='standard.fits',position='4h33m16.50s 22d53m20.40s',
+                     object_name='unknown',resolution=1.0e-7,freq=345.8e9,deltafreq=1.0e6):
     from numpy import zeros
     header = pf.Header()
     map_size = map_in.shape
@@ -119,12 +120,12 @@ def create_CASA_fits(map_in,out_name='standard.fits',position='4h33m16.50s 22d53
         map2 = zeros((1,1,map_size[0],map_size[1]))
         map2[0,0,:,:] = map_in[:,:]
 
-    c = ICRS(position)
+    c = SkyCoord(position)
     
     header['BUNIT']    = 'JY/PIXEL'
     header['BTYPE']    = 'Intensity'  
-    header['OBJECT']   = 'IRAS 04302+2247'
-    header['TELESCOP'] = 'ALMA    '                                                            
+    header['OBJECT']   = object_name
+    header['TELESCOP'] = 'ALMA    '
     header['OBSERVER'] = 'Florian Ober'
     header['IMGTYPE']  = 'ALMA Line radiative transfer simulations'          
     header['RADESYS'] = 'ICRS    '
@@ -138,7 +139,7 @@ def create_CASA_fits(map_in,out_name='standard.fits',position='4h33m16.50s 22d53
     header['CUNIT1']  = 'deg'   
 
     header['CTYPE2']  = 'DEC--SIN'
-    header['CRVAL2']  = c.dec.value
+    header['CRVAL2']  = c.dec.deg
     header['CRPIX2']  = float(half2+1)
     header['CDELT2']  = resolution
     header['CUNIT2']  = 'deg' 

@@ -284,427 +284,496 @@ contains
   end subroutine path_skip_sp
 
 
-  ! ################################################################################################
-  ! determine geometrical distance between given point and next cell boundary
-  ! ---
-  SUBROUTINE path( grid, pos_xyz, pos_xyz_new, nr_cell, nr_cell_new, d_l, kill_photon, dir_xyz)
-
-    IMPLICIT NONE
-    !--------------------------------------------------------------------------!
-    TYPE(Grid_TYP),INTENT(IN)                         :: grid
-    !--------------------------------------------------------------------------!
-    
-    real(kind=r2),               intent(out)          :: d_l
-    real(kind=r2), dimension(1:3), intent(in)        :: pos_xyz
-    real(kind=r2), dimension(1:3), intent(out)       :: pos_xyz_new
-    real(kind=r2), dimension(1:3), intent(in)        :: dir_xyz
-    integer,                     intent(in)           :: nr_cell
-    integer,                     intent(out)          :: nr_cell_new
-
-    logical,                     intent(out)          :: kill_photon
-    !logical                                           :: show_error
-    !--------------------------------------------------------------------------!
-    
-    
-!~     grid%counter = grid%counter +1
-    SELECT CASE(GetGridName(grid))
-        
-    CASE('spherical')
-        CALL path_sp( grid, pos_xyz, pos_xyz_new, nr_cell, nr_cell_new, d_l, kill_photon, dir_xyz)
-    CASE('cylindrical')
-
-        CALL path_cy( grid, pos_xyz, pos_xyz_new, nr_cell, nr_cell_new, d_l, kill_photon, dir_xyz)
-
-    CASE('cartesian')
-        print *, 'TbD, not finished yet, path'
-        stop
-    CASE DEFAULT
-        print *, 'selected coordinate system not found, path'
-        stop
-    END SELECT
-
-  END SUBROUTINE path
-  
-  SUBROUTINE path_cy( grid, pos_xyz, pos_xyz_new, nr_cell, nr_cell_new, d_l, kill_photon, dir_xyz)
-    
-    IMPLICIT NONE
-    !--------------------------------------------------------------------------!
-    TYPE(Grid_TYP),INTENT(IN)                         :: grid
-    !--------------------------------------------------------------------------!
-    
-    real(kind=r2),               intent(out)         :: d_l
-    real(kind=r2), dimension(1:3), intent(in)        :: pos_xyz
-    real(kind=r2), dimension(1:3), intent(out)       :: pos_xyz_new
-    real(kind=r2), dimension(1:3), intent(in)        :: dir_xyz
-    
-    integer,                     intent(in)           :: nr_cell
-    integer,                     intent(out)          :: nr_cell_new
-
-    logical,                     intent(out)          :: kill_photon
-    !logical                                           :: show_error
-    !--------------------------------------------------------------------------!
-    real(kind=r2),dimension(6) :: d_l_selc
-    real(kind=r2) :: d_r, p_r, d_ph, p_ph, a, p, q, sq
-    integer       :: i_r, i_ph, i_z, i, loca
-    
-    !--------------------------------------------------------------------------!
+    ! ################################################################################################
+    ! determine geometrical distance between given point and next cell boundary
     ! ---
-    ! default:
-    kill_photon = .false.
-    
-    i_r  = grid%cell_nr2idx(1,nr_cell)
-    i_ph = grid%cell_nr2idx(2,nr_cell)
-    i_z  = grid%cell_nr2idx(3,nr_cell)
-    
-!~     print *, i_r, i_ph, i_z
-    !pos_xyz(1) = -pos_xyz(1)
-    
-    d_r     = sqrt(dir_xyz(1)**2+dir_xyz(2)**2)
-    p_r     = sqrt(pos_xyz(1)**2+pos_xyz(2)**2)
-    
-    d_ph    = atan3(dir_xyz(2),dir_xyz(1))
-    p_ph    = atan3(pos_xyz(2),pos_xyz(1))
-    
-    d_l_selc(:) = 0.0_r2
-    
-    ! find z component
-    
-    IF ( abs(dir_xyz(3)) .gt. epsilon(d_r) ) THEN
-    
-        d_l_selc(1) = (grid%co_mx_c(i_z)-pos_xyz(3))/dir_xyz(3)
-        d_l_selc(2) = (grid%co_mx_c(i_z-1)-pos_xyz(3))/dir_xyz(3)
-    ELSE 
-        d_l_selc(1) = -1.0_r2
-        d_l_selc(2) = -1.0_r2
-    END IF
-    
-    ! find rho component
+    SUBROUTINE path( grid, pos_xyz, pos_xyz_new, nr_cell, nr_cell_new, d_l, kill_photon, dir_xyz)
 
-    p = 2.0_r2*(dir_xyz(1)*pos_xyz(1)+dir_xyz(2)*pos_xyz(2)) / &
-            (dir_xyz(1)**2+dir_xyz(2)**2)
-    q = (pos_xyz(1)**2+pos_xyz(2)**2-grid%co_mx_a(i_r)**2)/ &
-        (dir_xyz(1)**2+dir_xyz(2)**2)
-    sq = p**2/4.0-q
-    !print *,'1',sq
-    
-    !print *, -p/2.0_r2 + sqrt(p**2/4.0_r2-q)
-    
-    IF ( sq .gt. epsilon(sq) ) THEN
-    
-        d_l_selc(3) = -p/2.0_r2 + sqrt(p**2/4.0_r2-q)
-    
-    ELSE
-        d_l_selc(3) = -1.0_r2
-    END IF
-    
-    q = (pos_xyz(1)**2+pos_xyz(2)**2-grid%co_mx_a(i_r-1)**2)/ &
-        (dir_xyz(1)**2+dir_xyz(2)**2)  
+        IMPLICIT NONE
+        !--------------------------------------------------------------------------!
+        TYPE(Grid_TYP),INTENT(IN)                         :: grid
+        !--------------------------------------------------------------------------!
         
-    sq = p**2/4.0-q       
-    
-    IF ( sq .gt. epsilon(sq) ) THEN
-    
-        d_l_selc(4) = -p/2.0_r2 - sqrt(p**2/4.0_r2-q)
-    
-    ELSE
-        d_l_selc(4) = -1.0_r2
-    END IF
+        real(kind=r2),               intent(out)          :: d_l
+        real(kind=r2), dimension(1:3), intent(in)         :: pos_xyz
+        real(kind=r2), dimension(1:3), intent(out)        :: pos_xyz_new
+        real(kind=r2), dimension(1:3), intent(in)         :: dir_xyz
+        integer,                     intent(in)           :: nr_cell
+        integer,                     intent(out)          :: nr_cell_new
 
-    
-    ! find phi component   ! test this for more than 1 grid cell in phi direction!
-!~     IF (grid%n(2) .gt. 1 ) THEN
-    IF (d_ph .gt. epsilon(d_ph) .and. grid%n(2) .gt. 1  ) THEN
-        a = 1.0_r2/TAN(grid%co_mx_b(i_ph))
-        d_l_selc(5) = (pos_xyz(1)-pos_xyz(2)*a)/(dir_xyz(2)*a-dir_xyz(1))
+        logical,                     intent(out)          :: kill_photon
+        !--------------------------------------------------------------------------!
+                
+        SELECT CASE(GetGridName(grid))
+            
+        CASE('spherical')
+            CALL path_sp( grid, pos_xyz, pos_xyz_new, nr_cell, nr_cell_new, d_l, kill_photon, dir_xyz)
+        CASE('cylindrical')
+
+            CALL path_cy( grid, pos_xyz, pos_xyz_new, nr_cell, nr_cell_new, d_l, kill_photon, dir_xyz)
+
+        CASE('cartesian')
+            print *, 'TbD, not finished yet, path'
+            stop
+        CASE DEFAULT
+            print *, 'selected coordinate system not found, path'
+            stop
+        END SELECT
+
+    END SUBROUTINE path
+  
+    SUBROUTINE path_cy( grid, pos_xyz, pos_xyz_new, nr_cell, nr_cell_new, d_l, kill_photon, dir_xyz)
         
-        a = 1.0_r2/TAN(grid%co_mx_b(i_ph-1))
-        d_l_selc(6) = (pos_xyz(1)-pos_xyz(2)*a)/(dir_xyz(2)*a-dir_xyz(1))
-    ELSE
-        d_l_selc(5) = -1.0_r2
-        d_l_selc(6) = -1.0_r2
-    END IF
-    !print *, d_r
-    !print *, d_l_selc(:)
-    
-    ! find shortest path and leaving boundary
-    
-    d_l = 1.0e15_r2
-    DO i=1,6
-!~         print *, d_l_selc(i)
-        IF ( d_l_selc(i) .gt. epsilon(d_l) .and. d_l_selc(i) .lt. d_l ) THEN
-            d_l = d_l_selc(i)
-            loca = i 
+        IMPLICIT NONE
+        !--------------------------------------------------------------------------!
+        TYPE(Grid_TYP),INTENT(IN)                         :: grid
+        !--------------------------------------------------------------------------!
+        
+        real(kind=r2),               intent(out)          :: d_l
+        real(kind=r2), dimension(1:3), intent(in)         :: pos_xyz
+        real(kind=r2), dimension(1:3), intent(out)        :: pos_xyz_new
+        real(kind=r2), dimension(1:3), intent(in)         :: dir_xyz
+        
+        integer,                     intent(in)           :: nr_cell
+        integer,                     intent(out)          :: nr_cell_new
+
+        logical,                     intent(out)          :: kill_photon
+        !--------------------------------------------------------------------------!
+        real(kind=r2),dimension(6) :: d_l_selc
+        real(kind=r2) :: d_r, p_r, d_ph, p_ph, a, p, q, sq
+        integer       :: i_r, i_ph, i_z, i, loca
+        
+        !--------------------------------------------------------------------------!
+        ! ---
+        ! default:
+        kill_photon = .false.
+        
+        i_r  = grid%cell_nr2idx(1,nr_cell)
+        i_ph = grid%cell_nr2idx(2,nr_cell)
+        i_z  = grid%cell_nr2idx(3,nr_cell)
+        
+    !~     print *, i_r, i_ph, i_z
+        !pos_xyz(1) = -pos_xyz(1)
+        
+        d_r     = sqrt(dir_xyz(1)**2+dir_xyz(2)**2)
+        p_r     = sqrt(pos_xyz(1)**2+pos_xyz(2)**2)
+        
+        d_ph    = atan3(dir_xyz(2),dir_xyz(1))
+        p_ph    = atan3(pos_xyz(2),pos_xyz(1))
+        
+        d_l_selc(:) = 0.0_r2
+        
+        ! find z component
+        
+        IF ( abs(dir_xyz(3)) .gt. epsilon(d_r) ) THEN
+        
+            d_l_selc(1) = (grid%co_mx_c(i_z)-pos_xyz(3))/dir_xyz(3)
+            d_l_selc(2) = (grid%co_mx_c(i_z-1)-pos_xyz(3))/dir_xyz(3)
+        ELSE 
+            d_l_selc(1) = -1.0_r2
+            d_l_selc(2) = -1.0_r2
         END IF
-    END DO
-    d_l = d_l + 1.0e6_r2*epsilon(d_l)
-    nr_cell_new = get_cell_nr(grid,d_l*dir_xyz + pos_xyz)
-    pos_xyz_new = d_l*dir_xyz + pos_xyz
-    
-    
-    IF (d_l < grid%d_l_min) then
-       ! step width too small
-        kill_photon       = .true.
-        kill_photon_count = kill_photon_count +1
-        d_l = d_l+1.0e3_r2*epsilon(d_l) 
-    end if
+        
+        ! find rho component
 
-    !print *, pos_xyz
-    !print *, pos_xyz_new
-    !print *, nr_cell
-    !print *, nr_cell_new
+        p = 2.0_r2*(dir_xyz(1)*pos_xyz(1)+dir_xyz(2)*pos_xyz(2)) / &
+                (dir_xyz(1)**2+dir_xyz(2)**2)
+        q = (pos_xyz(1)**2+pos_xyz(2)**2-grid%co_mx_a(i_r)**2)/ &
+            (dir_xyz(1)**2+dir_xyz(2)**2)
+        sq = p**2/4.0-q
+        !print *,'1',sq
+        
+        !print *, -p/2.0_r2 + sqrt(p**2/4.0_r2-q)
+        
+        IF ( sq .gt. epsilon(sq) ) THEN
+        
+            d_l_selc(3) = -p/2.0_r2 + sqrt(p**2/4.0_r2-q)
+        
+        ELSE
+            d_l_selc(3) = -1.0_r2
+        END IF
+        
+        q = (pos_xyz(1)**2+pos_xyz(2)**2-grid%co_mx_a(i_r-1)**2)/ &
+            (dir_xyz(1)**2+dir_xyz(2)**2)  
+            
+        sq = p**2/4.0-q       
+        
+        IF ( sq .gt. epsilon(sq) ) THEN
+        
+            d_l_selc(4) = -p/2.0_r2 - sqrt(p**2/4.0_r2-q)
+        
+        ELSE
+            d_l_selc(4) = -1.0_r2
+        END IF
+
+        
+        ! find phi component   ! test this for more than 1 grid cell in phi direction!
+    !~     IF (grid%n(2) .gt. 1 ) THEN
+        IF (d_ph .gt. epsilon(d_ph) .and. grid%n(2) .gt. 1  ) THEN
+            a = 1.0_r2/TAN(grid%co_mx_b(i_ph))
+            d_l_selc(5) = (pos_xyz(1)-pos_xyz(2)*a)/(dir_xyz(2)*a-dir_xyz(1))
+            
+            a = 1.0_r2/TAN(grid%co_mx_b(i_ph-1))
+            d_l_selc(6) = (pos_xyz(1)-pos_xyz(2)*a)/(dir_xyz(2)*a-dir_xyz(1))
+        ELSE
+            d_l_selc(5) = -1.0_r2
+            d_l_selc(6) = -1.0_r2
+        END IF
+        !print *, d_r
+        !print *, d_l_selc(:)
+        
+        ! find shortest path and leaving boundary
+        
+        d_l = 1.0e15_r2
+        DO i=1,6
+    !~         print *, d_l_selc(i)
+            IF ( d_l_selc(i) .gt. epsilon(d_l) .and. d_l_selc(i) .lt. d_l ) THEN
+                d_l = d_l_selc(i)
+                loca = i 
+            END IF
+        END DO
+        d_l = d_l + 1.0e6_r2*epsilon(d_l)
+        nr_cell_new = get_cell_nr(grid,d_l*dir_xyz + pos_xyz)
+        pos_xyz_new = d_l*dir_xyz + pos_xyz
+        
+        
+        IF (d_l < grid%d_l_min) then
+           ! step width too small
+            kill_photon       = .true.
+            kill_photon_count = kill_photon_count +1
+            d_l = d_l+1.0e3_r2*epsilon(d_l) 
+        end if
+
   
-  END SUBROUTINE path_cy
+    END SUBROUTINE path_cy
   
   
-  SUBROUTINE path_sp( grid, p0_vec, pos_xyz_new, nr_cell, nr_cell_new, d_l, kill_photon, d_vec)
+    SUBROUTINE path_sp( grid, p0_vec, pos_xyz_new, nr_cell, nr_cell_new, d_l, kill_photon, d_vec)
     
-    IMPLICIT NONE
-    !--------------------------------------------------------------------------!
-    TYPE(Grid_TYP),INTENT(IN)                         :: grid
-    !--------------------------------------------------------------------------!
-    
-    real(kind=r2),               intent(out)         :: d_l
-    real(kind=r2), dimension(1:3), intent(in)        :: p0_vec
-    real(kind=r2), dimension(1:3), intent(out)       :: pos_xyz_new
-    real(kind=r2), dimension(1:3), intent(in)        :: d_vec
-    
-    
-    integer,                     intent(in)           :: nr_cell
-    integer,                     intent(out)          :: nr_cell_new
-    integer                                           :: nr_cell_new2
+        IMPLICIT NONE
+        !--------------------------------------------------------------------------!
+        TYPE(Grid_TYP),INTENT(IN)                         :: grid
+        !--------------------------------------------------------------------------!
+        
+        real(kind=r2),               intent(out)         :: d_l
+        real(kind=r2), dimension(1:3), intent(in)        :: p0_vec
+        real(kind=r2), dimension(1:3), intent(out)       :: pos_xyz_new
+        real(kind=r2), dimension(1:3), intent(in)        :: d_vec
+        
+        
+        integer,                     intent(in)           :: nr_cell
+        integer,                     intent(out)          :: nr_cell_new
+        integer                                           :: nr_cell_new2
 
-    logical,                     intent(out)          :: kill_photon
-    !--------------------------------------------------------------------------!
-    integer                                           :: hi1
-    integer                                           :: i_th, i_ph, i_r
-    integer, dimension(1)                             :: hi_arr1
-    real(kind=r2) :: hd_r1, hd_ph1, hd_th1, hd1, hd2, hd3, hd4, hd5, hd6, hd7
-    real(kind=r2), dimension(1:6)                     :: d_lx
-!~     real(kind=r2), dimension(1:3)                     :: p0_vec, d_vec
-    !real(kind=r2), dimension(1:3)                     :: spco
-    real(kind=r2), dimension(1:2)                     :: hd_arr1
-    
-    !--------------------------------------------------------------------------!
-    ! ---
-    ! default:
-    kill_photon = .false.
+        logical,                     intent(out)          :: kill_photon
+        !--------------------------------------------------------------------------!
+        integer                                           :: hi1
+        integer                                           :: i_th, i_ph, i_r
+        integer, dimension(1)                             :: hi_arr1
+        real(kind=r2)                                     :: hd1, hd2, hd3
+        real(kind=r2)                                     :: hd_r1, hd_th1, hd_ph1
+        real(kind=r2)                                     :: c2,c1,c0
+        real(kind=r2)                                     :: disc, g
+        real(kind=r2)                                     :: l1, l2
+        real(kind=r2), dimension(1:6)                     :: d_lx
+        real(kind=r2), dimension(1:3)                     :: A
+        real(kind=r2), dimension(1:2)                     :: hd_arr1
+        
+        !--------------------------------------------------------------------------!
+        ! ---
+        ! default:
+        kill_photon = .false.
 
-    ! starting point: pos_xyz (grid type variable)
-    ! direction     : dir_xyz (grid type variable)
-    ! cell number   : nr_cell (grid type variable)
+        ! starting point: pos_xyz (grid type variable)
+        ! direction     : dir_xyz (grid type variable)
+        ! cell number   : nr_cell (grid type variable)
 
-    ! ---
-    ! 1. determine distance to the boundaries of the cell
-    ! 1.1. r_min, r_max
-    ! inner boundary:
-    hd_r1 = grid%co_mx_a( grid%cell_nr2idx(1,nr_cell) -1 )
+        ! ---
+        ! 1. determine distance to the boundaries of the cell
+        ! 1.1. r_min, r_max
+        ! inner boundary:
+        hd_r1 = grid%co_mx_a( grid%cell_nr2idx(1,nr_cell) -1 )
 
-    hd1 = dot_product(p0_vec, d_vec)
-    hd2 = dot_product(p0_vec,p0_vec)
+        hd1 = dot_product(p0_vec, d_vec)
+        hd2 = dot_product(p0_vec,p0_vec)
 
-    hd3 = hd1*hd1 - (hd2-(hd_r1*hd_r1))
-    if (hd3 < -1.0e-15_r2) then
-       d_lx(1) = -1.0_r2
-    else
-       hd_arr1(1) = -hd1 + sqrt(abs(hd3))
-       hd_arr1(2) = -hd1 - sqrt(abs(hd3))
-       if (hd_arr1(1)<0.0_r2 .or. hd_arr1(2)<0.0_r2) then
-          d_lx(1) = maxval(hd_arr1(:))
-       else
-          d_lx(1) = minval(hd_arr1(:))
-       end if
-    end if
+        hd3 = hd1*hd1 - (hd2-(hd_r1*hd_r1))
+        if (hd3 < -1.0e-15_r2) then
+           d_lx(1) = -1.0_r2
+        else
+            hd_arr1(1) = -hd1 + sqrt(abs(hd3))
+            hd_arr1(2) = -hd1 - sqrt(abs(hd3))
+            if (hd_arr1(1)<0.0_r2 .or. hd_arr1(2)<0.0_r2) then
+                d_lx(1) = maxval(hd_arr1(:))
+            else
+                d_lx(1) = minval(hd_arr1(:))
+            end if
+        end if
 
-    ! outer boundary:
-    hd_r1 = grid%co_mx_a( grid%cell_nr2idx(1,nr_cell)    )
-    hd3 = hd1*hd1 - (hd2-(hd_r1*hd_r1))
-    if (hd3 < -1.0e-15_r2) then
-       d_lx(2) = -1.0_r2
-    else
-       hd_arr1(1) = -hd1 + sqrt(abs(hd3))
-       hd_arr1(2) = -hd1 - sqrt(abs(hd3))
-       if (hd_arr1(1)<0.0_r2 .or. hd_arr1(2)<0.0_r2) then
-          d_lx(2) = maxval(hd_arr1(:))
-       else
-          d_lx(2) = minval(hd_arr1(:))
-       end if
-    end if
-    
-    IF  (d_lx(2) .eq. 0.0_r2 ) THEN
-        d_lx(2) = grid%d_l_min *1.1_r2
-    ELSE IF (d_lx(1) .eq. 0.0_r2 ) THEN
-        d_lx(1) = grid%d_l_min *1.1_r2
-    END IF
-    !print *,d_lx(1), d_lx(2)
-    ! -
-    ! 1.2. theta_min, theta_max
-    if (grid%n(2) > 1) then
-       ! inner
-       hd_th1 = grid%co_mx_b( grid%cell_nr2idx(2,nr_cell) -1 )
-       hd1 = tan(hd_th1)**2
-       hd2 = hd1*( d_vec(1)**2        +  d_vec(2)**2       ) -  d_vec(3)**2
-       hd3 = hd1*( d_vec(1)*p0_vec(1) +  d_vec(2)*p0_vec(2)) -  d_vec(3)*p0_vec(3)
-       hd4 = hd1*(p0_vec(1)**2        + p0_vec(2)**2       ) - p0_vec(3)**2
-       
-       hd5 = hd3/hd2
-       hd6 = hd4/hd2
-       
-       hd7 = hd5**2 - hd6
-       if (hd7 < -1.0e-13_r2) then
-          d_lx(3) = -1.0_r2
-       else
-          hd_arr1(1) = -hd5 + sqrt(abs(hd7))
-          hd_arr1(2) = -hd5 - sqrt(abs(hd7))
-          if (hd_arr1(1)<0.0_r2 .or. hd_arr1(2)<0.0_r2) then
-             d_lx(3) = maxval(hd_arr1(:))
-          else
-             d_lx(3) = minval(hd_arr1(:))
-          end if
-       end if
-       
-       ! outer
-       hd_th1 = grid%co_mx_b( grid%cell_nr2idx(2,nr_cell)    )
-       hd1 = tan(hd_th1)**2
-       hd2 = hd1*( d_vec(1)**2        +  d_vec(2)**2       ) -  d_vec(3)**2
-       hd3 = hd1*( d_vec(1)*p0_vec(1) +  d_vec(2)*p0_vec(2)) -  d_vec(3)*p0_vec(3)
-       hd4 = hd1*(p0_vec(1)**2        + p0_vec(2)**2       ) - p0_vec(3)**2
-       
-       hd5 = hd3/hd2
-       hd6 = hd4/hd2
-       
-       hd7 = hd5**2 - hd6
-       if (hd7 < -1.0e-13_r2) then
-          d_lx(4) = -1.0_r2
-!~           print *, hd7, hd5**2, hd6
-       else
-!~           print *, hd5
-          hd_arr1(1) = -hd5 + sqrt(abs(hd7))
-          hd_arr1(2) = -hd5 - sqrt(abs(hd7))
-          if (hd_arr1(1)<0.0_r2 .or. hd_arr1(2)<0.0_r2) then
-             d_lx(4) = maxval(hd_arr1(:))
-          else
-             d_lx(4) = minval(hd_arr1(:))
-          end if
-       end if
-       
-       ! define sign of step width in <th> direction
-       if      (d_vec(3)>0.0_r2) then
-          d_lx(3) = -abs(d_lx(3))
-       else if (d_vec(3)<0.0_r2) then
-          d_lx(4) = -abs(d_lx(4))
-       end if
-    else
-       d_lx(3:4) = -1.0_r2
-    end if
+        ! outer boundary:
+        hd_r1 = grid%co_mx_a( grid%cell_nr2idx(1,nr_cell)    )
+        hd3 = hd1*hd1 - (hd2-(hd_r1*hd_r1))
+        if (hd3 < -1.0e-15_r2) then
+            d_lx(2) = -1.0_r2
+        else
+            hd_arr1(1) = -hd1 + sqrt(abs(hd3))
+            hd_arr1(2) = -hd1 - sqrt(abs(hd3))
+            if (hd_arr1(1)<0.0_r2 .or. hd_arr1(2)<0.0_r2) then
+                d_lx(2) = maxval(hd_arr1(:))
+            else
+                d_lx(2) = minval(hd_arr1(:))
+            end if
+        end if
+        
+        IF  (d_lx(2) .eq. 0.0_r2 ) THEN
+            d_lx(2) = grid%d_l_min *1.1_r2
+        ELSE IF (d_lx(1) .eq. 0.0_r2 ) THEN
+            d_lx(1) = grid%d_l_min *1.1_r2
+        END IF
 
 
-    ! -
-    ! 1.3. phi_min, phi_max
-    if (grid%n(3) > 1) then
-       ! inner
-       hd_ph1  = grid%co_mx_c( grid%cell_nr2idx(3,nr_cell) -1 )
-       hd1     = tan(hd_ph1)
-       d_lx(5) = (p0_vec(2) - p0_vec(1)*hd1) / (d_vec(1)*hd1 - d_vec(2))
-       
-       ! outer
-       hd_ph1  = grid%co_mx_c( grid%cell_nr2idx(3,nr_cell)    )
-       hd1     = tan(hd_ph1)
-       !print *,hd1
-       d_lx(6) = (p0_vec(2) - p0_vec(1)*hd1) / (d_vec(1)*hd1 - d_vec(2))
-    else
-       d_lx(5:6) = -1.0_r2
-    end if
-    ! -
-    ! 2. determine closest boundary & new new cell number
-    ! check: is there any boundary in forward direction of the photon (distance > 0)?
-    if (maxval(d_lx(:)) <= 0.0_r2) then
-       ! closest boundary NOT found :-(
-       kill_photon       = .true.
-       kill_photon_count = kill_photon_count +1
-   
-       if (show_error) then
-          print *, "*** problem in sr path():"
-          print *, "*** no cell boundary in forward direction."
-          
-          print *, "pos_xyz"
-          print *, real(pos_xyz_new)
-          ! -
-          print *, "rtp"
-          print *, &
-               real(norm(pos_xyz_new)), &
-               !real(rad2grad(atan2(pos_xyz_new(3),norm(pos_xyz_new(1:2))))), &
-               real(rad2grad(atan3(pos_xyz_new(2),pos_xyz_new(1))))
-          ! -
-          print *, "cell #", grid%cell_nr2idx(:,nr_cell)
-          
-          print *, "---"
-          print *, "check line: 'd_l = d_lx_sel(hi1) * 1.0000001_r2'"
-       end if
-    end if
+        ! -- 
+        ! 1.2. theta_min, theta_max
+        ! rewritten from scratch
+        ! We have to calculate the intersection of a line with a cone
+        ! We follow David Eberly : "Intersection of a Line and a Cone", www.geometrictools.com
+        !
+        ! 
+        ! We use the fact, that the cones axis is the z axis in our model space, therefore
+        ! A = (/0.0_r2,0.0_r2,1.0_r2/) = e_z
+        ! 
+        IF (grid%n(2) > 1) THEN
+            ! -- 
+            ! lower cone
+            
+            hd_th1 = cos(PI/2 - grid%co_mx_b( grid%cell_nr2idx(2,nr_cell) -1 ) )
+            g  = hd_th1**2
+            c2 = d_vec(3)  * d_vec(3)   - g
+            c1 = d_vec(3)  * p0_vec(3)  - g * (dot_product(d_vec,p0_vec))
+            c0 = p0_vec(3) * p0_vec(3)  - g * (dot_product(p0_vec,p0_vec))
+           
+            disc = c1**2 - c2 * c0
+            IF (disc > 0.0_r2) THEN
+                
+                l1 = (-c1 + sqrt(disc))/c2
+                l2 = (-c1 - sqrt(disc))/c2
+              
+                ! test if the resulting point is on the correct cone and not the refelcted one
+                
+                IF ( sign(1.0,hd_th1) * (p0_vec(3) + l1*d_vec(3) ) .gt. 0.0_r2) THEN
+                    hd_arr1(1) = l1
+                ELSE
+                    hd_arr1(1) = -1.0_r2
+                END IF
+              
+                IF ( sign(1.0,hd_th1) * (p0_vec(3) + l2*d_vec(3) ) .gt. 0.0_r2) THEN
+                    hd_arr1(2) = l2
+                ELSE
+                    hd_arr1(2) = -1.0_r2
+                END IF
+              
+            ELSE
+                ! We are not interested in the cone if it does not have an intersection.
+                ! Even we don't care about tangents (c2 == 0)
+                !
+                hd_arr1(1) = -1.0_r2
+                hd_arr1(2) = -1.0_r2
+            END IF
+           
+            IF ( hd_arr1(1) .gt. 0.0_r2 ) THEN
+                d_lx(3) = hd_arr1(1)
+            ELSE
+                d_lx(3) = -1.0_r2
+            END IF
+           
+            IF ( hd_arr1(2) .gt. 0.0_r2) THEN
+                IF (d_lx(3) .lt. 0.0_r2) THEN
+                    d_lx(3) = hd_arr1(2)
+                ELSE
+                    IF (hd_arr1(2) .lt. d_lx(3)) THEN
+                        d_lx(3) = hd_arr1(2)
+                    END IF
+                END IF
+            END IF
 
-    ! determine d_l
-    
-    hi_arr1 = minloc(d_lx, MASK = d_lx .GT. 0.0_r2)
-    hi1     = hi_arr1(1)
+            ! -- 
+            ! upper cone
+            
+            hd_th1 = cos(PI/2 - grid%co_mx_b( grid%cell_nr2idx(2,nr_cell) ) )
+            g  = hd_th1**2
+            c2 = d_vec(3)  * d_vec(3)   - g
+            c1 = d_vec(3)  * p0_vec(3)  - g * (dot_product(d_vec,p0_vec))
+            c0 = p0_vec(3) * p0_vec(3)  - g * (dot_product(p0_vec,p0_vec))
+           
+            disc = c1**2 - c2 * c0
+            IF (disc > 0.0_r2) THEN
+                
+                l1 = (-c1 + sqrt(disc))/c2
+                l2 = (-c1 - sqrt(disc))/c2
+              
+                ! test if the resulting point is on the correct cone and not the refelcted one
+                
+                IF ( sign(1.0,hd_th1) * (p0_vec(3) + l1*d_vec(3) ) .gt. 0.0_r2) THEN
+                    hd_arr1(1) = l1
+                ELSE
+                    hd_arr1(1) = -1.0_r2
+                END IF
+              
+                IF ( sign(1.0,hd_th1) * (p0_vec(3) + l2*d_vec(3) ) .gt. 0.0_r2) THEN
+                    hd_arr1(2) = l2
+                ELSE
+                    hd_arr1(2) = -1.0_r2
+                END IF
+              
+            ELSE
+                ! We are not interested in the cone if it does not have an intersection.
+                ! Even we don't care about tangents (c2 == 0)
+                !
+                hd_arr1(1) = -1.0_r2
+                hd_arr1(2) = -1.0_r2
+            END IF
+           
+            IF ( hd_arr1(1) .gt. 0.0_r2 ) THEN
+                d_lx(4) = hd_arr1(1)
+            ELSE
+                d_lx(4) = -1.0_r2
+            END IF
+           
+            IF ( hd_arr1(2) .gt. 0.0_r2) THEN
+                IF (d_lx(4) .lt. 0.0_r2) THEN
+                    d_lx(4) = hd_arr1(2)
+                ELSE
+                    IF (hd_arr1(2) .lt. d_lx(4)) THEN
+                        d_lx(4) = hd_arr1(2)
+                    END IF
+                END IF
+            END IF
+        ELSE
+           d_lx(3:4) = -1.0_r2
+        END IF   ! find theta boundary
 
-    d_l = d_lx(hi1) +1.0e6_r2*epsilon(d_l)
-    ! check: is the calculated step width large than the minimum allowed step width?
-    if (d_l < grid%d_l_min) then
-       ! step width too small
-       kill_photon       = .true.
-       kill_photon_count = kill_photon_count +1
-       d_l = d_l+1.0e5_r2*epsilon(d_l) 
-!~        if (show_error) then
-!~           print *, "*** problem in sr path():"
-!~           print *, "*** calculated current step width too small"
-!~           
-!~           print *, "d_l, d_l_min"
-!~           print *, d_l, grid%d_l_min
-!~        end if
-    end if
+        ! -
+        ! 1.3. phi_min, phi_max
+        
+        if (grid%n(3) > 1) then
+            ! inner
+            hd_ph1  = grid%co_mx_c( grid%cell_nr2idx(3,nr_cell) -1 )
+            hd1     = tan(hd_ph1)
+            d_lx(5) = (p0_vec(2) - p0_vec(1)*hd1) / (d_vec(1)*hd1 - d_vec(2))
+           
+            ! outer
+            hd_ph1  = grid%co_mx_c( grid%cell_nr2idx(3,nr_cell)    )
+            hd1     = tan(hd_ph1)
+            !print *,hd1
+            d_lx(6) = (p0_vec(2) - p0_vec(1)*hd1) / (d_vec(1)*hd1 - d_vec(2))
+        else
+            d_lx(5:6) = -1.0_r2
+        end if
+        
+        ! -
+        ! 2. determine closest boundary & new new cell number
+        ! check: is there any boundary in forward direction of the photon (distance > 0)?
+!~         if (maxval(d_lx(:)) <= 0.0_r2) then
+!~            ! closest boundary NOT found :-(
+!~            kill_photon       = .true.
+!~            kill_photon_count = kill_photon_count +1
+!~        
+!~            if (show_error) then
+!~               print *, "*** problem in sr path():"
+!~               print *, "*** no cell boundary in forward direction."
+!~               
+!~               print *, "pos_xyz"
+!~               print *, real(pos_xyz_new)
+!~               ! -
+!~               print *, "rtp"
+!~               print *, &
+!~                    real(norm(pos_xyz_new)), &
+!~                    !real(rad2grad(atan2(pos_xyz_new(3),norm(pos_xyz_new(1:2))))), &
+!~                    real(rad2grad(atan3(pos_xyz_new(2),pos_xyz_new(1))))
+!~               ! -
+!~               print *, "cell #", grid%cell_nr2idx(:,nr_cell)
+!~               
+!~               print *, "---"
+!~               print *, "check line: 'd_l = d_lx_sel(hi1) * 1.0000001_r2'"
+!~            end if
+!~         end if
 
-    ! -
-    ! 3.new position
-    pos_xyz_new(:) = p0_vec(:)  +  d_l * d_vec(:)
-    ! 
-    ! 4. new cell number
-    ! a) use the generic routine
-    nr_cell_new = get_cell_nr( grid,pos_xyz_new )
-    
-    ! b) use the cell id's (should be much faster)
-!~     IF (hi1 == 1 ) THEN
-!~         nr_cell_new2 = nr_cell - grid%n(2)*grid%n(3)
-!~     ELSEIF (hi1 == 2 ) THEN
-!~         nr_cell_new2 = nr_cell + grid%n(2)*grid%n(3)
-!~     ELSEIF (hi1 == 3 ) THEN
-!~         nr_cell_new2 = nr_cell - grid%n(3)
-!~     ELSEIF (hi1 == 4 ) THEN
-!~         nr_cell_new2 = nr_cell + grid%n(3)
-!~     ELSEIF (hi1 == 5 ) THEN
-!~         nr_cell_new2 = nr_cell - 1
-!~     ELSEIF (hi1 == 6 ) THEN
-!~         nr_cell_new2 = nr_cell + 1
-!~     END IF
-!~     print *, nr_cell_new
-!~     IF (grid%cell_nr2idx(2,nr_cell)+1 /= grid%cell_nr2idx(2,nr_cell_new) .and. &
-!~         grid%cell_nr2idx(2,nr_cell)-1 /= grid%cell_nr2idx(2,nr_cell_new) .and. &
-!~         grid%cell_nr2idx(2,nr_cell) /= grid%cell_nr2idx(2,nr_cell_new) .and. &
-!~         grid%cell_nr2idx(2,nr_cell_new) /= 0 ) THEN
-!~         print *, d_lx
-!~         print *, 'pos:'
-!~         print *, ca2sp(p0_vec)
-!~         print *, ca2sp(pos_xyz_new)
-!~         print *, d_vec
-!~         
-!~         print *, grid%cell_nr2idx(:,nr_cell)
-!~         print *, grid%cell_nr2idx(:,nr_cell_new)
-!~         print *, nr_cell
-!~         print *, nr_cell_new
-!~         
-!~         stop
-!~     END IF
-!~     print *, ''
-  end subroutine path_sp
+
+        ! determine d_l
+        
+        hi_arr1 = minloc(d_lx, MASK = d_lx .GT. 0.0_r2)
+        hi1     = hi_arr1(1)
+        IF (hi1 .gt. 6 .or. hi1 .lt. 1) THEN
+            ! no min gt. 0 in d_lx
+            ! we procced with a minimum step 
+            ! This case should not be raised, but in fact, if some routine is buggy, it can happen
+            IF (show_error) print *, "WARNING, no boundary in forward direction found"
+            d_l = grid%d_l_min+epsilon(d_l)
+        ELSE
+            d_l = d_lx(hi1) +1.0e6_r2*epsilon(d_l)
+        END IF
+            
+        ! check: is the calculated step width large than the minimum allowed step width?
+!~         if (d_l < grid%d_l_min) then
+!~            ! step width too small
+!~            kill_photon       = .true.
+!~            kill_photon_count = kill_photon_count +1
+!~            d_l = d_l+1.0e5_r2*epsilon(d_l) 
+!~         end if
+
+        ! -
+        ! 3.new position
+        pos_xyz_new(:) = p0_vec(:)  +  d_l * d_vec(:)
+        ! 
+        ! 4. new cell number
+        ! a) use the generic routine
+        nr_cell_new = get_cell_nr( grid,pos_xyz_new )
+        
+        ! b) use the cell id's (should be much faster)
+    !~     IF (hi1 == 1 ) THEN
+    !~         nr_cell_new2 = nr_cell - grid%n(2)*grid%n(3)
+    !~     ELSEIF (hi1 == 2 ) THEN
+    !~         nr_cell_new2 = nr_cell + grid%n(2)*grid%n(3)
+    !~     ELSEIF (hi1 == 3 ) THEN
+    !~         nr_cell_new2 = nr_cell - grid%n(3)
+    !~     ELSEIF (hi1 == 4 ) THEN
+    !~         nr_cell_new2 = nr_cell + grid%n(3)
+    !~     ELSEIF (hi1 == 5 ) THEN
+    !~         nr_cell_new2 = nr_cell - 1
+    !~     ELSEIF (hi1 == 6 ) THEN
+    !~         nr_cell_new2 = nr_cell + 1
+    !~     END IF
+        IF (show_error) THEN
+            IF (grid%cell_nr2idx(2,nr_cell)+1 /= grid%cell_nr2idx(2,nr_cell_new) .and. &
+                grid%cell_nr2idx(2,nr_cell)-1 /= grid%cell_nr2idx(2,nr_cell_new) .and. &
+                grid%cell_nr2idx(2,nr_cell)  /= grid%cell_nr2idx(2,nr_cell_new) .and. &
+                grid%cell_nr2idx(2,nr_cell_new) /= 0 ) THEN
+                print *, 'main error'
+                print *, d_lx
+                print *, hi1
+                print *, 'pos:'
+                print *, ca2sp(p0_vec)
+                print *, ca2sp(pos_xyz_new)
+                print *, p0_vec
+                print *, pos_xyz_new
+                print *, d_vec
+                
+                print *, ''
+                print *, grid%cell_nr2idx(:,nr_cell)
+                print *, grid%cell_nr2idx(:,nr_cell_new)
+                print *, nr_cell
+
+            ELSEIF (grid%cell_nr2idx(2,nr_cell) /= grid%cell_nr2idx(2,nr_cell_new) .and. nr_cell_new /= 0 ) THEN
+                IF  (hi1 > 4 .or. hi1 < 3) THEN
+                    print *, 'theta change without theta wall detected'
+                    print *, hi1
+                    print *, grid%cell_nr2idx(1,nr_cell) ,grid%cell_nr2idx(1,nr_cell_new)
+                    print *, grid%cell_nr2idx(2,nr_cell) ,grid%cell_nr2idx(2,nr_cell_new)
+                    print *, grid%cell_nr2idx(3,nr_cell) ,grid%cell_nr2idx(3,nr_cell_new)
+                END IF
+            END IF
+        END IF
+    END SUBROUTINE path_sp
 
 end module transfer_mod
 

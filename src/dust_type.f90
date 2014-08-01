@@ -481,26 +481,19 @@ CONTAINS
             END IF
           END IF
         END DO
-        print '(A,F11.2,A)',' wavelength dust:   ',this%lam(this%cont_map(1)) *1e6, ' micron'
-!~         print *, this%cont_map(1)
-!~         stop
-        !print *, gas%tr_cat(1)
-        print '(A,F11.2,A)',' central wavelength:',con_c/gas%trans_freq(gas%tr_cat(1))*1e6, ' micron'
-!~         stop
         DO i_lam = 1, this%n_lam
             this%i_star_emi(i_lam) = PI * 4.0_r2 * PI * model%r_star**2 * planck(model%t_star,this%lam(i_lam))  ! [W/m]
             this%c_in_star( i_lam) = this%i_star_emi(i_lam) / model%n_star_emi
         END DO
         
-!~         !$ this%c_in_star(:) =  this%c_in_star(:) * basics%num_core
-        CALL acc_select(this)
+        !CALL acc_select(this)
         CALL prepare_QB(this,basics)
     
         
     END SUBROUTINE InitDust
     
     
-    SUBROUTINE acc_select(this) !routine by mc3d v4 
+    SUBROUTINE acc_select(this) !routine by mc3d v4, is obsolent now!
 
         
         IMPLICIT NONE
@@ -624,7 +617,6 @@ CONTAINS
            end do
         end do
         deallocate(QBx)
-        
         ! set wavelength intervals
         this%d_lam(1) = this%lam(2)-this%lam(1)
         DO i_lam=2, this%n_lam-1

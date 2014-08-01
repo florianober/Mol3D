@@ -108,7 +108,7 @@ CONTAINS
         this%kep_const = (con_gamma * this%M_star/con_AU)**0.5  ! in units of m/s
 !~         print *, this%kep_const
         this%l_star = 4.0_r2 * PI * this%r_star**2 * con_sigma * this%t_star**4
-        print *, " => Stellar luminosity [L_sun]: ", this%l_star/L_sun
+!~         print *, " => Stellar luminosity [L_sun]: ", this%l_star/L_sun
         ALLOCATE(   this%th_map(1:n_map), &
                     this%ph_map(1:n_map), &
                     this%zoom_map(1:n_map), &
