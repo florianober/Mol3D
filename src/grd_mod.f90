@@ -894,8 +894,8 @@ CONTAINS
                 PRINT *, "ERROR: lower phi coordinate is not 0.0"
                 PRINT *, "lowest cell boundary : ", grid%co_mx_c(0)
                 STOP
-            ELSEIF ( abs(2.0 * PI - grid%co_mx_c(grid%n(3))) .gt. 1.0e3_r2*epsilon(PI) ) THEN
-                PRINT *, "ERROR: upper theta coordinate is not 2 * PI"
+            ELSEIF ( abs(2.0 * PI - grid%co_mx_c(grid%n(3))) .gt. 1.0e4_r2*epsilon(PI) ) THEN
+                PRINT *, "ERROR: upper phi coordinate is not 2 * PI"
                 PRINT *, "upper cell boundary : ", grid%co_mx_c(grid%n(3))
                 STOP
             END IF

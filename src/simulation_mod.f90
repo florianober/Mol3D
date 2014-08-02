@@ -78,8 +78,10 @@ CONTAINS
     
     ! --- save all results for later use
     ! first save the model itself
+    print *, " saving the model, this can take a few seconds, debending on the &
+               &number of grid cells"
     CALL save_model(grid, basics)
-
+    print *, " ... done"
     ! now, provide some extra visualisation output 
     ! 1: xz plane, 2: xy plane, 3: yz plane
     
