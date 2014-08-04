@@ -249,9 +249,7 @@ CONTAINS
         END DO
         print *, '| | | photon transfer finished                '
         ! prepare & save final results
-           
-        ! [solution 2] apply mean intensity method
-        !              => higher accuracy: from now on this temperature distribution will be used
+
 !~         !$OMP CRITICAL
 !~             grid%t_dust = t_dust
 !~         !$OMP END CRITICAL
@@ -262,9 +260,7 @@ CONTAINS
             grid%cell_energy_sum(i_dust,:,:) = 0.0_r2
         END DO
         CALL temp_final(basics, grid, dust)
-        !stop
-        ! save SED (quick&dirty SED)
-        !  call sv_stokes_sed()     
+
     END SUBROUTINE primary_temp
   
 
