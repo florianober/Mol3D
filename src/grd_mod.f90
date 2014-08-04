@@ -64,8 +64,9 @@ CONTAINS
         
         ! ---
         ! 1. set boundaries of each cell for the selected coordinate system
-
+        
         Call set_boundaries(grid, model,basics)
+        
         ! ---
         ! 2. - set cell numbering
         !    - calculate cell volumes
@@ -781,8 +782,8 @@ CONTAINS
 
             close(unit=1)
 
-	CASE(9)
-	    ! ---
+        CASE(9)
+            ! ---
             ! This case is for a very general input of a spherical grid, coordinates defined in external files
             ! The style of the input file has to be consistent
 

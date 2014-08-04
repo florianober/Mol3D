@@ -210,7 +210,8 @@ CONTAINS
             ! show progress
 !~                 !$OMP MASTER
             IF (modulo(i_phot, k_phot) == 0 .or. i_phot==model%n_star_emi) THEN
-                    write (*,'(A,I3,A)') " | | | - progress : ", int(i_phot/real(model%n_star_emi)*100.0), ' % done...'//char(27)//'[A'
+                    write (*,'(A,I3,A)') " | | | - progress : ", &
+                    int(i_phot/real(model%n_star_emi)*100.0), ' % done...'//char(27)//'[A'
             END IF
 !~             !$OMP END MASTER
 !~             !$omp do schedule(static)

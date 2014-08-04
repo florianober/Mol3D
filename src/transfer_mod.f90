@@ -560,13 +560,13 @@ contains
               
                 ! test if the resulting point is on the correct cone and not the refelcted one
                 
-                IF ( sign(1.0,hd_th1) * (p0_vec(3) + l1*d_vec(3) ) .gt. 0.0_r2) THEN
+                IF ( sign(1.0_r2,hd_th1) * (p0_vec(3) + l1*d_vec(3) ) .gt. 0.0_r2) THEN
                     hd_arr1(1) = l1
                 ELSE
                     hd_arr1(1) = -1.0_r2
                 END IF
               
-                IF ( sign(1.0,hd_th1) * (p0_vec(3) + l2*d_vec(3) ) .gt. 0.0_r2) THEN
+                IF ( sign(1.0_r2,hd_th1) * (p0_vec(3) + l2*d_vec(3) ) .gt. 0.0_r2) THEN
                     hd_arr1(2) = l2
                 ELSE
                     hd_arr1(2) = -1.0_r2
@@ -613,13 +613,13 @@ contains
               
                 ! test if the resulting point is on the correct cone and not the refelcted one
                 
-                IF ( sign(1.0,hd_th1) * (p0_vec(3) + l1*d_vec(3) ) .gt. 0.0_r2) THEN
+                IF ( sign(1.0_r2,hd_th1) * (p0_vec(3) + l1*d_vec(3) ) .gt. 0.0_r2) THEN
                     hd_arr1(1) = l1
                 ELSE
                     hd_arr1(1) = -1.0_r2
                 END IF
               
-                IF ( sign(1.0,hd_th1) * (p0_vec(3) + l2*d_vec(3) ) .gt. 0.0_r2) THEN
+                IF ( sign(1.0_r2,hd_th1) * (p0_vec(3) + l2*d_vec(3) ) .gt. 0.0_r2) THEN
                     hd_arr1(2) = l2
                 ELSE
                     hd_arr1(2) = -1.0_r2
