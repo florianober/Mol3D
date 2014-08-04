@@ -49,9 +49,9 @@ MODULE Grid_type
         REAL(kind=r2),DIMENSION(:),POINTER        :: cell_vol
         !  Nv(i_cell, i_dust): number of grains of species #i_dust in cell #i_cell
         REAL(kind=r2),DIMENSION(:,:),POINTER      :: Nv       
-        REAL(kind=r2),DIMENSION(:,:),POINTER      :: Nv_col        
-        REAL(kind=r2),DIMENSION(:),POINTER        :: Nv_mol        
-        REAL(kind=r1),DIMENSION(:,:),POINTER      :: lvl_pop        
+        REAL(kind=r2),DIMENSION(:,:),POINTER      :: Nv_col
+        REAL(kind=r2),DIMENSION(:),POINTER        :: Nv_mol
+        REAL(kind=r1),DIMENSION(:,:),POINTER      :: lvl_pop
         !  grd_density: this is the number density of the dust component (from mc3d)
         REAL(kind=r2),DIMENSION(:,:),POINTER      :: grd_dust_density
         !  grd_coldensity: this is the number density of all(!) possible collision partner for the
@@ -69,10 +69,6 @@ MODULE Grid_type
         !
         REAL(kind=r2),DIMENSION(:),POINTER         :: grd_mol_density
         
-        
-        REAL(kind=r1), DIMENSION(:,:), POINTER   :: col_finalcolmatrixup
-        REAL(kind=r1), DIMENSION(:,:), POINTER   :: col_finalcolmatrixlow
-        
         REAL(kind=r1),DIMENSION(:,:),POINTER      :: velo
         REAL(kind=r1),DIMENSION(:),POINTER        :: absvelo
         REAL(kind=r2),DIMENSION(:,:),POINTER      :: cellmidcaco
@@ -83,9 +79,8 @@ MODULE Grid_type
         REAL(kind=r1),DIMENSION(:),POINTER        :: t_gas
         REAL(kind=r2), DIMENSION(:),POINTER       :: ddust
         REAL(kind=r2),DIMENSION(:,:),POINTER      :: grd_d_l
-        REAL(kind=r2),DIMENSION(1:3)               :: dir_xyz
-        !REAL(kind=r2),DIMENSION(1:3)              :: pos_xyz
-        
+        REAL(kind=r2),DIMENSION(1:3)              :: dir_xyz
+                
         INTEGER,DIMENSION(1:3)                    :: n
         INTEGER                                   :: n_cell
         INTEGER                                   :: i_cell
@@ -150,7 +145,7 @@ CONTAINS
         SELECT CASE(GetGridname(this))
         
         CASE('spherical')
-            print *, 'using a spherical grid'
+            print *, 'grid type: spherical'
         
             SELECT CASE(GetGridType(this))
             
@@ -264,7 +259,7 @@ CONTAINS
             END SELECT
             
         CASE('cylindrical')
-            print *, 'using a cylindrical grid'
+            print *, 'grid type: cylindrical'
             SELECT CASE(GetGridType(this))
             CASE(1)
                 this%n(1)   = n_a
@@ -278,7 +273,7 @@ CONTAINS
                 this%n(2)   = 1
                 this%n(3)   = 103
             CASE DEFAULT
-                print *, 'selected coordinate type not found. try grid_type = [1]'
+                print *, 'selected coordinate type not found. try grid_type = [1,2]'
                 stop
             END SELECT 
             

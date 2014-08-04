@@ -118,7 +118,7 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
                                                         sources_in
     
 
-    print *, "Code initialization [level 1]"
+    print *, "Code initialization"
     
     IF ( iargc() == 1 ) THEN
         ! use command line given input name
@@ -134,7 +134,7 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
     
 
     ! Tell the project name
-    PRINT '(3A)','  Simulation name: <', TRIM(proname), '>'
+    PRINT '(2A)'," Simulation name: ", TRIM(proname)
     ref_u      = con_AU                                 !AU at the moment for prop. disks!
     ref_u_str  = "[AU]"                                 !ref unit
     concept_ps = 1                                      !Emission concept (1) Point-like, isotropic
@@ -232,8 +232,8 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
     
 !~     pluto_data = .True.
     pluto_data = .False.
-    do_continuum_map = .False.
-    do_velo_ch_map = .False.
+    do_continuum_map = .True.
+    do_velo_ch_map   = .True.
     IF (do_continuum_map .or. do_velo_ch_map) THEN
         do_raytr = .True.
     ELSE
@@ -245,9 +245,7 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
                     do_raytr,do_continuum_map,do_velo_ch_map, n_tem, t_dust_min, t_dust_max, &
                     num_core, pluto_data)
     !--------------------------------------------------------------------------! 
-    
-    print *, "Code initialization [level 2] Model Setup"
- 
+     
     
     CALL parse('r_in',r_in,input_file)
     WRITE(help,fmt='(ES15.6)') r_in

@@ -43,7 +43,8 @@ program mol3d
     TYPE(Dust_TYP)         :: dust
     TYPE(Gas_TYP)          :: gas
     TYPE(SOURCES)          :: sources_in
-    REAL                   :: t0,t1
+    REAL                   :: t0,t1, second
+    INTEGER                :: hour, minute
     
     !$ double precision omp_get_wtime
     !$ double precision wt0,wt1   
@@ -62,7 +63,7 @@ program mol3d
     print *, "==========================================================================="
     
     !--------------------------------------------------------------------------!
-    ! 1. initiate code [level 1: model setup]
+    ! 1. initiate code 
     !--------------------------------------------------------------------------!    
         CALL inimol(basics,fluxes, grid, model, dust , gas, sources_in)
     !--------------------------------------------------------------------------!
@@ -82,12 +83,18 @@ program mol3d
     !--------------------------------------------------------------------------!
     
         CALL cpu_time(t1)
+        hour   = int((t1-t0)/REAL(3600))
+        minute = int((t1-t0)/REAL(60)) - hour*60
+        second = t1-t0 - hour*3600 - minute*60
         !$ wt1=omp_get_wtime()
-        write (*,'(a,1pg12.4)')    'cpu_time:     ', t1-t0
+        PRINT *,'|'
+        PRINT '(3a,i3,a,i2,a,f5.2,a,f8.2,a)', " simulation ", Getproname(basics), " took", &
+                            hour, 'h ', minute, 'm ', second, 's    (', t1-t0 ,'sec)'
         !$ write (*,'(a,1pg12.4)') 'omp_get_wtime:', wt1-wt0
         
     !--------------------------------------------------------------------------!
+    
     print *,''
-    print *,"Simulation <", Getproname(basics), "> finished."
+    print *, 'Bye bye'
     print *
 end program mol3d

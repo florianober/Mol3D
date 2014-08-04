@@ -50,7 +50,7 @@ CONTAINS
     !--------------------------------------------------------------------------!   
     !logical :: in_front, kill_photon
     
-    INTEGER                       :: i_map, i_r, i, j, no_pixel, k
+    INTEGER                       :: i_map, i_r, i, j, no_pixel, k, l
          
     INTEGER,DIMENSION(0:2*model%n_bin_map,0:2*model%n_bin_map)  :: counter
     INTEGER,DIMENSION(:,:),ALLOCATABLE                          :: notopx
@@ -70,31 +70,34 @@ CONTAINS
     CHARACTER(len=252)                           :: filename
     !--------------------------------------------------------------------------!
     print *,''                                                    
-    print *,'starting simulation [level 4]'
-    
+    print *,"starting simulation"
+    print *, "|"
     ! --- calculate or set temperature
-    print *,' setting temperature distribution'
+    print *,"| temperature calculation"
     CALL set_temperature(basics, grid, model, dust, gas, sources_in,fluxes)
-    
+    print *, "| done!"
+    print *, "|"
     ! --- save all results for later use
     ! first save the model itself
-    print *, " saving the model, this can take a few seconds, debending on the &
-               &number of grid cells"
+    print *, "| saving the model"
     CALL save_model(grid, basics)
-    print *, " ... done"
+    print *, "| done!"
+    print *, "|"
     ! now, provide some extra visualisation output 
     ! 1: xz plane, 2: xy plane, 3: yz plane
-    
+    print *, "| generate visualisation output"
     CALL vis_plane(grid, basics,model, 1,401)
     CALL vis_plane(grid, basics,model, 2,401)
     CALL vis_plane(grid, basics,model, 3,401)
-
+    print *, "| done!"
+    print *, "|"
     IF (basics%do_raytr) THEN
     
         ! --- first calculate level populations
-        print *,' calculation of level populations'
+        print *,"| calculate level populations"
         CALL calc_lvlpop(basics, grid , model, gas)
-    
+        print *, "| done!"
+        print *, "|"
         hd_stepwidth = 0.2_r2
         
         ! 1. allocations
@@ -113,7 +116,7 @@ CONTAINS
            
         ! ---
         ! raytracing
-        print *, "Raytracing started ..."
+        print *, "| raytracing"
 
         
         do i_map=1, model%n_map               ! orientation of the map
@@ -155,25 +158,26 @@ CONTAINS
                 unit_value = 1.0_r2
             END IF
             
+            PRINT *,"| | check for pixel"
+            k = 1
+            l = 0
             DO i = 0, 2*model%n_bin_map
-!~             DO i = 50, 50!2*model%n_bin_map
-!~                 print '(A,I4)',' i =', i
                 DO j = 0,2*model%n_bin_map
-!~                 DO j = 50,50!2*model%n_bin_map
-!~                     print '(A,I4)','   j =', j
+                    IF (l == int(k*(2*model%n_bin_map)**2*0.01)) THEN
+                        WRITE (*,'(A,I3,A)') ' | | | ',int(l/real((2*model%n_bin_map)**2)*100),' % done'//char(27)//'[A'
+                        k = k + 1
+                    END IF
 
                     coor_map(1) = rho_size_i * (REAL(i, KIND=r2) + 0.5) - model%r_ou/model%zoom_map(1)
                     coor_map(2) = rho_size_j * (REAL(j, KIND=r2) + 0.5) - model%r_ou/model%zoom_map(1)
-!~                     print *, i,coor_map(1),coor_map(2)
                     
                     CALL get_map_px(basics, grid, model, &
                                   i, j, rho_size_i*0.5_r2, rho_size_j*0.5_r2,     &
                                   coor_map(1), coor_map(2), ex, ey, pixel_list)
+                    l = l + 1
                 END DO ! coord(2), j
             END DO ! coord(1), i   
-            
-!~             PRINT *, '  calculated no of pixel (including subpixel)'
-            
+                        
             no_pixel = GetSize(pixel_list)
             counter = 0
             ALLOCATE (calc_px (1:no_pixel,1:4))
@@ -188,22 +192,26 @@ CONTAINS
                 calc_px(i,3:4) = pixel_p%size_xy
                 CALL RemoveLast(pixel_list)
             END DO
-            PRINT '(A,I7,A,I7,A)', '   do raytrace with ',no_pixel,' Pixel (', &
+            
+            PRINT '(A,I7,A,I7,A)', ' | | do raytrace with ',no_pixel,' pixel (', &
                           no_pixel-(2*model%n_bin_map +1)**2, ' subpixel)' 
-            PRINT '(A,F11.2,A)',' wavelength dust:   ',dust%lam(dust%cont_map(1)) *1e6, ' micron'
-            PRINT '(A,F11.2,A)',' central wavelength:',con_c/gas%trans_freq(gas%tr_cat(1))*1e6, ' micron'
+
             
             IF (basics%do_velo_ch_map ) THEN
+                PRINT *, '| | calculating velocity channel maps'
+                PRINT '(A,F8.2,A)',' | | | wavelength dust    :',dust%lam(dust%cont_map(1)) *1e6, ' micron'
+                PRINT '(A,F8.2,A)',' | | | central wavelength :',con_c/gas%trans_freq(gas%tr_cat(1))*1e6, ' micron'
+            
                 ALLOCATE (inten_px (1:no_pixel,-gas%i_vel_chan:gas%i_vel_chan,1:gas%n_tr))
 
                 inten_px = 0.0_r2
                 k = 1
-                PRINT *, '  calculating velocity channel maps'
+                
                 !$omp parallel num_threads(basics%num_core)
                 !$omp do schedule(dynamic) private(i) 
                 DO i = 1, no_pixel
                     IF (i == int(k*no_pixel*0.01)) THEN
-                        WRITE (*,'(A,I3,A)') '      ',int(i/real(no_pixel)*100),' % done...'//char(27)//'[A'
+                        WRITE (*,'(A,I3,A)') ' | | | ',int(i/real(no_pixel)*100),' % done'//char(27)//'[A'
                         k = k + 1
                     END IF
                     
@@ -222,13 +230,13 @@ CONTAINS
                              inten_px(i,:,:)*(calc_px(i,3)*calc_px(i,4)*4.)/(rho_size_i*rho_size_j)
                 END DO
                 
-                PRINT *, '  velocity channel maps calculated'
+                
                 
                 DEALLOCATE(inten_px)
-                print *, 'Saving channel maps'
+                print *, '| | | saving channel maps'
 
                 CALL save_ch_map(model, basics, gas, fluxes)
-                
+                PRINT *, '| | done!'
                 
             END IF
             
@@ -236,12 +244,12 @@ CONTAINS
                 ALLOCATE (continuum_px (1:no_pixel,1:dust%n_lam))
                 continuum_px = 0.0_r2
                 k = 1
-                PRINT *, '  calculating continuum maps'
+                PRINT *, '| | calculating continuum maps'
                 !$omp parallel num_threads(basics%num_core)
                 !$omp do schedule(dynamic) private(i) 
                 DO i = 1, no_pixel
                     IF (i == int(k*no_pixel*0.01)) THEN
-                        WRITE (*,'(A,I3,A)') '      ',int(i/real(no_pixel)*100),' % done...'//char(27)//'[A'
+                        WRITE (*,'(A,I3,A)') ' | | | ',int(i/real(no_pixel)*100),' % done...'//char(27)//'[A'
                         k = k + 1
                     END IF
                     continuum_px(i,:)   =   get_continuum_px(basics, grid, &
@@ -253,26 +261,26 @@ CONTAINS
                 
                 !$omp end do nowait
                 !$omp end parallel
-                PRINT *, '  continuum maps calculated'
+                
                 DO i = 1, no_pixel
                     fluxes%continuum_map(notopx(i,1),notopx(i,2),:) = &
                              fluxes%continuum_map(notopx(i,1),notopx(i,2),:) +  unit_value* &
                              continuum_px(i,:)*(calc_px(i,3)*calc_px(i,4)*4.)/(rho_size_i*rho_size_j)
                 END DO
                 DEALLOCATE(continuum_px)
-                print *, 'Saving continuum maps'
+                print *, '| | | saving continuum maps'
         
                 CALL save_continuum_map(model, basics, dust, fluxes)
-                
+                PRINT *, '| | done!'
             END IF
             DEALLOCATE( calc_px, notopx)
         END DO ! orientation map.
         
-        WRITE (*,"(A)") " Raytracing ... finished! "
+        WRITE (*,"(A)") " | done! "
     END IF
     
     
-    print *, 'Simulation finished!'
+!~     print *, 'Simulation finished!'
     
     END SUBROUTINE run_simu
     

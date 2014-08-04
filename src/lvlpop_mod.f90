@@ -20,7 +20,7 @@ MODULE lvlpop_mod
     IMPLICIT NONE
     
     !--------------------------------------------------------------------------!
-    PRIVATE :: pop_LTE, pop_FEP, pop_LVG, elem_LVG, create_matrix!, elem_LVG
+    PRIVATE :: pop_LTE, pop_FEP, pop_LVG, elem_LVG, create_matrix, calc_collision_parameter
     !--------------------------------------------------------------------------!
     PUBLIC :: calc_lvlpop
     !--------------------------------------------------------------------------!
@@ -45,13 +45,13 @@ CONTAINS
     !--------------------------------------------------------------------------!  
     SELECT CASE(GetGasType(gas))
     CASE(1)
-        print *, ' using LTE method'
+        print *, '| | using LTE method'
         CALL pop_LTE(grid, gas)
     CASE(2)
-        print *, ' using FEP method'
+        print *, '| | using FEP method'
         CALL pop_FEP(grid, gas)
     CASE(3)
-        print *, ' using LVG method'
+        print *, '| | using LVG method'
         CALL pop_LVG(basics, grid, model, gas)   
             
     CASE DEFAULT
@@ -59,10 +59,7 @@ CONTAINS
         print *, 'ERROR: selected method is not implemended yet'
         stop
     END SELECT
-    DEALLOCATE(grid%col_finalcolmatrixup,grid%col_finalcolmatrixlow)
-    
-    print *, 'populations calculated'
-    
+        
     ! save results
     ! for default we don't save the level populations to hdd, but you can enable it
     ! by uncomment the following lines:
@@ -128,6 +125,7 @@ CONTAINS
     REAL(kind=r1),DIMENSION(1:gas%egy_lvl)                         :: c
     REAL(kind=r2),DIMENSION(1:gas%trans_lvl)                       :: J_mid, J_ext
     REAL(kind=r1)                                                  :: sum_p
+    REAL(kind=r2),DIMENSION(1:gas%col_trans,1:2)                   :: final_col_para
     INTEGER                                                        :: i_cell, i
     !--------------------------------------------------------------------------!        
     
@@ -139,7 +137,8 @@ CONTAINS
     
     DO i_cell = 1, grid%n_cell
         IF (grid%grd_mol_density(i_cell) .lt. 1.0e-200_r2) CYCLE
-        CALL create_matrix(grid,gas,J_mid,i_cell,A,c)
+        final_col_para = calc_collision_parameter(grid,gas,i_cell)
+        CALL create_matrix(grid,gas,J_mid,i_cell,A,c,final_col_para)
 
         CALL solvestateq(A,gas%egy_lvl,c,grid%lvl_pop(i_cell,:))
         
@@ -173,12 +172,13 @@ CONTAINS
     TYPE(Model_TYP),INTENT(IN)                       :: model
     TYPE(Gas_TYP),INTENT(IN)                         :: gas
     
-    REAL(kind=r1),DIMENSION(1:gas%egy_lvl,1:gas%egy_lvl)           :: A
-    REAL(kind=r1),DIMENSION(1:gas%egy_lvl)                         :: c
-    REAL(kind=r1),DIMENSION(1:gas%egy_lvl)                         :: old_pop
-    REAL(kind=r2),DIMENSION(1:gas%trans_lvl)                       :: J_mid, J_ext
-    REAL(kind=r1)                                                  :: sum_p
-    REAL(kind=r2)                                                  :: R_mid, L
+    REAL(kind=r1),DIMENSION(1:gas%egy_lvl,1:gas%egy_lvl)       :: A
+    REAL(kind=r1),DIMENSION(1:gas%egy_lvl)                     :: c
+    REAL(kind=r1),DIMENSION(1:gas%egy_lvl)                     :: old_pop
+    REAL(kind=r2),DIMENSION(1:gas%trans_lvl)                   :: J_mid, J_ext
+    REAL(kind=r1)                                              :: sum_p
+    REAL(kind=r2)                                              :: R_mid, L
+    REAL(kind=r2),DIMENSION(1:gas%col_trans,1:2)               :: final_col_para
     
     INTEGER                                           :: i_cell, i, max_iteration
     !--------------------------------------------------------------------------!        
@@ -207,7 +207,7 @@ CONTAINS
 !~         END DO
 !~         grid%lvl_pop(i_cell,:) = grid%lvl_pop(i_cell,:)/sum(grid%lvl_pop(i_cell,:)) !normalize array
         
-        
+        final_col_para = calc_collision_parameter(grid,gas,i_cell)
         R_mid = sqrt(grid%cellmidcaco(i_cell,1)**2+grid%cellmidcaco(i_cell,2)**2)
         L = R_mid * sqrt(2.0/3.0 /( grid%cell_gauss_a(i_cell) * grid%absvelo(i_cell))) * model%ref_unit
         
@@ -221,7 +221,7 @@ CONTAINS
                              gas%trans_einstB_l(:), L, J_ext(:))
             !---------------------------------------------------------------------------------------
             
-            CALL create_matrix(grid,gas,J_mid,i_cell,A,c)
+            CALL create_matrix(grid,gas,J_mid,i_cell,A,c,final_col_para)
             
             CALL solvestateq(A,gas%egy_lvl,c,grid%lvl_pop(i_cell,:))
             
@@ -243,14 +243,11 @@ CONTAINS
 
             END IF
         END DO
-        IF (i == max_iteration +1 ) THEN
+        IF (i == max_iteration +1 .and. show_error) THEN
             print *, 'Warning: maximum iteration needed in cell:', i_cell
-!~             print *, 'iter:',  i, i_cell
-!~             print *,MAXVAL(abs(grid%lvl_pop(i_cell,:)-old_pop)/old_pop)
-!~             print '(ES15.6E3)', grid%lvl_pop(i_cell,:)
-!~             print *,''
-!~             print '(ES15.6E3)', old_pop
-!~             stop
+            print *,MAXVAL(abs(grid%lvl_pop(i_cell,:)-old_pop)/old_pop)
+            print '(ES15.6E3)', grid%lvl_pop(i_cell,:)
+            print '(ES15.6E3)', old_pop
         END IF
     END DO
     END SUBROUTINE pop_LVG
@@ -304,7 +301,7 @@ CONTAINS
     END FUNCTION elem_LVG
     
     
-    PURE SUBROUTINE create_matrix(grid,gas,J_mid,i_cell,A,c)
+    PURE SUBROUTINE create_matrix(grid,gas,J_mid,i_cell,A,c,final_col_para)
     ! ---    
     IMPLICIT NONE
     !--------------------------------------------------------------------------!
@@ -314,6 +311,7 @@ CONTAINS
     REAL(kind=r1),DIMENSION(1:gas%egy_lvl,1:gas%egy_lvl),INTENT(OUT)   :: A
     REAL(kind=r1),DIMENSION(1:gas%egy_lvl),INTENT(OUT)                 :: c
     REAL(kind=r2),DIMENSION(1:gas%trans_lvl),INTENT(IN)                :: J_mid
+    REAL(kind=r2),DIMENSION(1:gas%col_trans,1:2),INTENT(IN)            :: final_col_para
 
     INTEGER,INTENT(IN)                                                 :: i_cell
     INTEGER                                                            :: col_tr
@@ -329,26 +327,23 @@ CONTAINS
                 k = gas%trans_lower(j)
                 A(i,k) =  A(i,k) + gas%trans_einstB_l(j)*J_mid(j)
                 A(i,i) =  A(i,i) - gas%trans_einstA(j)-gas%trans_einstB_u(j)*J_mid(j)
-                !PRINT *, - gas%trans_einstA(j)-gas%trans_einstB_u(j)*J_mid(j)
             ELSE IF (gas%trans_lower(j) == i) THEN
                 k = gas%trans_upper(j)
                 A(i,k) = A(i,k) + gas%trans_einstA(j) + gas%trans_einstB_u(j)*J_mid(j)
                 A(i,i) = A(i,i) - gas%trans_einstB_l(j)*J_mid(j)
             END IF
         END DO
-!~         DO j = 1,gas%col_partner
-            DO col_tr=1, gas%col_trans
-                IF (gas%col_lower(col_tr,gas%col_id(1)) == i) THEN
-                    k = gas%col_upper(col_tr,gas%col_id(1))
-                    A(i,k) = A(i,k) + grid%col_finalcolmatrixup(col_tr,i_cell)
-                    A(i,i) = A(i,i) - grid%col_finalcolmatrixlow(col_tr,i_cell)
-                ELSE IF ( gas%col_upper(col_tr,gas%col_id(1)) == i) THEN
-                    k = gas%col_lower(col_tr,gas%col_id(1))
-                    A(i,k) = A(i,k) + grid%col_finalcolmatrixlow(col_tr,i_cell)
-                    A(i,i) = A(i,i) - grid%col_finalcolmatrixup(col_tr,i_cell)
-                END IF
-            END DO
-!~         END DO
+        DO col_tr=1, gas%col_trans
+            IF (gas%col_lower(col_tr,gas%col_id(1)) == i) THEN
+                k = gas%col_upper(col_tr,gas%col_id(1))
+                A(i,k) = A(i,k) + final_col_para(col_tr,1)
+                A(i,i) = A(i,i) - final_col_para(col_tr,2)
+            ELSE IF ( gas%col_upper(col_tr,gas%col_id(1)) == i) THEN
+                k = gas%col_lower(col_tr,gas%col_id(1))
+                A(i,k) = A(i,k) + final_col_para(col_tr,2)
+                A(i,i) = A(i,i) - final_col_para(col_tr,1)
+            END IF
+        END DO
     END DO
     
 
@@ -360,6 +355,58 @@ CONTAINS
     A(1,:) = 1.0_r2
 
     END SUBROUTINE create_matrix
-    
+
+    FUNCTION calc_collision_parameter(grid,gas,i_cell) RESULT(final_col_para)
+        ! ---
+        IMPLICIT NONE
+        !--------------------------------------------------------------------------!
+        TYPE(Grid_TYP),INTENT(IN)                              :: grid
+        TYPE(Gas_TYP),INTENT(IN)                               :: gas
+
+        REAL(kind=r2),DIMENSION(1:gas%col_trans,1:2)           :: final_col_para
+        REAL(kind=r2), DIMENSION(1:gas%col_trans)              :: col_mtr_tmp_ul
+        REAL(kind=r2), DIMENSION(1:gas%col_trans)              :: col_mtr_tmp_lu
+
+
+        INTEGER,INTENT(IN)                                     :: i_cell
+        INTEGER                                                :: j, k, hi_i
+        !--------------------------------------------------------------------------!
+        final_col_para(:,:)  = 0.0_r2
+
+        DO j = 1, gas%col_partner
+            k = gas%col_id(j)
+            IF( any(gas%col_upper(:,k) == 0) ) THEN
+                CONTINUE
+            ELSE
+                IF (grid%t_gas(i_cell) .lt. MINVAL(gas%col_alltemps(:,k)) ) THEN
+                    hi_i = 1
+            
+                ELSE IF (grid%t_gas(i_cell) .gt. MAXVAL(gas%col_alltemps(:,k)) ) THEN
+        
+                    hi_i = gas%col_temps - 1
+                ELSE
+        
+                    hi_i = binary_search(REAL(grid%t_gas(i_cell),kind=r2), REAL(gas%col_alltemps(:,k),kind=r2))
+                END IF
+        
+                col_mtr_tmp_ul(:) = &
+                                    ipol2(REAL(gas%col_alltemps(hi_i,k),kind=r2), REAL(gas%col_alltemps(hi_i+1,k),kind=r2),   &
+                                    REAL(gas%col_colmatrix(k,:,hi_i),kind=r2),REAL(gas%col_colmatrix(k,:,hi_i+1),kind=r2), &
+                                    REAL(grid%t_gas(i_cell),kind=r2))* grid%grd_col_density(i_cell,k)
+        
+                col_mtr_tmp_lu(:) = &
+                        col_mtr_tmp_ul(:)* &
+                        gas%g_level(gas%col_upper(:,k))/gas%g_level(gas%col_lower(:,k)) * &
+                        exp(-con_h * &
+                        (gas%energylevel(gas%col_upper(:,k))*con_c*100.0_r2 - &
+                        gas%energylevel(gas%col_lower(:,k))*con_c*100.0_r2)  &
+                        /(con_k*grid%t_gas(i_cell)))
+        
+                final_col_para(:,1)   =  final_col_para(:,1) + col_mtr_tmp_ul(:)
+                final_col_para(:,2)   =  final_col_para(:,2) + col_mtr_tmp_lu(:)
+            END IF
+        END DO
+
+    END FUNCTION calc_collision_parameter
     
 END MODULE lvlpop_mod

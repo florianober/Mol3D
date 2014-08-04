@@ -72,7 +72,7 @@ CONTAINS
             END IF
             CALL primary_temp(basics,grid,model,dust,sources_in,fluxes)
         ELSE IF (.not. basics%calc_tmp) THEN
-            print *, '  using analytical temperature distribution'
+            print *, '| | using analytical temperature distribution'
             i_cell = 0
             DO i_a=1, grid%n(1)
                 DO i_b=1, grid%n(2)
@@ -110,14 +110,10 @@ CONTAINS
                                     ! is just for saving the x midplane temperature
 
     
-    ! CALCULATE ALL PROBERTIES, WHICH NEED TEMPERATURE INFORMATIONS
+    ! CALCULATE PROBERTIES, WHICH NEED TEMPERATURE INFORMATIONS
     
     IF (basics%do_raytr) THEN
-        PRINT *, '  temperature included, now calculate some additional parameters'
-        ALLOCATE(grid%col_finalcolmatrixup(1:gas%col_trans,1:grid%n_cell), &
-                 grid%col_finalcolmatrixlow(1:gas%col_trans,1:grid%n_cell) )
-        grid%col_finalcolmatrixup  = 0.0_r2
-        grid%col_finalcolmatrixlow = 0.0_r2
+        !
         DO i_cell = 1,grid%n_cell
 
             ! set line width in each cell (in fact the inverse value)
@@ -128,45 +124,9 @@ CONTAINS
             ! save quadratic line width value for faster calculations
             
             grid%cell_gauss_a2(i_cell)  =   grid%cell_gauss_a(i_cell)**2
-            ! calculate (interpolate) collision parameters c = f(T)
-            DO j = 1, gas%col_partner
-                k = gas%col_id(j)
-                IF( any(gas%col_upper(:,k) == 0) ) THEN
-                    CONTINUE
-                ELSE
-                    IF (grid%t_gas(i_cell) .lt. MINVAL(gas%col_alltemps(:,k)) ) THEN
-                        hi_i = 1
-                    
-                    ELSE IF (grid%t_gas(i_cell) .gt. MAXVAL(gas%col_alltemps(:,k)) ) THEN
-                    
-                        hi_i = gas%col_temps - 1
-                    ELSE
-
-                        hi_i = binary_search(REAL(grid%t_gas(i_cell),kind=r2), REAL(gas%col_alltemps(:,k),kind=r2))
-                    END IF
-                            
-                    col_mtr_tmp_ul(:) = &
-                                        ipol2(REAL(gas%col_alltemps(hi_i,k),kind=r2), REAL(gas%col_alltemps(hi_i+1,k),kind=r2),   &
-                                        REAL(gas%col_colmatrix(k,:,hi_i),kind=r2),REAL(gas%col_colmatrix(k,:,hi_i+1),kind=r2), &
-                                        REAL(grid%t_gas(i_cell),kind=r2))* grid%grd_col_density(i_cell,k)
-                                        
-                    col_mtr_tmp_lu(:) = &
-                            col_mtr_tmp_ul(:)* &
-                            gas%g_level(gas%col_upper(:,k))/gas%g_level(gas%col_lower(:,k)) * &
-                            exp(-con_h * &
-                            (gas%energylevel(gas%col_upper(:,k))*con_c*100.0_r2 - &
-                            gas%energylevel(gas%col_lower(:,k))*con_c*100.0_r2)  &
-                            /(con_k*grid%t_gas(i_cell)))
-                            
-                    grid%col_finalcolmatrixup(:,i_cell)  =  grid%col_finalcolmatrixup(:,i_cell) + &
-                                                            col_mtr_tmp_ul(:)
-                    grid%col_finalcolmatrixlow(:,i_cell) =  grid%col_finalcolmatrixlow(:,i_cell) + &
-                                                            col_mtr_tmp_lu(:)
-                END IF 
-            END DO
+            
         END DO
     END IF
-
     END SUBROUTINE set_temperature
   
     PURE FUNCTION Get_temp(caco) RESULT(temps)
@@ -226,8 +186,8 @@ CONTAINS
 
 
         ! photon transfer
-        print *,' calculate temperature via immediate reemission concept'
-        print *,' starting photon transfer ... [this may take a while]'
+        print *,'| | calculate temperature with Monte Carlo method'
+        print *,'| | | starting photon transfer ... [this may take a while]'
         !--------------------------------------------------------------------------!
         grid%t_dust(:,:)  = basics%t_dust_min
         grid%t_dust(0,:)  = 0.0_r2
@@ -250,7 +210,7 @@ CONTAINS
             ! show progress
 !~                 !$OMP MASTER
             IF (modulo(i_phot, k_phot) == 0 .or. i_phot==model%n_star_emi) THEN
-                    write (*,'(A,I3,A)') "   - photon : ", int(i_phot/real(model%n_star_emi)*100.0), ' % done...'//char(27)//'[A'
+                    write (*,'(A,I3,A)') " | | | - progress : ", int(i_phot/real(model%n_star_emi)*100.0), ' % done...'//char(27)//'[A'
             END IF
 !~             !$OMP END MASTER
 !~             !$omp do schedule(static)
@@ -286,7 +246,7 @@ CONTAINS
             CALL ClosePhoton(photon)
 !~                 !$omp end do nowait
         END DO
-        print *, ' photon transfer finished     '
+        print *, '| | | photon transfer finished                '
         ! prepare & save final results
            
         ! [solution 2] apply mean intensity method

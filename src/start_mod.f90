@@ -27,7 +27,7 @@ MODULE start_mod
 contains
 
   ! ################################################################################################
-  ! start photon from source
+  ! start photon from random source
   ! ---
   SUBROUTINE start_photon(basics,grid,model,rand_nr,fluxes,dust,photon, sources_in)
     

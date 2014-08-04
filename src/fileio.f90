@@ -168,7 +168,7 @@ CONTAINS
             action="write", status="unknown", form="formatted")
 
         IF ( plane == 3) THEN
-            print *,'visualize  -> yz - plane'
+            print *,'| |  -> yz - plane'
             dxy = 2.0*model%r_ou/pix
             write(unit=1,fmt='(I6.4,A)') pix ,'    # no of pixel of the map'
             write(unit=1,fmt=*) ''
@@ -205,7 +205,7 @@ CONTAINS
             END DO 
             
         ELSEIF ( plane == 2) THEN
-            print *,'visualize  -> xy - plane'
+            print *,'| |  -> xy - plane'
             dxy = 2.0*model%r_ou/pix
             write(unit=1,fmt='(I6.4,A)') pix ,'    # no of pixel of the map'
             write(unit=1,fmt=*) ''
@@ -242,7 +242,7 @@ CONTAINS
             END DO 
 
         ELSE IF (plane == 1) THEN
-            print *,'visualize  -> xz - plane'
+            print *,'| |  -> xz - plane'
             dxy = 2.0*model%r_ou/pix
             write(unit=1,fmt='(I6.4,A)') pix ,'    # no of pixel of the map'
             write(unit=1,fmt=*) ''

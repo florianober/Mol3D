@@ -81,7 +81,7 @@ contains
     !--------------------------------------------------------------------------!
     
     ! ---
-    print *, "    final temperature calculation ..."
+    print *, "| | final temperature calculation"
     hd2 = 0.0_r2
     do i_dust=1, dust%n_dust
         do nr_cell=1, grid%n_cell

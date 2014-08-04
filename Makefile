@@ -1,6 +1,6 @@
 ################################################################
-#                Makefile for mol3d based on mc3dv 4.x
-#						  J. Sauter 2010 & F. Ober 2012
+#                Makefile for mol3d based on mc3d v. 4
+#		 J. Sauter 2010 & F. Ober 2014
 ################################################################
 #
 # Usage examples:
@@ -81,7 +81,7 @@ endif
 #
 ifeq ($(FC),ifort)
   CFLAGS = -O3 #-warn all -warn errors
-  DEPFLAGS = -module $(BUILD_DIR) -I$(BUILD_DIR) -lcfitsio
+  DEPFLAGS = -module $(BUILD_DIR) -I$(BUILD_DIR) -L./../cfitsio -lcfitsio
   OFLAGS = -fpp
   ifeq ($(CO),debug)
 #    CFLAGS = -pg -check bounds -check uninit -std -warn all -warn errors -WB -zero -traceback
