@@ -884,7 +884,7 @@ CONTAINS
         REAL(kind=r2),DIMENSION(:),ALLOCATABLE      :: pluto_th
         
         REAL(kind=r2), DIMENSION(10)                :: line
-        REAL(kind=r2), DIMENSION(3)                 :: caco, moco
+        REAL(kind=r2), DIMENSION(3)                 :: caco, moco, velo_hlp
         REAL(kind=r2)                               :: R_gap_in, R_gap_ou
         REAL(kind=r2)                               :: value_in
         REAL(kind=r1)                               :: P_xy, P_z
@@ -1013,7 +1013,36 @@ CONTAINS
                 grid%grd_col_density(i_cell,:)  = 10.0**(value_in)
             END DO
             CLOSE(unit=1)
-            
+        ELSE IF (GetGridType(grid) == 9 .and. GetGridName(grid) == 'spherical' ) THEN            
+            print *,'  read model from text_file'
+            OPEN(unit=1, file="/data/jpruge/flock_data/HRFIX_410.dat", &
+                         action="read", status="old", form="formatted")
+            DO i = 1,4
+            !read header
+               READ(unit=1,fmt=*,iostat=io) waste
+            END DO
+            k = 1
+            DO i_r = 1, grid%n(1)
+                DO i_th = 2, grid%n(2)-1
+                    DO i_ph = 1, grid%n(3)
+                        i_cell  = grid%cell_idx2nr(i_r,i_th,i_ph)
+                        !IF (i_cell == int(k*grid%n_cell*0.01)) THEN
+                        !    WRITE (*,'(A,I3,A)') ' | | | ',int(i_cell/real(grid%n_cell)*100),' &
+                        !                            &% done'//char(27)//'[A'
+                        !    k = k +1
+                        !END IF
+
+                        READ(unit=1,fmt=*,iostat=io) pluto_n, velo_hlp, value_in
+                        grid%grd_dust_density(i_cell,:) = value_in
+                        grid%grd_col_density(i_cell,:)  = value_in
+                        grid%velo(i_cell,:)  = mo2ca(grid,velo_hlp) 
+                    END DO
+                END DO
+            END DO
+        
+            CLOSE(unit=1)
+        
+        
         ELSE 
             DO i_cell = 1, grid%n_cell
                 ! number of particles / cell / species;
@@ -1072,9 +1101,11 @@ CONTAINS
             grid%Nv_mol(i_cell)   = grid%grd_mol_density(i_cell)    * REAL(grid%cell_vol(i_cell),kind=r2)
             grid%Nv_col(i_cell,:) = grid%grd_col_density(i_cell,:)  * REAL(grid%cell_vol(i_cell),kind=r2)
             ! set velocity, in a future release we should generalize this
-            ! 
-            grid%velo(i_cell,:)  = Set_velo(grid%cellmidcaco(i_cell,:),model%kep_const)
-            
+            !
+            !IF (maxval(grid%velo(:,:)) .lt. 1.0e-10 ) THEN
+            !    print *, 'here' 
+            !    grid%velo(i_cell,:)  = Set_velo(grid%cellmidcaco(i_cell,:),model%kep_const)
+            !END IF
             grid%absvelo(i_cell) = norm(REAL(grid%velo(i_cell,:),kind=r2))
         END DO
     END SUBROUTINE set_grid_properties
