@@ -405,23 +405,32 @@ CONTAINS
         TYPE(Grid_TYP), INTENT(INOUT)               :: grid
         TYPE(Model_TYP), INTENT(INOUT)              :: model
         TYPE(Basic_TYP), INTENT(IN)                 :: basics
+        CHARACTER(len=252)                          :: file_a,file_b,file_c
         !------------------------------------------------------------------------!
+        IF (basics%old_model) THEN
+            ! if we use an old model, we simply read the boundaries from the input files
+            file_a = TRIM(basics%path_results)//TRIM(basics%pronam_old)//'_a_boundaries.dat'
+            file_b = TRIM(basics%path_results)//TRIM(basics%pronam_old)//'_b_boundaries.dat'
+            file_c = TRIM(basics%path_results)//TRIM(basics%pronam_old)//'_c_boundaries.dat'
+            CALL read_boundaries(grid,file_a,file_b,file_c)
         
-        SELECT CASE(GetGridName(grid))
-        
-        CASE('spherical')
-            CALL set_boundaries_sp(grid,model)
+        ELSE
+            SELECT CASE(GetGridName(grid))
             
-        CASE('cylindrical')
-            CALL set_boundaries_cy(grid,model)
-            
-        CASE('cartesian')
-            print *, 'TbD,..set_boundaries'
-            stop
-        CASE DEFAULT
-            print *, 'selected coordinate system not found, set_boundaries'
-            stop
-        END SELECT
+            CASE('spherical')
+                CALL set_boundaries_sp(grid,model)
+                
+            CASE('cylindrical')
+                CALL set_boundaries_cy(grid,model)
+                
+            CASE('cartesian')
+                print *, 'TbD,..set_boundaries'
+                stop
+            CASE DEFAULT
+                print *, 'selected coordinate system not found, set_boundaries'
+                stop
+            END SELECT
+        END IF
         
         CALL save_boundaries(grid,model,basics)
     
@@ -786,29 +795,16 @@ CONTAINS
             ! ---
             ! This case is for a very general input of a spherical grid, coordinates defined in external files
             ! The style of the input file has to be consistent
+            
+            CALL read_boundaries(grid, "input/grid/spherical_r.dat", &
+                                 "input/grid/spherical_theta.dat","input/grid/spherical_phi.dat")
 
+            ! ---
             ! 1 r
-            open(unit=1, file="input/grid/spherical_r.dat", &
-                    action="read", status="unknown", form="formatted")
-
-            ! read header lines
-            read(unit=1,fmt=*) i_abc ! number of r cells
-            IF ( i_abc /= grid%n(1)  ) STOP("ERROR: No of r_cells are not consistent")           
-
-            read(unit=1,fmt=*) fmt_kind
-            DO i_r = 0, grid%n(1)
-                read(unit=1,fmt=*) value_in
-                IF ( TRIM(fmt_kind) == 'log10' ) THEN
-                    grid%co_mx_a(i_r) = 10.0**(value_in)
-                ELSEIF (TRIM(fmt_kind) == 'linear' ) THEN
-                    grid%co_mx_a(i_r) = value_in
-                ELSE
-                    PRINT *, "ERROR: coordinate r has no known kind"
-                    STOP
-                END IF
-            END DO
-            close(unit=1)
             ! test for consistency
+            ! co_mx_a(  0 ) = r_in
+            ! co_mx_a(n(1)) = r_ou
+            
             IF ( abs(model%r_in - grid%co_mx_a(0)) .gt. 1.0e3_r2*epsilon(model%r_in) ) THEN
                 PRINT *, "ERROR: Inner rim given in input file is not consistent with the grid"
                 PRINT *, "r_in               : ", model%r_in
@@ -823,29 +819,7 @@ CONTAINS
  
 
             ! ---
-            ! 2 th
-            open(unit=1, file="input/grid/spherical_theta.dat", &
-                    action="read", status="unknown", form="formatted")
-
-            ! read header lines
-            read(unit=1,fmt=*) i_abc ! number of th cells
-            IF ( i_abc /= grid%n(2)  ) STOP("ERROR: No of th_cells are not consistent")
-
-            read(unit=1,fmt=*) fmt_kind
-
-            DO i_th = 0, grid%n(2)
-                read(unit=1,fmt=*) value_in
-                IF ( TRIM(fmt_kind) == 'log10' ) THEN
-                    grid%co_mx_b(i_th) = 10.0**(value_in)
-                ELSEIF (TRIM(fmt_kind) == 'linear' ) THEN
-                    grid%co_mx_b(i_th) = value_in
-                ELSE
-                    PRINT *, "ERROR: coordinate theta has no known kind"
-                    STOP
-                END IF
-            END DO
-            close(unit=1)
-
+            ! 2 theta
             ! test for consistency
             ! co_mx_b(  0 ) = -PI/2    (- 90°)
             ! co_mx_b(n(2)) =  PI/2    (  90°)
@@ -859,34 +833,9 @@ CONTAINS
                 PRINT *, "upper cell boundary : ", grid%co_mx_b(grid%n(2))
                 STOP
             END IF
-
-
+            
             ! ---
             ! 3 phi
-            ! co_mx_c(  0 ) = 0    (  0°)
-            ! co_mx_c(n(3)) = 2xPI (360°)
-            open(unit=1, file="input/grid/spherical_phi.dat", &
-                    action="read", status="unknown", form="formatted")
-            
-            ! read header lines
-            read(unit=1,fmt=*) i_abc ! number of th cells
-            IF ( i_abc /= grid%n(3)  ) STOP("ERROR: No of phi_cells are not consistent")
-
-            read(unit=1,fmt=*) fmt_kind
-
-            DO i_ph = 0, grid%n(3)
-                read(unit=1,fmt=*) value_in
-                IF ( TRIM(fmt_kind) == 'log10' ) THEN
-                    grid%co_mx_c(i_ph) = 10.0**(value_in)
-                ELSEIF (TRIM(fmt_kind) == 'linear' ) THEN
-                    grid%co_mx_c(i_ph) = value_in
-                ELSE
-                    PRINT *, "ERROR: coordinate phi has no known kind"
-                    STOP
-                END IF
-            END DO
-            close(unit=1)
-
             ! test for consistency
             ! co_mx_c(  0 ) = 0         (   0°)
             ! co_mx_c(n(3)) = 2 * PI    ( 360°)

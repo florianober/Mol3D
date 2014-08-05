@@ -16,10 +16,92 @@ MODULE fileio
     PRIVATE
     !--------------------------------------------------------------------------!
     PUBLIC :: vis_plane, save_ch_map, sv_temp, load_temp_dist, save_input, save_model, &
-              save_boundaries, save_continuum_map
+              save_boundaries, read_boundaries, save_continuum_map
     !--------------------------------------------------------------------------!
 CONTAINS    
+    
+    SUBROUTINE read_boundaries(grid,file_a,file_b,file_c)
+        !--------------------------------------------------------------------------!
+        TYPE(Grid_TYP), INTENT(INOUT)                   :: grid
+        !--------------------------------------------------------------------------!
+        INTEGER                                         :: i, i_abc
+        CHARACTER(len=*),INTENT(IN)                     :: file_a,file_b,file_c
+        CHARACTER(len=252)                              :: fmt_kind
+        REAL(kind=r2)                                   :: value_in
+        !--------------------------------------------------------------------------!
+        
+        ! 1 r
+        open(unit=1, file=file_a, &
+             action="read", status="unknown", form="formatted")
 
+        ! read header lines
+        read(unit=1,fmt=*) i_abc ! number of r cells
+        IF ( i_abc /= grid%n(1)  ) STOP("ERROR: No of r_cells are not consistent")           
+
+        read(unit=1,fmt=*) fmt_kind
+        DO i = 0, grid%n(1)
+            read(unit=1,fmt=*) value_in
+            IF ( TRIM(fmt_kind) == 'log10' ) THEN
+                grid%co_mx_a(i) = 10.0**(value_in)
+            ELSEIF (TRIM(fmt_kind) == 'linear' ) THEN
+                grid%co_mx_a(i) = value_in
+            ELSE
+                PRINT *, "ERROR: coordinate r has no known kind"
+                STOP
+            END IF
+        END DO
+        close(unit=1)
+
+        ! ---
+        ! 2 th
+        open(unit=1, file=file_b, &
+                action="read", status="unknown", form="formatted")
+
+        ! read header lines
+        read(unit=1,fmt=*) i_abc ! number of th cells
+        IF ( i_abc /= grid%n(2)  ) STOP("ERROR: No of th_cells are not consistent")
+
+        read(unit=1,fmt=*) fmt_kind
+
+        DO i = 0, grid%n(2)
+            read(unit=1,fmt=*) value_in
+            IF ( TRIM(fmt_kind) == 'log10' ) THEN
+                grid%co_mx_b(i) = 10.0**(value_in)
+            ELSEIF (TRIM(fmt_kind) == 'linear' ) THEN
+                grid%co_mx_b(i) = value_in
+            ELSE
+                PRINT *, "ERROR: coordinate theta has no known kind"
+                STOP
+            END IF
+        END DO
+        close(unit=1)
+
+        open(unit=1, file=file_c, &
+                action="read", status="unknown", form="formatted")
+        
+        ! read header lines
+        read(unit=1,fmt=*) i_abc ! number of th cells
+        IF ( i_abc /= grid%n(3)  ) STOP("ERROR: No of phi_cells are not consistent")
+
+        read(unit=1,fmt=*) fmt_kind
+
+        DO i = 0, grid%n(3)
+            read(unit=1,fmt=*) value_in
+            IF ( TRIM(fmt_kind) == 'log10' ) THEN
+                grid%co_mx_c(i) = 10.0**(value_in)
+            ELSEIF (TRIM(fmt_kind) == 'linear' ) THEN
+                grid%co_mx_c(i) = value_in
+            ELSE
+                PRINT *, "ERROR: coordinate phi has no known kind"
+                STOP
+            END IF
+        END DO
+        close(unit=1)
+    
+    END SUBROUTINE read_boundaries
+    
+    
+    
     SUBROUTINE save_boundaries(grid,model,basics)
         IMPLICIT NONE
         !--------------------------------------------------------------------------!
@@ -37,7 +119,20 @@ CONTAINS
         open(unit=1, file=TRIM(filename), &
             action="write", status="unknown", form="formatted")
             
+        filename = TRIM(basics%path_results)//Getproname(basics)//'_a_boundaries.dat'
+        open(unit=2, file=TRIM(filename), &
+            action="write", status="unknown", form="formatted")
+            
+        filename = TRIM(basics%path_results)//Getproname(basics)//'_b_boundaries.dat'
+        open(unit=3, file=TRIM(filename), &
+            action="write", status="unknown", form="formatted")
+            
+        filename = TRIM(basics%path_results)//Getproname(basics)//'_c_boundaries.dat'
+        open(unit=4, file=TRIM(filename), &
+            action="write", status="unknown", form="formatted")
+            
         ! write header:
+        ! for the general file
         write(unit=1,fmt='(A)') '# cell boundaries: '
         SELECT CASE(GetGridName(grid))
         
@@ -54,6 +149,15 @@ CONTAINS
             stop
         END SELECT
         write(unit=1,fmt='(A)') ''
+        ! for individual files
+        write(unit=2,fmt=*) grid%n(1)
+        write(unit=2,fmt='(A)') 'linear'
+        write(unit=3,fmt=*) grid%n(2)
+        write(unit=3,fmt='(A)') 'linear'
+        write(unit=4,fmt=*) grid%n(3)
+        write(unit=4,fmt='(A)') 'linear'
+        
+        ! write boundaries
         DO i = 0,maxval(grid%n)
         
             IF ( i .gt. grid%n(1) ) THEN
@@ -61,25 +165,31 @@ CONTAINS
                 WRITE(a,fmt='(A)') ''
             ELSE
                 WRITE(a,fmt='(F16.8)') grid%co_mx_a(i)
+                WRITE(unit=2,fmt=*) grid%co_mx_a(i)
             END IF
             
             IF ( i .gt. grid%n(2) ) THEN
                 WRITE(b,fmt='(A)') ''
             ELSE
                 WRITE(b,fmt='(F16.12)') grid%co_mx_b(i)
+                WRITE(unit=3,fmt=*) grid%co_mx_b(i)
             END IF
             
             IF ( i .gt. grid%n(3) ) THEN
                 WRITE(c,fmt='(A)') ''
             ELSE
                 WRITE(c,fmt='(F16.12)') grid%co_mx_c(i)
+                WRITE(unit=4,fmt=*) grid%co_mx_c(i)
             END IF
             
-!~             write(unit=1,fmt='(I5,3(F16.8))') i,a,b,c
             write(unit=1,fmt='(I5,3(A))') i,a,b,c
         
         END DO
         CLOSE(unit=1)
+        CLOSE(unit=2)
+        CLOSE(unit=3)
+        CLOSE(unit=4)
+
 !~         stop
     END SUBROUTINE  save_boundaries
         
@@ -294,7 +404,7 @@ CONTAINS
 !~         Call sv_temp_dist(basics, grid)
     END SUBROUTINE sv_temp
     
-     SUBROUTINE load_temp_dist(basics, grid,tmp_found)
+     SUBROUTINE load_temp_dist(basics, grid,tmp_found) !this routine is obsolent at the moment
         IMPLICIT NONE
         !--------------------------------------------------------------------------!
         TYPE(Basic_TYP), INTENT(IN)                  :: basics
@@ -495,10 +605,6 @@ CONTAINS
         ! free the (u)nit number
         call ftfiou(u, sta)
         
-        
-
-
-        
         !write sed in ascii format
         OPEN(unit=2, file=TRIM(basics%path_results)//Getproname(basics)//'_continuum_sed.dat', &
             action="write", status="unknown", form="formatted")
@@ -564,7 +670,7 @@ CONTAINS
         
         
         !write full spectrum in ascii format 
-        OPEN(unit=2, file=TRIM(basics%path_results)//Getproname(basics)//'_velo_ch_mapsum.dat', &
+        OPEN(unit=2, file=TRIM(basics%path_results)//Getproname(basics)//'_spectrum.dat', &
             action="write", status="unknown", form="formatted")
         
         ! write file header

@@ -145,8 +145,8 @@ CONTAINS
         SELECT CASE(GetGridname(this))
         
         CASE('spherical')
-            print *, 'grid type: spherical'
-        
+            print '(A,I1)', ' grid type: spherical, type: ', GetGridType(this)
+            
             SELECT CASE(GetGridType(this))
             
             CASE(1,2,3)
@@ -259,7 +259,7 @@ CONTAINS
             END SELECT
             
         CASE('cylindrical')
-            print *, 'grid type: cylindrical'
+            print '(A,I1)', ' grid type: cylindrical, type: ', GetGridType(this)
             SELECT CASE(GetGridType(this))
             CASE(1)
                 this%n(1)   = n_a
