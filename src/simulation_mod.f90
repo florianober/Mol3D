@@ -75,13 +75,13 @@ CONTAINS
     ! --- calculate or set temperature
     print *,"| temperature calculation"
     CALL set_temperature(basics, grid, model, dust, gas, sources_in,fluxes)
-    print *, "| done!"
+    print *, "| done!                 "
     print *, "|"
     ! --- save all results for later use
     ! first save the model itself
     print *, "| saving the model"
     CALL save_model(grid, basics)
-    print *, "| done!"
+    print *, "| done!                 "
     print *, "|"
     ! now, provide some extra visualisation output 
     ! 1: xz plane, 2: xy plane, 3: yz plane
@@ -89,14 +89,14 @@ CONTAINS
     CALL vis_plane(grid, basics,model, 1,401)
     CALL vis_plane(grid, basics,model, 2,401)
     CALL vis_plane(grid, basics,model, 3,401)
-    print *, "| done!"
+    print *, "| done!                 "
     print *, "|"
     IF (basics%do_raytr) THEN
     
         ! --- first calculate level populations
         print *,"| calculate level populations"
         CALL calc_lvlpop(basics, grid , model, gas)
-        print *, "| done!"
+        print *, "| done!                 "
         print *, "|"
         hd_stepwidth = 0.2_r2
         

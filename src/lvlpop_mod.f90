@@ -126,7 +126,7 @@ CONTAINS
     REAL(kind=r2),DIMENSION(1:gas%trans_lvl)                       :: J_mid, J_ext
     REAL(kind=r1)                                                  :: sum_p
     REAL(kind=r2),DIMENSION(1:gas%col_trans,1:2)                   :: final_col_para
-    INTEGER                                                        :: i_cell, i
+    INTEGER                                                        :: i_cell, i, k
     !--------------------------------------------------------------------------!        
     
     DO i=1, gas%trans_lvl
@@ -134,8 +134,15 @@ CONTAINS
             J_ext(i) = planckhz(2.75_r1,gas%trans_freq(i))
     END DO
     J_mid = J_ext
-    
+    k = 1
     DO i_cell = 1, grid%n_cell
+    
+        IF (i_cell == int(k*grid%n_cell*0.01)) THEN
+            WRITE (*,'(A,I3,A)') ' | | | ',int(i_cell/real(grid%n_cell)*100),' % done'//char(27)//'[A'
+            k = k + 1
+        END IF
+    
+    
         IF (grid%grd_mol_density(i_cell) .lt. 1.0e-200_r2) CYCLE
         final_col_para = calc_collision_parameter(grid,gas,i_cell)
         CALL create_matrix(grid,gas,J_mid,i_cell,A,c,final_col_para)
@@ -180,7 +187,7 @@ CONTAINS
     REAL(kind=r2)                                              :: R_mid, L
     REAL(kind=r2),DIMENSION(1:gas%col_trans,1:2)               :: final_col_para
     
-    INTEGER                                           :: i_cell, i, max_iteration
+    INTEGER                                           :: i_cell, i, max_iteration, k
     !--------------------------------------------------------------------------!        
 
 !~     print *, 'ERROR: method under development'
@@ -191,9 +198,12 @@ CONTAINS
     J_ext(:) = planckhz(2.75,gas%trans_freq(:))
 !~     J_ext(:) = 0
 
-   
+    k = 1
     DO i_cell = 1,grid%n_cell
-        
+        IF (i_cell == int(k*grid%n_cell*0.01)) THEN
+            WRITE (*,'(A,I3,A)') ' | | | ',int(i_cell/real(grid%n_cell)*100),' % done'//char(27)//'[A'
+            k = k + 1
+        END IF
         ! Now iterate
     
 

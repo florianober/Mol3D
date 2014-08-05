@@ -143,7 +143,7 @@ CONTAINS
             stop
         end if
         
-        print *, ''
+        print *, '                                                               '
         !------------------------------------------------------------------------!
         !    ! estimate mass
         !  scale to given mass, or to given density (at some point here 100 AU)
@@ -873,7 +873,7 @@ CONTAINS
         TYPE(Basic_TYP), INTENT(IN)                 :: basics
         !------------------------------------------------------------------------!
         
-        INTEGER                                     :: i_cell, i_cell_in, i
+        INTEGER                                     :: i_cell, i_cell_in, i, k
         INTEGER                                     :: i_in, i_r, i_th, i_ph
         INTEGER                                     :: io
         INTEGER,DIMENSION(1:3)                      :: pluto_n
@@ -899,14 +899,19 @@ CONTAINS
             
         IF (basics%old_model) THEN
         
-            print '(2A)', '  loading model parameter from: ', TRIM(basics%pronam_old)
+            print '(2A)', ' | loading model parameter from: ', TRIM(basics%pronam_old)
             ! load the density stored in a model file of the old project
             filename = TRIM(basics%path_results)//TRIM(basics%pronam_old)//'_model.dat'
             OPEN(unit=1, file=TRIM(filename), &
                 action="read", status="unknown", form="formatted")
             READ(unit=1,fmt=*) waste
-            
+            k = 1
             DO i_cell = 1, grid%n_cell
+                IF (i_cell == int(k*grid%n_cell*0.01)) THEN
+                    WRITE (*,'(A,I3,A)') ' | | ',int(i_cell/real(grid%n_cell)*100),' % done'//char(27)//'[A'
+                    k = k + 1
+                END IF
+            
                 READ(unit=1,fmt=*,iostat=io) i_cell_in, line
                 IF (io < 0 .or. i_cell_in /= i_cell) THEN
                     PRINT *,'ERROR in model file ('//TRIM(filename)//') cell not found',i_cell

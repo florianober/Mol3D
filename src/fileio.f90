@@ -209,7 +209,7 @@ CONTAINS
         CHARACTER(len=256)                           :: outname
         
         INTEGER                                      :: i_cell
-        INTEGER                                      :: i,j,k
+        INTEGER                                      :: k
         !--------------------------------------------------------------------------!
         
         file_a = TRIM(basics%path_results)//Getproname(basics)//'_model.dat'
@@ -226,9 +226,13 @@ CONTAINS
             write(unit=1,fmt='(12A)') '#cell  ','mid_x  ','mid_y  ','mid_z  ',  'no_dens_dust  ','no_dens_mol  ', &
                                         'no_dens_H  ', 'no_dens_Hp  ', 'no_dens_Ho  ','T_dust  ', 'T_gas  ', &
                                         'abs_velocity'
-            
+            k = 1
             DO i_cell=1,grid%n_cell
-                
+               
+                IF (i_cell == int(k*grid%n_cell*0.01)) THEN
+                    WRITE (*,'(A,I3,A)') ' | | | ',int(i_cell/real(grid%n_cell)*100),' % done'//char(27)//'[A'
+                    k = k + 1
+                END IF
                 write(unit=1,fmt='(I8,11(ES15.6E3))') i_cell, grid%cellmidcaco(i_cell,:), grid%grd_dust_density(i_cell,1), &
                                                        grid%grd_mol_density(i_cell) , &
                                                        grid%grd_col_density(i_cell,1:3), &
