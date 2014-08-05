@@ -205,31 +205,39 @@ CONTAINS
         REAL(kind=r2),DIMENSION(1:3)                 :: caco
         REAL(kind=r2)                                :: dxy
                 
-        CHARACTER(len=252)                           :: filename
+        CHARACTER(len=252)                           :: file_a, file_b
         CHARACTER(len=256)                           :: outname
         
         INTEGER                                      :: i_cell
         INTEGER                                      :: i,j,k
         !--------------------------------------------------------------------------!
-        filename = TRIM(basics%path_results)//Getproname(basics)//'_model.dat'
-        open(unit=1, file=TRIM(filename), &
-            action="write", status="unknown", form="formatted")
         
-        ! write header:
-        write(unit=1,fmt='(12A)') '#cell  ','mid_x  ','mid_y  ','mid_z  ',  'no_dens_dust  ','no_dens_mol  ', &
-                                    'no_dens_H  ', 'no_dens_Hp  ', 'no_dens_Ho  ','T_dust  ', 'T_gas  ', &
-                                    'abs_velocity'
-        
-        DO i_cell=1,grid%n_cell
+        file_a = TRIM(basics%path_results)//Getproname(basics)//'_model.dat'
+        IF (basics%old_model) THEN
+            file_b = TRIM(basics%pronam_old)//'_model.dat'
+            !
+            CALL SYSTEM("ln -fs "//TRIM(file_b)//" "//TRIM(file_a))
+        ELSE
             
-            write(unit=1,fmt='(I8,11(ES15.6E3))') i_cell, grid%cellmidcaco(i_cell,:), grid%grd_dust_density(i_cell,1), &
-                                                   grid%grd_mol_density(i_cell) , &
-                                                   grid%grd_col_density(i_cell,1:3), &
-                                                   grid%t_dust(i_cell,1), grid%t_gas(i_cell), &
-                                                   grid%absvelo(i_cell)
+            open(unit=1, file=TRIM(file_a), &
+                action="write", status="unknown", form="formatted")
             
-        END DO
-        CLOSE(unit=1)
+            ! write header:
+            write(unit=1,fmt='(12A)') '#cell  ','mid_x  ','mid_y  ','mid_z  ',  'no_dens_dust  ','no_dens_mol  ', &
+                                        'no_dens_H  ', 'no_dens_Hp  ', 'no_dens_Ho  ','T_dust  ', 'T_gas  ', &
+                                        'abs_velocity'
+            
+            DO i_cell=1,grid%n_cell
+                
+                write(unit=1,fmt='(I8,11(ES15.6E3))') i_cell, grid%cellmidcaco(i_cell,:), grid%grd_dust_density(i_cell,1), &
+                                                       grid%grd_mol_density(i_cell) , &
+                                                       grid%grd_col_density(i_cell,1:3), &
+                                                       grid%t_dust(i_cell,1), grid%t_gas(i_cell), &
+                                                       grid%absvelo(i_cell)
+                
+            END DO
+            CLOSE(unit=1)
+        END IF
         
 !~         stop
     END SUBROUTINE save_model
