@@ -9,6 +9,12 @@ module math_mod
     implicit none
     public :: planck, planckhz, integ1, rad2grad, grad2rad, atan3, atanx, norm,cy2ca, sp2ca, ca2sp, ipol1, ipol2, &
        arcdis, dasico, gauss_arr, solvestateq, binary_search, get_expo,get_opa,random_planck_frequency,dB_dT_l
+    INTERFACE binary_search
+        MODULE PROCEDURE binary_search_r1,binary_search_r2
+    END INTERFACE
+    INTERFACE ipol2
+        MODULE PROCEDURE ipol2_r1,ipol2_r2
+    END INTERFACE
     
 contains
 
@@ -513,7 +519,21 @@ contains
    !################################################################################################
    !linear interpolation, typ 2: as simple as possible...
    !---
-  ELEMENTAL function ipol2( x_min, x_max, y_min, y_max, x_ipol ) result(ipol2_result)
+  ELEMENTAL function ipol2_r1( x_min, x_max, y_min, y_max, x_ipol ) result(ipol2_result)
+    use datatype
+    
+    real(kind=r1), intent(in) :: x_min, x_max, y_min, y_max, x_ipol
+    real(kind=r1) :: ipol2_result
+    ! ---
+    if (x_min == x_max) then
+       ipol2_result = y_min
+    else
+       ipol2_result = (y_max-y_min)*(x_ipol-x_min)/(x_max-x_min) + y_min
+    end if
+  end function ipol2_r1
+
+
+  ELEMENTAL function ipol2_r2( x_min, x_max, y_min, y_max, x_ipol ) result(ipol2_result)
     use datatype
     
     real(kind=r2), intent(in) :: x_min, x_max, y_min, y_max, x_ipol
@@ -524,7 +544,7 @@ contains
     else
        ipol2_result = (y_max-y_min)*(x_ipol-x_min)/(x_max-x_min) + y_min
     end if
-  end function ipol2
+  end function ipol2_r2
 
 
   ! ################################################################################################
@@ -768,7 +788,41 @@ contains
         photon%D = matmul(photon%D,D_help)
     end subroutine vecmat
     
-    PURE FUNCTION binary_search(var_in, array_in) RESULT (int_result)
+    PURE FUNCTION binary_search_r1(var_in, array_in) RESULT (int_result)
+    
+        IMPLICIT NONE
+        !------------------------------------------------------------------------!
+        REAL(kind=r1), DIMENSION(:), INTENT(IN)       :: array_in
+        REAL(kind=r1), INTENT(IN)                     :: var_in
+        
+        INTEGER                                       :: int_result
+        INTEGER                                       :: L, R, MID
+        !------------------------------------------------------------------------!
+        int_result = 0
+        L = 1
+        R = SIZE(array_in)
+        IF ( var_in .gt. array_in(R)) THEN
+            int_result = R
+        ELSE
+            DO WHILE (L .le. R )
+                MID = INT((L+R)/2)
+                IF (var_in .ge. array_in(MID) .and. var_in .le. array_in(MID+1) ) THEN
+                    int_result = MID
+                    EXIT
+                ELSE
+                    IF ( var_in < array_in(MID) ) THEN
+                        R = MID-1
+                    
+                    ELSE IF ( var_in > array_in(MID) ) THEN
+                        L = MID+1
+                    END IF
+                END IF
+            END DO
+        END IF
+        
+    END FUNCTION binary_search_r1
+    
+    PURE FUNCTION binary_search_r2(var_in, array_in) RESULT (int_result)
     
         IMPLICIT NONE
         !------------------------------------------------------------------------!
@@ -800,7 +854,7 @@ contains
             END DO
         END IF
         
-    END FUNCTION binary_search
+    END FUNCTION binary_search_r2
     
     
 end module math_mod

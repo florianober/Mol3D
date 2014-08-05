@@ -928,6 +928,7 @@ CONTAINS
                 grid%t_gas(i_cell)    = line(10)
 
             END DO
+            print *,"                          "
             CLOSE(unit=1)
         ELSE IF (basics%pluto_data) THEN
             OPEN(unit=1, file="input/grid/sp1_reduced.dat", &

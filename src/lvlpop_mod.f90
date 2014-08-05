@@ -396,13 +396,13 @@ CONTAINS
                     hi_i = gas%col_temps - 1
                 ELSE
         
-                    hi_i = binary_search(REAL(grid%t_gas(i_cell),kind=r2), REAL(gas%col_alltemps(:,k),kind=r2))
+                    hi_i = binary_search(grid%t_gas(i_cell), gas%col_alltemps(:,k))
                 END IF
         
                 col_mtr_tmp_ul(:) = &
-                                    ipol2(REAL(gas%col_alltemps(hi_i,k),kind=r2), REAL(gas%col_alltemps(hi_i+1,k),kind=r2),   &
-                                    REAL(gas%col_colmatrix(k,:,hi_i),kind=r2),REAL(gas%col_colmatrix(k,:,hi_i+1),kind=r2), &
-                                    REAL(grid%t_gas(i_cell),kind=r2))* grid%grd_col_density(i_cell,k)
+                                    ipol2(gas%col_alltemps(hi_i,k), gas%col_alltemps(hi_i+1,k),   &
+                                          gas%col_colmatrix(k,:,hi_i),gas%col_colmatrix(k,:,hi_i+1), &
+                                          grid%t_gas(i_cell))* grid%grd_col_density(i_cell,k)
         
                 col_mtr_tmp_lu(:) = &
                         col_mtr_tmp_ul(:)* &
