@@ -14,6 +14,7 @@ import math
 import numpy as np
 from astropy.io import fits as pf
 from astropy.coordinates import SkyCoord
+from numpy.linalg import norm
 
 from datetime import datetime, timedelta
 
@@ -34,6 +35,20 @@ CO_lines_freq =  np.array([115.2712018,230.5380000,345.7959899,461.0407682,576.2
                  921.7997000,1036.9123930,1151.9854520,1267.0144860,1381.9951050,1496.9229090])*1e9
 HCO_lines_freq = np.array([89.1885230,178.3750650,267.5576190,356.7342880,445.9029960,535.0617755,
                         624.2086733,713.3420900,802.4583290,891.5579242,980.6374000,1069.6938000])*1e9
+
+def ca2sp(p_vec):
+    r = np.zeros(3)
+    r[0]  = norm(p_vec)
+    r[1]  = np.arctan2(p_vec[2],math.sqrt(p_vec[0]**2 + p_vec[1]**2))
+    r[2]  = np.arctan2(p_vec[1],p_vec[0])
+    return r
+    
+def sp2ca(p):
+    r = np.zeros(3)
+    r[0]  = p[0] * math.cos(p[1]) * math.cos(p[2])
+    r[1]  = p[0] * math.cos(p[1]) * math.sin(p[2])
+    r[2]  = p[0] * math.sin(p[1])
+    return r    
 
 def conv(image, beam=0.1,r_ou=200,dist=140,gg=''):
     from numpy import sqrt 

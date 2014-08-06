@@ -1015,7 +1015,7 @@ CONTAINS
             CLOSE(unit=1)
         ELSE IF (GetGridType(grid) == 9 .and. GetGridName(grid) == 'spherical' ) THEN            
             print *,'  read model from text_file'
-            OPEN(unit=1, file="/data/jpruge/flock_data/HRFIX_410.dat", &
+            OPEN(unit=1, file="input/grid/model.dat", &
                          action="read", status="old", form="formatted")
             DO i = 1,4
             !read header

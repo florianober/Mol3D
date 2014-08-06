@@ -8,48 +8,25 @@ module math_mod
 
     implicit none
     public :: planck, planckhz, integ1, rad2grad, grad2rad, atan3, atanx, norm,cy2ca, sp2ca, ca2sp, ipol1, ipol2, &
-       arcdis, dasico, gauss_arr, solvestateq, binary_search, get_expo,get_opa,random_planck_frequency,dB_dT_l
+       arcdis, dasico, gauss_arr, solvestateq, binary_search, get_expo,get_opa,random_planck_frequency,dB_dT_l, &
+       generate_rotation_matrix, Vector3d
     INTERFACE binary_search
         MODULE PROCEDURE binary_search_r1,binary_search_r2
     END INTERFACE
     INTERFACE ipol2
         MODULE PROCEDURE ipol2_r1,ipol2_r2
     END INTERFACE
+    TYPE Vector3d
+        !-----------------------------------------------------------------------!
+        REAL(kind=r2),DIMENSION(1:3)              :: comp
+        
+        CHARACTER(15)                             :: c_sys
+        !-----------------------------------------------------------------------!
+    END TYPE
+    SAVE
     
 contains
-
-  ! ################################################################################################
-  ! random number generator
-!  ! ---
-!  subroutine RAN2()
-!    use var_globalnew
     
-!    implicit none
-    
-!    integer :: J
-!     ---
-!    RM=1.0/M
-!    if  (IDUM<0 .or. IFF==0)  then
-!       IFF  = 1
-!       IDUM = modulo(IC-IDUM,M)
-!       do J=1,97
-!          IDUM = modulo(IA*IDUM+IC,M)
-!          IR(J)= IDUM
-!       end do
-!       IDUM = modulo(IA*IDUM+IC,M)
-!       IY   = IDUM
-!    endif
-    
-!    J = 1+(97*IY)/M
-!    if (J > 97 .or. J < 1) then
-!      print *, "subroutine RAN2(): failed."
-!      stop
-!    end if
-!    IY   = IR( J)
-!    rndx = IY*RM
-!    IDUM = modulo(IA*IDUM+IC,M)
-!    IR(J)= IDUM    
-!  end subroutine RAN2
 
 
   ! ################################################################################################
@@ -855,6 +832,80 @@ contains
         END IF
         
     END FUNCTION binary_search_r2
+    
+    SUBROUTINE generate_rotation_matrix(p_vec, S)
+        !
+        ! using S we can calculate converte every vector v:
+        ! v_xyz     = S * v_u1u2u3 = matmul(S,v_u1u2u3)
+        ! v_u1u2u3  = S^T * v_xyz  = matmul(transpose(S),v_u1u2u3)
+        !
+        IMPLICIT NONE
+        !------------------------------------------------------------------------!
+        TYPE(Vector3d),INTENT(IN)                        :: p_vec
+        !------------------------------------------------------------------------!
+
+        REAL(kind=r2), DIMENSION(1:3)                    :: spco
+        REAL(kind=r2), DIMENSION(1:3,1:3),INTENT(OUT)    :: S
+        
+        REAL(kind=r2)                                    :: sintheta, costheta
+        REAL(kind=r2)                                    :: sinphi, cosphi
+        !------------------------------------------------------------------------!
+        
+        S(:,:) = 0.0_r2
+        
+        spco = p_vec%comp
+        SELECT CASE(TRIM(p_vec%c_sys))
+        
+        CASE('spherical')
+            
+            sintheta = sin(spco(2))
+            costheta = cos(spco(2))
+            
+            sinphi   = sin(spco(3))
+            cosphi   = cos(spco(3))
+        
+            S(1,1)   =   costheta   *  cosphi
+            S(2,1)   =   costheta   *  sinphi
+            S(3,1)   =   sintheta
+            
+            S(1,2)   = - sintheta   *  cosphi
+            S(2,2)   = - sintheta   *  sinphi
+            S(3,2)   =   costheta
+            
+            S(1,3)   = - sinphi
+            S(2,3)   =   cosphi
+            S(3,3)   =   0.0_r2
+            
+        CASE('cylindrical')
+            ! this is not tested yet, but should work ...;)
+            
+            sinphi   = sin(spco(2))
+            cosphi   = cos(spco(2))
+        
+            S(1,1)   =   cosphi
+            S(2,1)   =   sinphi
+            S(3,1)   =   0.0_r2
+            
+            S(1,2)   = - sinphi
+            S(2,2)   =   cosphi
+            S(3,2)   =   0.0_r2
+            
+            S(1,3)   =   0.0_r2
+            S(2,3)   =   0.0_r2
+            S(3,3)   =   1.0_r2
+            
+        CASE('cartesian')
+            ! this is not tested yet, but should work ...;)
+            S(1,1) = 1.0_r2
+            S(2,2) = 1.0_r2
+            S(3,3) = 1.0_r2
+            
+        CASE DEFAULT
+            print *, 'ERROR: generate_rotatation_matrix: vectors coordinate system not found'
+            stop
+        
+        END SELECT
+    END SUBROUTINE generate_rotation_matrix
     
     
 end module math_mod

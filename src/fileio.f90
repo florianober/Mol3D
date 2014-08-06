@@ -220,7 +220,7 @@ CONTAINS
         ELSE
             
             open(unit=1, file=TRIM(file_a), &
-                action="write", status="unknown", form="formatted")
+                action="write", status="new", form="formatted")
             
             ! write header:
             write(unit=1,fmt='(12A)') '#cell  ','mid_x  ','mid_y  ','mid_z  ',  'no_dens_dust  ','no_dens_mol  ', &

@@ -32,6 +32,7 @@ MODULE Grid_type
     !                 \ 3 = z /
     !
     !--------------------------------------------------------------------------!
+    
     TYPE Grid_TYP
         TYPE(Common_TYP) :: grdtype                     ! -----------------    !
         !-----------------------------------------------------------------------!
@@ -106,10 +107,7 @@ MODULE Grid_type
         get_cell_nr, &
         mo2ca, &
         check_inside
-    
-!~     PRIVATE :: &
-!~         get_cell_nr_sp, &
-!~         get_cell_nr_cy
+
     !--------------------------------------------------------------------------!
 CONTAINS
 
@@ -583,8 +581,6 @@ CONTAINS
   ! determine cell number from cartesian coordinates. 
   ! ---
     FUNCTION get_cell_nr_sp(this,caco) RESULT(get_cell_nr_result)
-        USE datatype
-        USE var_globalnew
         USE math_mod, ONLY : ca2sp, binary_search
         
         IMPLICIT NONE
@@ -640,6 +636,4 @@ CONTAINS
 
     END FUNCTION get_cell_nr_sp
     
-
-
 End Module Grid_type
