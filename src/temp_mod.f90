@@ -119,7 +119,9 @@ CONTAINS
             ! set line width in each cell (in fact the inverse value)
             grid%cell_gauss_a(i_cell) = 1.0_r2/(sqrt(2.0_r2*con_k*grid%t_dust(i_cell,1)/ &  
                                                 (gas%mol_weight*1.0e-3_r2/con_Na) &
-                                                +100.0_r2**2)) ! 100.0 eq trub. line width TbD!~!
+                                                +100.0_r2**2)) ! 100.0 eq turb. line width TbD
+                                                !+grid%velo(i_cell,3)**2))   ! use i_z for face one
+                                                !+grid%v_turb(i_cell)**2))   ! use turb array (TbD)
                                                 
             ! save quadratic line width value for faster calculations
             
@@ -175,7 +177,7 @@ CONTAINS
         REAL(kind=r2),DIMENSION(1:3)                     :: pos_xyz
         REAL(kind=r2),DIMENSION(1:3)                     :: dir_xyz
         REAL(kind=r2)                                    :: d_l
-!~         !$ INTEGER omp_get_thread_num 
+        !$ INTEGER omp_get_thread_num 
                 
         !# shared variables
         TYPE(PHOTON_TYP)                                 :: photon
@@ -191,30 +193,28 @@ CONTAINS
         !--------------------------------------------------------------------------!
         grid%t_dust(:,:)  = basics%t_dust_min
         grid%t_dust(0,:)  = 0.0_r2
+        k_phot = model%n_star_emi/100
 
-!~         !$ call omp_set_num_threads( basics%num_core )
         
-!~         !$omp parallel PRIVATE(i_phot,seed,photon,rand_nr,t_dust,grd_d_l,i_star_abs)
-        
-        
+!~         !$omp PRIVATE(seed,rand_nr)
+
         ! initialize random number generator
         seed = -1
-!~         !$ seed = omp_get_thread_num()*(-1)
-        !print *, 'here'
+        !$omp parallel num_threads(basics%num_core) PRIVATE(seed,rand_nr,i_phot,photon)
+        !$ seed = (omp_get_thread_num()+1)*(-1)
+!~         !$ print *,seed
         CALL InitRandgen(rand_nr,seed,'RAN2')
         !--------------------------------------------------------------------------! 
 !~         DO lucy = 1,5 ! TbD, in future we will use lucy iterations again, 
                          !      -> parallelisation should be more efficient
-        k_phot = model%n_star_emi/100
+        !$omp do schedule(dynamic)
         DO i_phot=1,model%n_star_emi
             ! show progress
-!~                 !$OMP MASTER
             IF (modulo(i_phot, k_phot) == 0 .or. i_phot==model%n_star_emi) THEN
                     write (*,'(A,I3,A)') " | | | - progress : ", &
                     int(i_phot/real(model%n_star_emi)*100.0), ' % done...'//char(27)//'[A'
             END IF
-!~             !$OMP END MASTER
-!~             !$omp do schedule(static)
+
 
             ! initiate photon
             CALL InitPhoton(photon, 1, 'Photon',dust%n_dust)
@@ -245,16 +245,12 @@ CONTAINS
                 END IF
             END DO
             CALL ClosePhoton(photon)
-!~                 !$omp end do nowait
         END DO
+        !$omp end do nowait
+        !$omp end parallel
+        
         print *, '| | | photon transfer finished                '
         ! prepare & save final results
-
-!~         !$OMP CRITICAL
-!~             grid%t_dust = t_dust
-!~         !$OMP END CRITICAL
-!~         DEALLOCATE (t_dust)
-!~         !$omp end parallel
         DO i_dust=1,dust%n_dust
             grid%cell_energy(i_dust,:) = grid%cell_energy_sum(i_dust,:,1)/ (basics%PIx4 * grid%cell_vol(:))
             grid%cell_energy_sum(i_dust,:,:) = 0.0_r2
@@ -263,125 +259,6 @@ CONTAINS
 
     END SUBROUTINE primary_temp
   
-
-!~   ! ################################################################################################
-!~   ! simulation of primary source radiation:  
-!~   ! ---------------------------------------
-!~   !       photon_type = 4: calculation of primary source scattered light map
-!~   !                   5: calculation of primary source SED
-!~   ! ---
-!~   subroutine primary_scatt()
-!~     use datatype
-!~     use var_global
-!~     use start_mod
-!~     use interact_mod
-!~     use observe_mod
-!~     use sv_results_mod
-!~     use transfer_mod
-!~     use immediate_mod
-!~     use math_mod
-!~     use tools_mod
-!~ 
-!~     implicit none
-!~ 
-!~     integer :: i_lam_map, i_phot, i_phot_show 
-!~     ! ---
-!~     ! preparation
-!~     i_phot_show = nint( n_star_emi/10.0_r2 )
-!~ 
-!~     ! photon transfer
-!~     print *, "    photon transfer ... [this may take a while]"
-!~ 
-!~     do i_lam_map=1, n_lam_map
-!~        print *,"   - wavelength           : ", i_lam_map, " / ", n_lam_map
-!~ 
-!~        do i_phot=1, nint(n_star_emi)
-!~           if (photon_type==4) then
-!~              if ( modulo(i_phot,i_phot_show)==0 ) then
-!~                 print *,"     - photon counter [%] : ", &
-!~                      nint( 100.0_r2 * real(i_phot,kind=r2) / n_star_emi )
-!~              end if
-!~           end if
-!~           
-!~           ! 1. start photon (from primary source only)
-!~           call start_prim( num_lam_map(i_lam_map) )
-!~ 
-!~           ! 2. determine & go to next point of interaction
-!~           call next_pos_const()
-!~ 
-!~           ! 3. transfer through model space
-!~           !    if still inside model space: interaction
-!~           !                                 + go to next position
-!~           !                           else: observe photon leaving the model space
-!~           do
-!~              if (inside .and. (stokes(1)>i_min)) then
-!~                 call interact()
-!~                 call next_pos_const()
-!~                 cycle
-!~              else
-!~                 call observe_MC(i_lam_map)
-!~                 exit
-!~              end if
-!~           end do
-!~        end do
-!~     end do
-!~ 
-!~     ! ---
-!~     ! prepare & save final results
-!~     select case(photon_type)
-!~    
-!~     case(4)
-!~        ! save scattered light maps
-!~        call sv_stokes_map()
-!~        
-!~     case(5)
-!~        ! save SED (scattered light SED only)
-!~        call sv_stokes_sed()
-!~ 
-!~     case default
-!~        print *,"<!> subroutine primary_scatt: wrong input parameter. stopped."
-!~        call stop_mc3d()
-!~     end select
-!~        
-!~   end subroutine primary_scatt
-!~   
-!~ 
-!~   ! ################################################################################################
-!~   ! dust reemission map / SED
-!~   subroutine dust_RT()
-!~     use var_global
-!~     use reemission_mod
-!~     use sv_results_mod
-!~     use tools_mod
-!~     
-!~     implicit none
-!~     ! ---
-!~     ! 1. run simulation, depending on type of radiative transfer chosen
-!~     select case(ree_type)
-!~     case(1)
-!~        ! mc radiative transfer (including scattering)
-!~        call reemission_mc()
-!~     case(2)
-!~        ! raytracing (no scattering); argument: get_map = .true.
-!~        call reemission_raytrace()
-!~     case default
-!~        print *,"<!> subroutine dust_RT [a]: wrong input parameter. stopped."
-!~        call stop_mc3d()
-!~     end select
-!~     
-!~     ! ---
-!~     ! 2. save results
-!~     select case(photon_type)
-!~     case(2)
-!~        call sv_stokes_map()
-!~     case(3)
-!~        call sv_stokes_sed()
-!~     case default
-!~        print *,"<!> subroutine dust_RT [b]: wrong input parameter. stopped."
-!~        call stop_mc3d()
-!~     end select
-!~        
-!~   end subroutine dust_RT
       
 END MODULE temp_mod
 

@@ -220,7 +220,6 @@ CONTAINS
                                             calc_px(i,1), calc_px(i,2), ex, ey)
                 END DO
 
-                
                 !$omp end do nowait
                 !$omp end parallel
 

@@ -135,6 +135,7 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
 
     ! Tell the project name
     PRINT '(2A)'," Simulation name: ", TRIM(proname)
+    
     ref_u      = con_AU                                 !AU at the moment for prop. disks!
     ref_u_str  = "[AU]"                                 !ref unit
     concept_ps = 1                                      !Emission concept (1) Point-like, isotropic
@@ -148,7 +149,7 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
     acc_select_level  = 1.0e-6
     i_lam_show        = 10
     t_dust_min        = 0
-    t_dust_max        = 3000.0
+    t_dust_max        = 2000.0
     n_interact_max    = 100000
     
     show_error = .False.                             ! show some minor warnings
@@ -213,6 +214,7 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
     CALL parse('num_core',num_core,new_input_file)  ! number of cores used (raytracing, temperature calculation (TbD))
     
     WRITE(help,fmt='(I3.3)') num_core
+    !$ PRINT '(A,I3,A)', " Parallel mode, using: ", num_core, " cores"
     WRITE(unit=3,fmt='(A)') 'num_core = {'//TRIM(help)// &
     '}                     number of cores used (raytracing, temperature calculation (TbD))'
     WRITE(unit=3,fmt='(A)') '' 

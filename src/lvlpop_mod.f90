@@ -49,7 +49,7 @@ CONTAINS
         CALL pop_LTE(grid, gas)
     CASE(2)
         print *, '| | using FEP method'
-        CALL pop_FEP(grid, gas)
+        CALL pop_FEP(basics, grid, gas)
     CASE(3)
         print *, '| | using LVG method'
         CALL pop_LVG(basics, grid, model, gas)   
@@ -112,13 +112,14 @@ CONTAINS
     END SUBROUTINE pop_LTE
     
     
-    SUBROUTINE pop_FEP(grid,gas)
+    SUBROUTINE pop_FEP(basics, grid,gas)
     
     ! ---    free escape probability
     
     IMPLICIT NONE
     !--------------------------------------------------------------------------!
     TYPE(Grid_TYP),INTENT(INOUT)                                   :: grid
+    TYPE(Basic_TYP),INTENT(IN)                                     :: basics
     TYPE(Gas_TYP),INTENT(IN)                                       :: gas
     
     REAL(kind=r1),DIMENSION(1:gas%egy_lvl,1:gas%egy_lvl)           :: A
@@ -135,6 +136,8 @@ CONTAINS
     END DO
     J_mid = J_ext
     k = 1
+    !$omp parallel num_threads(basics%num_core)
+    !$omp do schedule(dynamic) private(i_cell,final_col_para, sum_p, A,c ) 
     DO i_cell = 1, grid%n_cell
     
         IF (i_cell == int(k*grid%n_cell*0.01)) THEN
@@ -159,7 +162,9 @@ CONTAINS
             print *, abs(1.0-sum_p)
         END IF
     END DO
-
+    !$omp end do nowait
+    !$omp end parallel
+    
     END SUBROUTINE pop_FEP
     
     
@@ -199,9 +204,13 @@ CONTAINS
 !~     J_ext(:) = 0
 
     k = 1
+    
+    !$omp parallel num_threads(basics%num_core)
+    !$omp do schedule(dynamic) private(i_cell,old_pop,J_mid, final_col_para,R_mid, L, sum_p, i,A,c ) 
+    
     DO i_cell = 1,grid%n_cell
         IF (i_cell == int(k*grid%n_cell*0.01)) THEN
-            WRITE (*,'(A,I3,A)') ' | | | ',int(i_cell/real(grid%n_cell)*100),' % done'//char(27)//'[A'
+            WRITE (*,'(A,I3,A)') ' | | | ',int(i_cell/real(grid%n_cell)*100.0),' % done'//char(27)//'[A'
             k = k + 1
         END IF
         ! Now iterate
@@ -260,6 +269,10 @@ CONTAINS
             print '(ES15.6E3)', old_pop
         END IF
     END DO
+    
+    !$omp end do nowait
+    !$omp end parallel
+    
     END SUBROUTINE pop_LVG
     
     ELEMENTAL FUNCTION elem_LVG(mol_dens,lvl_pop_u,lvl_pop_l,doppler,line_konst,A,B_u,B_l, L,J_ext) &

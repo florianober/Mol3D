@@ -47,7 +47,7 @@ contains
         !--------------------------------------------------------------------------
             
         logical                                            :: kill_photon
-        !integer                                            :: nr_cell_new
+        INTEGER                                            :: i_dust
         real(kind=r2)                                      :: tau_end, d_l, d_tau, rndx
  
         !real(kind=r2), dimension(1:3)                      :: pos_xyz_new
@@ -110,15 +110,19 @@ contains
                 photon%pos_xyz_new(:) = photon%pos_xyz(:) + photon%dir_xyz(:) * d_l
 
                 ! c) store information about (fractional) path through last cell
-                grid%cell_energy_sum(:,photon%nr_cell,1) = grid%cell_energy_sum(:,photon%nr_cell,1)+ &
-                                                         d_l * photon%energy * dust%C_abs(:,photon%nr_lam) &
-                                                         *model%ref_unit
+                DO i_dust=1,dust%n_dust
+                    !$omp atomic
+                    grid%cell_energy_sum(i_dust,photon%nr_cell,1) = &
+                                        grid%cell_energy_sum(i_dust,photon%nr_cell,1)+ &
+                                        d_l * photon%energy * dust%C_abs(i_dust,photon%nr_lam) * &
+                                        model%ref_unit
+                END DO
+!~                 !$omp end critical
                 ! d) new point of interaction
                 photon%pos_xyz(:) = photon%pos_xyz_new(:)
 
                 ! e) nr_cell: remains unchanged (photon does not leave current cell)
                 ! photon%nr_cell = photon%nr_cell_new
-
                 exit
       
             ELSE
@@ -131,10 +135,13 @@ contains
                     
                     !#######################################################
                     ! be careful here
-
-                    grid%cell_energy_sum(:,photon%nr_cell,1) = grid%cell_energy_sum(:,photon%nr_cell,1)+ &
-                                                         d_l * photon%energy * dust%C_abs(:,photon%nr_lam) &
-                                                         *model%ref_unit
+                    DO i_dust=1,dust%n_dust
+                        !$omp atomic
+                        grid%cell_energy_sum(i_dust,photon%nr_cell,1) = &
+                                            grid%cell_energy_sum(i_dust,photon%nr_cell,1)+ &
+                                            d_l * photon%energy * dust%C_abs(i_dust,photon%nr_lam) * &
+                                            model%ref_unit
+                    END DO
                     !#######################################################
                     ! b) set new starting point; adjust optical depth
                     photon%pos_xyz(:) = photon%pos_xyz_new(:)             
@@ -146,10 +153,13 @@ contains
                     ! photon already outside model space
                     ! ---
                     ! a) store information about (fractional) path through last cell
-                    grid%cell_energy_sum(:,photon%nr_cell,1) = grid%cell_energy_sum(:,photon%nr_cell,1)+ &
-                                                         d_l * photon%energy * dust%C_abs(:,photon%nr_lam) &
-                                                         *model%ref_unit
-                 
+                    DO i_dust=1,dust%n_dust
+                        !$omp atomic
+                        grid%cell_energy_sum(i_dust,photon%nr_cell,1) = &
+                                            grid%cell_energy_sum(i_dust,photon%nr_cell,1)+ &
+                                            d_l * photon%energy * dust%C_abs(i_dust,photon%nr_lam) * &
+                                            model%ref_unit
+                    END DO
                     ! b) set flag
                     photon%inside = .false.
                     exit
