@@ -79,7 +79,6 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
     INTEGER, ALLOCATABLE, DIMENSION(:)               :: tr_cat
     
     INTEGER                                          :: photon_type
-    INTEGER                                          :: i_arg
     INTEGER                                          :: n_a
     INTEGER                                          :: n_b
     INTEGER                                          :: n_c
@@ -107,7 +106,6 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
     LOGICAL                                          :: do_raytr
     LOGICAL                                          :: do_velo_ch_map
     LOGICAL                                          :: do_continuum_map
-    LOGICAL                                          :: source_test
     !--------------------------------------------------------------------------!
     INTENT(INOUT)                                    :: basics, &
                                                         fluxes, &
@@ -503,8 +501,8 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
 !~         n_c  = 1
     
 !~     END SELECT
-    CALL InitGrid(grid,grid_type,grid_name, model, n_a, sf, n_b, n_c,dust%n_dust, & 
-                  dust%n_lam,gas%egy_lvl)
+    CALL InitGrid(grid,grid_type,grid_name, n_a, sf, n_b, n_c,dust%n_dust, & 
+                  gas%egy_lvl)
     !--------------------------------------------------------------------------! 
     
     CALL InitSources(sources_in,1,'sources',dust)

@@ -79,7 +79,6 @@ MODULE Grid_type
         REAL(kind=r1),DIMENSION(:,:),POINTER      :: delta_t_dust
         REAL(kind=r1),DIMENSION(:),POINTER        :: t_gas
         REAL(kind=r2), DIMENSION(:),POINTER       :: ddust
-        REAL(kind=r2),DIMENSION(:,:),POINTER      :: grd_d_l
         REAL(kind=r2),DIMENSION(1:3)              :: dir_xyz
                 
         INTEGER,DIMENSION(1:3)                    :: n
@@ -111,12 +110,10 @@ MODULE Grid_type
     !--------------------------------------------------------------------------!
 CONTAINS
 
-    SUBROUTINE InitGrid(this,ut,un, model, n_a, sf, n_b, n_c, n_dust, n_lam, egy_lvl)
+    SUBROUTINE InitGrid(this,ut,un, n_a, sf, n_b, n_c, n_dust, egy_lvl)
         IMPLICIT NONE
         !------------------------------------------------------------------------!
-        TYPE(Grid_TYP)        :: this
-        TYPE(Model_TYP)       :: model  
-        
+        TYPE(Grid_TYP)        :: this        
         REAL(kind=r2)         :: sf
         REAL(kind=r2)         :: trash
         REAL(kind=r2),DIMENSION(1:2)         :: d_angle
@@ -129,14 +126,13 @@ CONTAINS
         INTEGER               :: n_b
         INTEGER               :: n_c
         INTEGER               :: n_dust
-        INTEGER               :: n_lam
         INTEGER               :: egy_lvl       !from gas type
         
         CHARACTER(LEN=*)      :: un
         CHARACTER(LEN=256)    :: waste
         
         !------------------------------------------------------------------------!
-        INTENT(IN)            :: ut, un, model, n_a, sf, n_b, n_c, n_dust, n_lam, egy_lvl
+        INTENT(IN)            :: ut, un, n_a, sf, n_b, n_c, n_dust, egy_lvl
         INTENT(INOUT)         :: this
         !------------------------------------------------------------------------!
         CALL InitCommon(this%grdtype,ut,un)
@@ -314,8 +310,7 @@ CONTAINS
             this%t_dust(  0:this%n_cell, 1:n_dust ), &
             this%delta_t_dust(  0:this%n_cell, 1:n_dust ), &
             this%t_gas(  0:this%n_cell), &
-            this%grd_d_l( 1:this%n_cell, 1:n_lam ) , &
-            this%lvl_pop( 0:this%n_cell, 1:egy_lvl ) )
+            this%lvl_pop( 1:egy_lvl,0:this%n_cell ) )
             
         this%nh_n_dust = n_dust
         this%co_mx_a(:)           = 0.0_r2
@@ -340,7 +335,6 @@ CONTAINS
         this%t_dust(:,:)          = 0.0
         this%delta_t_dust(:,:)    = 0.0
         this%t_gas(:)             = 0.0
-        this%grd_d_l(:,:)         = 0.0_r2
         this%d_l_min              = 0.0_r2
         this%dir_xyz(:)           = 0.0_r2
         this%cell_energy(:,:)     = 0.0_r2
@@ -380,7 +374,6 @@ CONTAINS
             this%t_dust, &
             this%delta_t_dust, &
             this%t_gas, &
-            this%grd_d_l, &
             this%lvl_pop, &
             this%cell_energy, &
             this%cell_energy_sum)

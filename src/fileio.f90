@@ -102,12 +102,11 @@ CONTAINS
     
     
     
-    SUBROUTINE save_boundaries(grid,model,basics)
+    SUBROUTINE save_boundaries(grid, basics)
         IMPLICIT NONE
         !--------------------------------------------------------------------------!
         TYPE(Grid_TYP), INTENT(IN)                   :: grid
         TYPE(Basic_TYP), INTENT(IN)                  :: basics
-        TYPE(Model_TYP), INTENT(IN)                  :: model
         !--------------------------------------------------------------------------!
         INTEGER                                      :: i
         CHARACTER(len=252)                           :: filename
@@ -199,14 +198,8 @@ CONTAINS
         !--------------------------------------------------------------------------!
         TYPE(Grid_TYP), INTENT(IN)                   :: grid
         TYPE(Basic_TYP), INTENT(IN)                  :: basics
-        !--------------------------------------------------------------------------!
-        INTEGER                                      :: plane, pix
-        
-        REAL(kind=r2),DIMENSION(1:3)                 :: caco
-        REAL(kind=r2)                                :: dxy
-                
+        !--------------------------------------------------------------------------!                        
         CHARACTER(len=252)                           :: file_a, file_b
-        CHARACTER(len=256)                           :: outname
         
         INTEGER                                      :: i_cell
         INTEGER                                      :: k
@@ -596,7 +589,7 @@ CONTAINS
         TYPE(Dust_TYP), INTENT(IN)                   :: dust
         TYPE(Fluxes_TYP), INTENT(IN)                 :: fluxes
         !--------------------------------------------------------------------------!
-        INTEGER                                      :: i_lam, i, j, sta, u
+        INTEGER                                      :: i_lam, sta, u
         !--------------------------------------------------------------------------!
         
         sta = 0
@@ -639,7 +632,7 @@ CONTAINS
         TYPE(Gas_TYP), INTENT(IN)                    :: gas
         TYPE(Fluxes_TYP), INTENT(IN)                 :: fluxes
         !--------------------------------------------------------------------------!
-        INTEGER                                      :: vch, i, j, u, sta
+        INTEGER                                      :: vch, u, sta
         !--------------------------------------------------------------------------!
         
         ! write velocity channel map to fits file

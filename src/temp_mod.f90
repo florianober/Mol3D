@@ -52,16 +52,13 @@ CONTAINS
     TYPE(Fluxes_TYP) ,INTENT(IN)                     :: fluxes
     TYPE(SOURCES),INTENT(IN)                         :: sources_in
     !--------------------------------------------------------------------------!  
-    REAL(kind=r2), DIMENSION(1:3)                  :: caco
-    REAL(kind=r2), DIMENSION(1:3)                  :: moco
-    REAL(kind=r2), DIMENSION(1:gas%col_trans)      :: col_mtr_tmp_ul
-    REAL(kind=r2), DIMENSION(1:gas%col_trans)      :: col_mtr_tmp_lu
+    REAL(kind=r2), DIMENSION(1:3)                    :: caco
+    REAL(kind=r2), DIMENSION(1:3)                    :: moco
     
-    INTEGER                                          :: i_cell, hi_i
+    INTEGER                                          :: i_cell
     INTEGER                                          :: i_a
     INTEGER                                          :: i_b
     INTEGER                                          :: i_c
-    INTEGER                                          :: j,k
     
     !--------------------------------------------------------------------------! 
     IF (.not. basics%old_model) THEN
@@ -164,19 +161,12 @@ CONTAINS
         TYPE(Model_TYP),INTENT(IN)                       :: model
         TYPE(Dust_TYP),INTENT(IN)                        :: dust
         TYPE(SOURCES),INTENT(IN)                         :: sources_in
-    !~     TYPE(Gas_TYP),INTENT(INOUT)                      :: gas
     
-        TYPE(Randgen_TYP)                                 :: rand_nr
+        TYPE(Randgen_TYP)                                :: rand_nr
         
         !--------------------------------------------------------------------------!  
-        logical                                          :: kill_photon
-        INTEGER                                          :: i_lam, i_phot, i_dust
+        INTEGER                                          :: i_phot, i_dust
         INTEGER                                          :: seed, k_phot
-        INTEGER                                          :: nr_cell_new, nr_cell
-        REAL(kind=r2),DIMENSION(1:3)                     :: pos_xyz_new
-        REAL(kind=r2),DIMENSION(1:3)                     :: pos_xyz
-        REAL(kind=r2),DIMENSION(1:3)                     :: dir_xyz
-        REAL(kind=r2)                                    :: d_l
         !$ INTEGER omp_get_thread_num 
                 
         !# shared variables

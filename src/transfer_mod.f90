@@ -35,23 +35,18 @@ contains
 
         IMPLICIT NONE
         !--------------------------------------------------------------------------!    
-        TYPE(Grid_TYP),INTENT(IN)                        :: grid
-        TYPE(Randgen_TYP),INTENT(INOUT)                  :: rand_nr
+        TYPE(Grid_TYP),INTENT(IN)                         :: grid
+        TYPE(Randgen_TYP),INTENT(INOUT)                   :: rand_nr
         TYPE(Model_TYP),INTENT(IN)                        :: model
         TYPE(Dust_TYP),INTENT(IN)                         :: dust
         
-        TYPE(PHOTON_TYP),INTENT(INOUT)                      :: photon
+        TYPE(PHOTON_TYP),INTENT(INOUT)                    :: photon
         !--------------------------------------------------------------------------!
-        
-!~         REAL(kind=r2),DIMENSION(1:grid%n_cell, 1:dust%n_lam),INTENT(INOUT)      :: grd_d_l
-        !--------------------------------------------------------------------------
-            
-        logical                                            :: kill_photon
-        INTEGER                                            :: i_dust
-        real(kind=r2)                                      :: tau_end, d_l, d_tau, rndx
- 
-        !real(kind=r2), dimension(1:3)                      :: pos_xyz_new
-        
+                    
+        logical                                           :: kill_photon
+        INTEGER                                           :: i_dust
+        real(kind=r2)                                     :: tau_end, d_l, d_tau, rndx
+   
         !--------------------------------------------------------------------------!
         ! ---
         ! 1. determine optical depth (distance) to next point of interaction
@@ -215,8 +210,8 @@ contains
     REAL(kind=r2),INTENT(OUT)                        :: d_l
     !--------------------------------------------------------------------------!
     
-    real(kind=r2) :: d_l1,d_l2
-    real(kind=r2) :: a,b,c, rndx
+    real(kind=r2) :: d_l1
+    real(kind=r2) :: a,b,c
     !--------------------------------------------------------------------------!
     ! ---
     ! starting point: pos_xyz
@@ -256,10 +251,8 @@ contains
     INTEGER,INTENT(OUT)                              :: nr_cell_new
     REAL(kind=r2),INTENT(OUT)                        :: d_l
     !--------------------------------------------------------------------------!
-    integer :: i_r, i_th, i_ph
     
-!~     real(kind=r2) :: d_l
-    real(kind=r2) :: hd_r1, hd1, hd2, hd3, hd_th, hd_ph
+    real(kind=r2) :: hd_r1, hd1, hd2, hd3
     !--------------------------------------------------------------------------!
     
     ! ---
@@ -473,12 +466,10 @@ contains
         
         integer,                     intent(in)           :: nr_cell
         integer,                     intent(out)          :: nr_cell_new
-        integer                                           :: nr_cell_new2
 
         logical,                     intent(out)          :: kill_photon
         !--------------------------------------------------------------------------!
         integer                                           :: hi1
-        integer                                           :: i_th, i_ph, i_r
         integer, dimension(1)                             :: hi_arr1
         real(kind=r2)                                     :: hd1, hd2, hd3
         real(kind=r2)                                     :: hd_r1, hd_th1, hd_ph1
@@ -486,7 +477,6 @@ contains
         real(kind=r2)                                     :: disc, g
         real(kind=r2)                                     :: l1, l2
         real(kind=r2), dimension(1:6)                     :: d_lx
-        real(kind=r2), dimension(1:3)                     :: A
         real(kind=r2), dimension(1:2)                     :: hd_arr1
         
         !--------------------------------------------------------------------------!

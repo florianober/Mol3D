@@ -34,13 +34,11 @@ CONTAINS
     TYPE(Grid_TYP),INTENT(INOUT)                     :: grid
     TYPE(Model_TYP),INTENT(IN)                       :: model
     TYPE(Gas_TYP),INTENT(IN)                         :: gas
-    
-    INTEGER                                          :: i
-    
-    CHARACTER(len=252)                               :: filename
-    CHARACTER(len=252)                               :: fmtstr
-    CHARACTER(len=4)                                 :: fileext
-    CHARACTER(len=256)                               :: outname
+        
+!~     CHARACTER(len=252)                               :: filename
+!~     CHARACTER(len=252)                               :: fmtstr
+!~     CHARACTER(len=4)                                 :: fileext
+!~     CHARACTER(len=256)                               :: outname
     
     !--------------------------------------------------------------------------!  
     SELECT CASE(GetGasType(gas))
@@ -63,6 +61,7 @@ CONTAINS
     ! save results
     ! for default we don't save the level populations to hdd, but you can enable it
     ! by uncomment the following lines:
+    ! Note: depending on the no of grid cells, this file can be enormous
     
 !~     fileext = '.dat'
 !~     filename = TRIM(basics%path_results)//Getproname(basics)//'_lvl_pop'
@@ -73,7 +72,7 @@ CONTAINS
 !~ 
 !~     DO i = 1, grid%n_cell
 !~ 
-!~         WRITE(unit=1,fmt=fmtstr) i, grid%lvl_pop(i,:)
+!~         WRITE(unit=1,fmt=fmtstr) i, grid%lvl_pop(:,i)
 !~     
 !~     END DO
 !~     CLOSE(unit=1)
@@ -100,36 +99,37 @@ CONTAINS
         
     DO i_cell = 1, grid%n_cell
         IF ( grid%t_dust(i_cell,1) .lt. 1.0e-20 ) THEN
-            grid%lvl_pop(i_cell,:) = 0.0
+            grid%lvl_pop(:,i_cell) = 0.0
         ELSE
-            grid%lvl_pop(i_cell,:) =  gas%g_level(:)/gas%g_level(1) *exp(-con_h/(con_k*grid%t_dust(i_cell,1)) &
+            grid%lvl_pop(:,i_cell) =  gas%g_level(:)/gas%g_level(1) *exp(-con_h/(con_k*grid%t_dust(i_cell,1)) &
                                     *(gas%energylevel(:))*con_c*100.0_r2)
                                     
-            grid%lvl_pop(i_cell,:) = grid%lvl_pop(i_cell,:)/sum(grid%lvl_pop(i_cell,:)) !normalize array
+            grid%lvl_pop(:,i_cell) = grid%lvl_pop(:,i_cell)/sum(grid%lvl_pop(:,i_cell)) !normalize array
         END IF
     END DO
     
     END SUBROUTINE pop_LTE
     
     
-    SUBROUTINE pop_FEP(basics, grid,gas)
+    SUBROUTINE pop_FEP(basics, grid, gas)
     
     ! ---    free escape probability
     
     IMPLICIT NONE
     !--------------------------------------------------------------------------!
-    TYPE(Grid_TYP),INTENT(INOUT)                                   :: grid
     TYPE(Basic_TYP),INTENT(IN)                                     :: basics
+    TYPE(Grid_TYP),INTENT(INOUT)                                   :: grid
     TYPE(Gas_TYP),INTENT(IN)                                       :: gas
     
     REAL(kind=r1),DIMENSION(1:gas%egy_lvl,1:gas%egy_lvl)           :: A
     REAL(kind=r1),DIMENSION(1:gas%egy_lvl)                         :: c
+    REAL(kind=r1),DIMENSION(1:gas%egy_lvl)                         :: new_pop
     REAL(kind=r2),DIMENSION(1:gas%trans_lvl)                       :: J_mid, J_ext
     REAL(kind=r1)                                                  :: sum_p
     REAL(kind=r2),DIMENSION(1:gas%col_trans,1:2)                   :: final_col_para
     INTEGER                                                        :: i_cell, i, k
     !--------------------------------------------------------------------------!        
-    
+    new_pop = 0.0_r2
     DO i=1, gas%trans_lvl
 !~             J_ext(i) = 1e-14_r2*planckhz(1000.0_r2,gas%trans_freq(i)) + planckhz(2.72_r2,gas%trans_freq(i))
             J_ext(i) = planckhz(2.75_r1,gas%trans_freq(i))
@@ -137,7 +137,7 @@ CONTAINS
     J_mid = J_ext
     k = 1
     !$omp parallel num_threads(basics%num_core)
-    !$omp do schedule(dynamic) private(i_cell,final_col_para, sum_p, A,c ) 
+    !$omp do schedule(dynamic) private(i_cell,new_pop,final_col_para, sum_p, A,c ) 
     DO i_cell = 1, grid%n_cell
     
         IF (i_cell == int(k*grid%n_cell*0.01)) THEN
@@ -148,19 +148,21 @@ CONTAINS
     
         IF (grid%grd_mol_density(i_cell) .lt. 1.0e-200_r2) CYCLE
         final_col_para = calc_collision_parameter(grid,gas,i_cell)
-        CALL create_matrix(grid,gas,J_mid,i_cell,A,c,final_col_para)
+        CALL create_matrix(gas, J_mid, A, c, final_col_para)
 
-        CALL solvestateq(A,gas%egy_lvl,c,grid%lvl_pop(i_cell,:))
+        CALL solvestateq(A,gas%egy_lvl,c,new_pop)
         
         
         ! verify the result (sum over all populations should be 1)
 
-        sum_p = sum(grid%lvl_pop(i_cell,:))
+        sum_p = sum(new_pop(:))
 
         IF ( abs(1.0-sum_p) > 1.0e4*epsilon(sum_p) ) THEN
             print *, 'Warning, level polulation do not sum to 1'
             print *, abs(1.0-sum_p)
         END IF
+        
+        grid%lvl_pop(:,i_cell) = new_pop
     END DO
     !$omp end do nowait
     !$omp end parallel
@@ -187,6 +189,7 @@ CONTAINS
     REAL(kind=r1),DIMENSION(1:gas%egy_lvl,1:gas%egy_lvl)       :: A
     REAL(kind=r1),DIMENSION(1:gas%egy_lvl)                     :: c
     REAL(kind=r1),DIMENSION(1:gas%egy_lvl)                     :: old_pop
+    REAL(kind=r1),DIMENSION(1:gas%egy_lvl)                     :: new_pop
     REAL(kind=r2),DIMENSION(1:gas%trans_lvl)                   :: J_mid, J_ext
     REAL(kind=r1)                                              :: sum_p
     REAL(kind=r2)                                              :: R_mid, L
@@ -195,8 +198,8 @@ CONTAINS
     INTEGER                                           :: i_cell, i, max_iteration, k
     !--------------------------------------------------------------------------!        
 
-!~     print *, 'ERROR: method under development'
-    
+    new_pop(:) = 0.0_r2
+    old_pop(:) = 0.0_r2
     max_iteration = 200
     !calculate external radiation field
 
@@ -206,7 +209,7 @@ CONTAINS
     k = 1
     
     !$omp parallel num_threads(basics%num_core)
-    !$omp do schedule(dynamic) private(i_cell,old_pop,J_mid, final_col_para,R_mid, L, sum_p, i,A,c ) 
+    !$omp do schedule(dynamic) private(i_cell,new_pop,old_pop,J_mid, final_col_para,R_mid, L, sum_p, i,A,c ) 
     
     DO i_cell = 1,grid%n_cell
         IF (i_cell == int(k*grid%n_cell*0.01)) THEN
@@ -220,33 +223,33 @@ CONTAINS
         
                 
 !~         DO i = 1, gas%egy_lvl
-!~             grid%lvl_pop(i_cell,i) =  gas%g_level(i)/gas%g_level(1) *exp(-con_h/(con_k*grid%t_dust(i_cell,1)) &
+!~             grid%lvl_pop(i,i_cell) =  gas%g_level(i)/gas%g_level(1) *exp(-con_h/(con_k*grid%t_dust(i_cell,1)) &
 !~                                 *(gas%energylevel(i))*con_c*100.0_r2)
 !~                                 
 !~         END DO
-!~         grid%lvl_pop(i_cell,:) = grid%lvl_pop(i_cell,:)/sum(grid%lvl_pop(i_cell,:)) !normalize array
+!~         grid%lvl_pop(:,i_cell) = grid%lvl_pop(:,i_cell)/sum(grid%lvl_pop(:,i_cell)) !normalize array
         
         final_col_para = calc_collision_parameter(grid,gas,i_cell)
         R_mid = sqrt(grid%cellmidcaco(i_cell,1)**2+grid%cellmidcaco(i_cell,2)**2)
         L = R_mid * sqrt(2.0/3.0 /( grid%cell_gauss_a(i_cell) * grid%absvelo(i_cell))) * model%ref_unit
         
         DO i = 1, max_iteration  ! more iteration needed if cells are far from LTE solution
-            old_pop = grid%lvl_pop(i_cell,:)
+            old_pop = new_pop
 
             !---------------------------------------------------------------------------------------
-            J_mid = elem_LVG(grid%grd_mol_density(i_cell),grid%lvl_pop(i_cell,gas%trans_upper(:)),  & 
-                             grid%lvl_pop(i_cell,gas%trans_lower(:)),grid%cell_gauss_a(i_cell),     &
+            J_mid = elem_LVG(grid%grd_mol_density(i_cell),new_pop(gas%trans_upper(:)),  & 
+                             new_pop(gas%trans_lower(:)),grid%cell_gauss_a(i_cell),     &
                              basics%linescale,gas%trans_einstA(:),gas%trans_einstB_u(:),         &
                              gas%trans_einstB_l(:), L, J_ext(:))
             !---------------------------------------------------------------------------------------
             
-            CALL create_matrix(grid,gas,J_mid,i_cell,A,c,final_col_para)
+            CALL create_matrix(gas, J_mid, A, c, final_col_para)
             
-            CALL solvestateq(A,gas%egy_lvl,c,grid%lvl_pop(i_cell,:))
+            CALL solvestateq(A,gas%egy_lvl,c,new_pop)
             
             ! verify the result (sum over all populations should be 1)
 
-            sum_p = sum(grid%lvl_pop(i_cell,:))
+            sum_p = sum(new_pop(:))
             IF ( abs(1.0-sum_p) > 1.0e4*epsilon(sum_p) ) THEN
                 print *, 'Warning, level polulation do not sum to 1'
                 print *, abs(1.0-sum_p)
@@ -257,17 +260,17 @@ CONTAINS
                 print *, J_mid
                 stop
             END IF
-            IF ( MAXVAL(abs(grid%lvl_pop(i_cell,:)-old_pop)/(old_pop+EPSILON(old_pop))) .lt. 1.0e-2) THEN
+            IF ( MAXVAL(abs(new_pop-old_pop)/(old_pop+EPSILON(old_pop))) .lt. 1.0e-2) THEN
                 EXIT
-
             END IF
         END DO
         IF (i == max_iteration +1 .and. show_error) THEN
             print *, 'Warning: maximum iteration needed in cell:', i_cell
-            print *,MAXVAL(abs(grid%lvl_pop(i_cell,:)-old_pop)/old_pop)
-            print '(ES15.6E3)', grid%lvl_pop(i_cell,:)
+            print *,MAXVAL(abs(new_pop-old_pop)/old_pop)
+            print '(ES15.6E3)', new_pop
             print '(ES15.6E3)', old_pop
         END IF
+        grid%lvl_pop(:,i_cell) = new_pop
     END DO
     
     !$omp end do nowait
@@ -324,11 +327,10 @@ CONTAINS
     END FUNCTION elem_LVG
     
     
-    PURE SUBROUTINE create_matrix(grid,gas,J_mid,i_cell,A,c,final_col_para)
+    PURE SUBROUTINE create_matrix(gas, J_mid, A, c, final_col_para)
     ! ---    
     IMPLICIT NONE
     !--------------------------------------------------------------------------!
-    TYPE(Grid_TYP),INTENT(IN)                                          :: grid
     TYPE(Gas_TYP),INTENT(IN)                                           :: gas
     
     REAL(kind=r1),DIMENSION(1:gas%egy_lvl,1:gas%egy_lvl),INTENT(OUT)   :: A
@@ -336,7 +338,6 @@ CONTAINS
     REAL(kind=r2),DIMENSION(1:gas%trans_lvl),INTENT(IN)                :: J_mid
     REAL(kind=r2),DIMENSION(1:gas%col_trans,1:2),INTENT(IN)            :: final_col_para
 
-    INTEGER,INTENT(IN)                                                 :: i_cell
     INTEGER                                                            :: col_tr
     INTEGER                                                            :: i, j, k
     !--------------------------------------------------------------------------!    

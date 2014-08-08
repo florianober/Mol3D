@@ -48,11 +48,7 @@ program mol3d
     
     !$ double precision omp_get_wtime
     !$ double precision wt0,wt1   
-    
-!~     INTEGER                :: u,l, i
-!~     REAL(kind=r2), DIMENSION(5,5)          :: A
-!~     REAL(kind=r2), DIMENSION(5)            :: c,x
-    
+
     !--------------------------------------------------------------------------! 
     ! ---
     call cpu_time(t0)
@@ -88,7 +84,7 @@ program mol3d
         second = t1-t0 - hour*3600 - minute*60
         !$ wt1=omp_get_wtime()
         PRINT *,'|'
-        PRINT '(3a,i3,a,i2,a,f5.2,a,f8.2,a)', " simulation ", Getproname(basics), " took", &
+        PRINT '(3a,i3,a,i2,a,f5.2,a,f10.2,a)', " simulation ", Getproname(basics), " took", &
                             hour, 'h ', minute, 'm ', second, 's    (', t1-t0 ,'sec)'
         !$ write (*,'(a,1pg12.4)') 'omp_get_wtime:', wt1-wt0
         

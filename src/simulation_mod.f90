@@ -67,7 +67,6 @@ CONTAINS
     REAL(kind=r2), dimension(:,:,:), allocatable :: inten_px
     REAL(kind=r2), dimension(:,:), allocatable   :: continuum_px
     
-    CHARACTER(len=252)                           :: filename
     !--------------------------------------------------------------------------!
     print *,''                                                    
     print *,"starting simulation"
@@ -143,8 +142,9 @@ CONTAINS
             
             
             ! calculate the size of each px  
-            rho_size_i = model%r_ou/(REAL(model%n_bin_map,KIND=r2)+0.5_r2)/model%zoom_map(1)   !user unit, but should be fixed to [AU]
-            rho_size_j = model%r_ou/(REAL(model%n_bin_map,KIND=r2)+0.5_r2)/model%zoom_map(1)   !user unit, but should be fixed to [AU]
+            !user unit, but should be fixed to [AU]
+            rho_size_i = model%r_ou/(REAL(model%n_bin_map,KIND=r2)+0.5_r2)/model%zoom_map(1)   
+            rho_size_j = model%r_ou/(REAL(model%n_bin_map,KIND=r2)+0.5_r2)/model%zoom_map(1)
             
             pix_res_i  = rho_size_i/model%distance *PI /(3600.0_r2*180.0_r2)
             pix_res_j  = rho_size_j/model%distance *PI /(3600.0_r2*180.0_r2)
@@ -251,7 +251,7 @@ CONTAINS
                         WRITE (*,'(A,I3,A)') ' | | | ',int(i/real(no_pixel)*100),' % done...'//char(27)//'[A'
                         k = k + 1
                     END IF
-                    continuum_px(i,:)   =   get_continuum_px(basics, grid, &
+                    continuum_px(i,:)   =   get_continuum_px(grid, &
                                             model, dust, gas, &
                                             calc_px(i,1), calc_px(i,2), ex, ey)
     !~                 print *,i
@@ -291,7 +291,7 @@ CONTAINS
     IMPLICIT NONE
         !--------------------------------------------------------------------------!
         TYPE(Basic_TYP),INTENT(IN)                       :: basics
-        TYPE(Grid_TYP),INTENT(INOUT)                     :: grid
+        TYPE(Grid_TYP),INTENT(IN)                        :: grid
         TYPE(Model_TYP),INTENT(IN)                       :: model
         TYPE(Dust_TYP),INTENT(IN)                        :: dust
         TYPE(Gas_TYP),INTENT(IN)                         :: gas
@@ -422,15 +422,15 @@ CONTAINS
 !~                             j_dust = 0.0_r2
 !~                         alpha_dust = 0.0_r2
                         j_ul =      grid%grd_mol_density(nr_cell)                     *   &
-                                    grid%lvl_pop(nr_cell,gas%trans_upper(gas%tr_cat(tr)))  *   &
+                                    grid%lvl_pop(gas%trans_upper(gas%tr_cat(tr)),nr_cell)  *   &
                                     gas%trans_einstA(gas%tr_cat(tr)) * &
                                     basics%linescale*grid%cell_gauss_a(nr_cell)
 !~                             j_ul = 0.0_r2
 
                         alpha_ul =      grid%grd_mol_density(nr_cell)                     *   &
-                                        (grid%lvl_pop(nr_cell,gas%trans_lower(gas%tr_cat(tr))) *   &
+                                        (grid%lvl_pop(gas%trans_lower(gas%tr_cat(tr)),nr_cell) *   &
                                         gas%trans_einstB_l(gas%tr_cat(tr))                 -   &
-                                        grid%lvl_pop(nr_cell,gas%trans_upper(gas%tr_cat(tr)))  *   &
+                                        grid%lvl_pop(gas%trans_upper(gas%tr_cat(tr)),nr_cell)  *   &
                                         gas%trans_einstB_u(gas%tr_cat(tr))) * &
                                         basics%linescale*grid%cell_gauss_a(nr_cell)
                                         
@@ -511,13 +511,12 @@ CONTAINS
 !~         close(unit=1)
     END FUNCTION get_intensity_px
     
-    FUNCTION get_continuum_px(basics, grid, model, dust, gas, coor_map1, coor_map2, ex, ey)     &
+    FUNCTION get_continuum_px(grid, model, dust, gas, coor_map1, coor_map2, ex, ey)     &
                                         RESULT(px_intensity)
         
     IMPLICIT NONE
         !--------------------------------------------------------------------------!
-        TYPE(Basic_TYP),INTENT(IN)                       :: basics
-        TYPE(Grid_TYP),INTENT(INOUT)                     :: grid
+        TYPE(Grid_TYP),INTENT(IN)                        :: grid
         TYPE(Model_TYP),INTENT(IN)                       :: model
         TYPE(Dust_TYP),INTENT(IN)                        :: dust
         TYPE(Gas_TYP),INTENT(IN)                         :: gas
@@ -538,7 +537,6 @@ CONTAINS
         REAL(KIND=r2)                                    :: dz_sum
         REAL(KIND=r2)                                    :: j_dust
         REAL(KIND=r2)                                    :: alpha_dust
-        REAL(KIND=r1)                                    :: velo_dir_xyz
         
         REAL(KIND=r2)                                    :: d_l
         REAL(KIND=r2)                                    :: cell_d_l
@@ -550,7 +548,6 @@ CONTAINS
         REAL(KIND=r2)                                    :: epsr2
         
         
-        REAL(KIND=r1)                                              :: gauss_val
         REAL(KIND=r2), DIMENSION(1:dust%n_lam)                     :: intensity
         REAL(KIND=r2)                                              :: intensity_new
         REAL(KIND=r2)                                              :: intensity_new2
@@ -572,7 +569,7 @@ CONTAINS
         INTEGER                                          :: nr_cell
         INTEGER                                          :: nr_cell_new
     
-        LOGICAL                                          :: kill_photon, log_size
+        LOGICAL                                          :: kill_photon
         !--------------------------------------------------------------------------!
 
         rel_err = 1.0e-8
@@ -721,7 +718,7 @@ CONTAINS
     IMPLICIT NONE
         !--------------------------------------------------------------------------!
         TYPE(Basic_TYP),INTENT(IN)                       :: basics
-        TYPE(Grid_TYP),INTENT(INOUT)                     :: grid
+        TYPE(Grid_TYP),INTENT(IN)                        :: grid
         TYPE(Model_TYP),INTENT(IN)                       :: model
 
         TYPE(l_list),POINTER,INTENT(INOUT)               :: pixel_list

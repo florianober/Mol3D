@@ -40,27 +40,20 @@ contains
         
     integer, intent(in)                              :: i_dust_action
 
-    integer       :: i_tem_2
     integer       :: i_lam, i_tem
-    real(kind=r2) :: t_dust_new, hd1, rndx
-    real(kind=r2) :: i_tem_hd2
+    real(kind=r2) :: rndx
     !--------------------------------------------------------------------------!
-    !1.+ 2. estimate new temperature -> t_dust(nr_cell,i_dust_action) & store old temp
+    ! 1. update internal energy
     
     CALL immediate_temp( basics, grid,dust,photon, i_dust_action, i_tem)
                          
     ! ----------------------------------------------------------------------------------------------
-    ! 3. estimate difference in SED
-
-!~     i_tem_hd2 = (t_dust_new - basics%t_dust_min) / basics%d_tem
-!~     i_tem_2   = nint( i_tem_hd2 )
-    
-
-    ! chose a wavelength in the difference SED randomly == new wavelength
+    ! 2. chose a wavelength in the difference SED randomly == new wavelength
     CALL RAN2(rand_nr,rndx)
 
     i_lam = MIN(binary_search(rndx,dust%QdB_dT_l_cdf(:,i_tem,i_dust_action))+1, dust%n_lam)
-
+    ! ----------------------------------------------------------------------------------------------
+    ! 3. update photons proberties
     photon%nr_lam         = i_lam
     photon%current_albedo = dust%albedo(:,i_lam)
   end subroutine immediate

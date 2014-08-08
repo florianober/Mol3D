@@ -432,7 +432,7 @@ CONTAINS
             END SELECT
         END IF
         
-        CALL save_boundaries(grid,model,basics)
+        CALL save_boundaries(grid,basics)
     
     END SUBROUTINE set_boundaries
     
@@ -562,13 +562,10 @@ CONTAINS
         REAL(kind=r2)                               :: dr1
         REAL(kind=r2)                               :: dth
         REAL(kind=r2)                               :: dph
-        REAL(kind=r2)                               :: th_start
-        REAL(kind=r2)                               :: th_stop
         REAL(kind=r2)                               :: trash
         REAL(kind=r2)                               :: value_in
         
         Character(256)                              :: waste
-        Character(256)                              :: fmt_kind
         !------------------------------------------------------------------------!
         SELECT CASE(GetGridType(grid))
         
@@ -885,7 +882,7 @@ CONTAINS
         REAL(kind=r2),DIMENSION(:),ALLOCATABLE      :: pluto_th
         
         REAL(kind=r2), DIMENSION(10)                :: line
-        REAL(kind=r2), DIMENSION(3)                 :: caco, moco, velo_hlp
+        REAL(kind=r2), DIMENSION(3)                 :: moco, velo_hlp
         REAL(kind=r2), DIMENSION(3,3)               :: S
         REAL(kind=r2)                               :: R_gap_in, R_gap_ou
         REAL(kind=r2)                               :: value_in
@@ -909,8 +906,8 @@ CONTAINS
             READ(unit=1,fmt=*) waste
             k = 1
             DO i_cell = 1, grid%n_cell
-                IF (i_cell == int(k*grid%n_cell*0.01)) THEN
-                    WRITE (*,'(A,I3,A)') ' | | ',int(i_cell/real(grid%n_cell)*100),' % done'//char(27)//'[A'
+                IF (i_cell >= int(k*grid%n_cell*0.01)) THEN
+                    WRITE (*,'(A,I3,A)') ' | | ',int(i_cell/real(grid%n_cell)*100.0),' % done'//char(27)//'[A'
                     k = k + 1
                 END IF
             
