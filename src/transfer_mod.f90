@@ -35,7 +35,7 @@ contains
 
         IMPLICIT NONE
         !--------------------------------------------------------------------------!    
-        TYPE(Grid_TYP),INTENT(IN)                         :: grid
+        TYPE(Grid_TYP),INTENT(INOUT)                      :: grid
         TYPE(Randgen_TYP),INTENT(INOUT)                   :: rand_nr
         TYPE(Model_TYP),INTENT(IN)                        :: model
         TYPE(Dust_TYP),INTENT(IN)                         :: dust

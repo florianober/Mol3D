@@ -32,7 +32,38 @@ MODULE Grid_type
     !                 \ 3 = z /
     !
     !--------------------------------------------------------------------------!
+    TYPE Cell_TYP !this is a new type, so ongoing work
+        
+        REAL(kind=r2)                          :: vol
+        REAL(kind=r2),DIMENSION(1:3)           :: cell_index
+        REAL(kind=r2)                          :: minA
+        REAL(kind=r2)                          :: gauss_a
+        REAL(kind=r2)                          :: gauss_a2
+        
+        REAL(kind=r2),DIMENSION(1:3)           :: velocity
+        REAL(kind=r2)                          :: absvelo
+        REAL(kind=r2),DIMENSION(1:3)           :: cellmidcaco
+!~         REAL(kind=r2),DIMENSION(1:n_dust)   :: Nv
+        REAL(kind=r2),DIMENSION(:),POINTER     :: Nv
+        REAL(kind=r2),DIMENSION(1:6)           :: Nv_col
+        REAL(kind=r2)                          :: Nv_mol
+!~         REAL(kind=r2),DIMENSION(1:n_dust)   :: dust_density
+        REAL(kind=r2),DIMENSION(:),POINTER     :: dust_density
+        REAL(kind=r2),DIMENSION(1:6)           :: col_density
+        REAL(kind=r2)                          :: mol_density
+        
+!~         REAL(kind=r2),DIMENSION(1:n_dust)   :: internal_energy
+        REAL(kind=r2),DIMENSION(:),POINTER     :: internal_energy
+        REAL(kind=r2),DIMENSION(:),POINTER     :: internal_energy_sum
+        
+!~         REAL(kind=r2),DIMENSION(1:n_dust)   :: t_dust
+        REAL(kind=r2),DIMENSION(:),POINTER     :: t_dust
+        REAL(kind=r2)                          :: t_gas
+!~         REAL(kind=r2),DIMENSION(1:egy_lvl)  :: lvl_pop
+        REAL(kind=r2),DIMENSION(:),POINTER     :: lvl_pop
     
+    
+    END TYPE Cell_TYP
     TYPE Grid_TYP
         TYPE(Common_TYP) :: grdtype                     ! -----------------    !
         !-----------------------------------------------------------------------!
@@ -68,7 +99,7 @@ MODULE Grid_type
         REAL(kind=r2),DIMENSION(:,:),POINTER      :: grd_col_density
         !  grd_mol_density: this is the number density of the selected molecule
         !
-        REAL(kind=r2),DIMENSION(:),POINTER         :: grd_mol_density
+        REAL(kind=r2),DIMENSION(:),POINTER        :: grd_mol_density
         
         REAL(kind=r1),DIMENSION(:,:),POINTER      :: velo
         REAL(kind=r1),DIMENSION(:),POINTER        :: absvelo
@@ -76,7 +107,6 @@ MODULE Grid_type
         REAL(kind=r2),DIMENSION(:,:),POINTER      :: cell_energy
         REAL(kind=r2),DIMENSION(:,:,:),POINTER    :: cell_energy_sum
         REAL(kind=r1),DIMENSION(:,:),POINTER      :: t_dust
-        REAL(kind=r1),DIMENSION(:,:),POINTER      :: delta_t_dust
         REAL(kind=r1),DIMENSION(:),POINTER        :: t_gas
         REAL(kind=r2), DIMENSION(:),POINTER       :: ddust
         REAL(kind=r2),DIMENSION(1:3)              :: dir_xyz
@@ -308,7 +338,6 @@ CONTAINS
             this%cell_idx2nr( 0:this%n(1), 0:this%n(2), 0:this%n(3) ), &
             this%cell_nr2idx( 1:3, 0:this%n_cell ), &
             this%t_dust(  0:this%n_cell, 1:n_dust ), &
-            this%delta_t_dust(  0:this%n_cell, 1:n_dust ), &
             this%t_gas(  0:this%n_cell), &
             this%lvl_pop( 1:egy_lvl,0:this%n_cell ) )
             
@@ -333,7 +362,6 @@ CONTAINS
         this%cell_idx2nr(:,:,:)   = 0
         this%cell_nr2idx(:,:)     = 0
         this%t_dust(:,:)          = 0.0
-        this%delta_t_dust(:,:)    = 0.0
         this%t_gas(:)             = 0.0
         this%d_l_min              = 0.0_r2
         this%dir_xyz(:)           = 0.0_r2
@@ -372,7 +400,6 @@ CONTAINS
             this%cell_idx2nr, &
             this%cell_nr2idx, &
             this%t_dust, &
-            this%delta_t_dust, &
             this%t_gas, &
             this%lvl_pop, &
             this%cell_energy, &

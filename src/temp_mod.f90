@@ -169,7 +169,6 @@ CONTAINS
         INTEGER                                          :: seed, k_phot
         !$ INTEGER omp_get_thread_num 
                 
-        !# shared variables
         TYPE(PHOTON_TYP)                                 :: photon
         
         !--------------------------------------------------------------------------! 
@@ -230,6 +229,10 @@ CONTAINS
                 ELSE 
                     IF (photon%inside) THEN
                         kill_photon_count = kill_photon_count +1 
+                        
+                    ELSE
+                    ! observe photon, in work...
+                    CALL observe_photon(grid, photon)
                     END IF
                     EXIT
                 END IF
@@ -248,6 +251,30 @@ CONTAINS
         CALL temp_final(basics, grid, dust)
 
     END SUBROUTINE primary_temp
+    
+    SUBROUTINE observe_photon(grid, photon)
+    
+        IMPLICIT NONE
+        
+        !--------------------------------------------------------------------------!
+!~         TYPE(Basic_TYP),INTENT(IN)                       :: basics
+!~         TYPE(Fluxes_TYP),INTENT(IN)                      :: fluxes
+        TYPE(Grid_TYP),INTENT(INOUT)                     :: grid
+!~         TYPE(Model_TYP),INTENT(IN)                       :: model
+!~         TYPE(Dust_TYP),INTENT(IN)                        :: dust
+!~         TYPE(SOURCES),INTENT(IN)                         :: sources_in
+        TYPE(PHOTON_TYP)                                 :: photon
+!~         TYPE(Randgen_TYP)                                :: rand_nr
+        
+        !--------------------------------------------------------------------------!  
+!~         INTEGER                                          :: i, j
+!~         INTEGER                                          :: x, y
+        !$ INTEGER omp_get_thread_num 
+                
+        
+        
+        
+    END SUBROUTINE observe_photon
   
       
 END MODULE temp_mod
