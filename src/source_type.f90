@@ -22,7 +22,7 @@ MODULE source_type
         !-----------------------------------------------------------------------!
         REAL(kind=r2)                                        :: Luminosity
         REAL(kind=r2),DIMENSION(1:3)                         :: pos_xyz
-        REAL(kind=r2),DIMENSION(:),POINTER                   :: wave_cdf
+        REAL(kind=r2),DIMENSION(:),ALLOCATABLE                   :: wave_cdf
         INTEGER                                              :: s_type
 
     END TYPE SOURCE_TYP
@@ -32,9 +32,9 @@ MODULE source_type
         TYPE(Common_TYP) :: mtype                       ! -----------------     !
         !-----------------------------------------------------------------------!
         REAL(kind=r2)                                        :: L_total
-        TYPE(SOURCE_TYP),DIMENSION(:),POINTER                :: source
-        REAL(kind=r2),DIMENSION(:),POINTER                   :: source_cdf
-        REAL(kind=r2),DIMENSION(:),POINTER                   :: lam
+        TYPE(SOURCE_TYP),DIMENSION(:),ALLOCATABLE                :: source
+        REAL(kind=r2),DIMENSION(:),ALLOCATABLE                   :: source_cdf
+        REAL(kind=r2),DIMENSION(:),ALLOCATABLE                   :: lam
         
         INTEGER                                              :: n_sources
         INTEGER                                              :: n_lam

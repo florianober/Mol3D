@@ -37,8 +37,8 @@ MODULE photon_type
         REAL(kind=r2)                                   :: SINTHE, COSTHE
         
         REAL(kind=r2)                                  :: energy
-        REAL(kind=r2), DIMENSION(:),POINTER            :: prob_action
-        REAL(kind=r2), DIMENSION(:),POINTER            :: current_albedo
+        REAL(kind=r2), DIMENSION(:),ALLOCATABLE            :: prob_action
+        REAL(kind=r2), DIMENSION(:),ALLOCATABLE            :: current_albedo
         
 
     END TYPE PHOTON_TYP

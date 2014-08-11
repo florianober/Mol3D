@@ -79,12 +79,12 @@ CONTAINS
     CALL CloseCommon(this%gentype)
   END SUBROUTINE CloseRandgen
 
-  SUBROUTINE RAN2(this,randnb)
+  SUBROUTINE RAN2(this,randno)
     IMPLICIT NONE
     !------------------------------------------------------------------------!
     TYPE(Randgen_TYP), INTENT(INOUT) :: this
-    INTEGER                           :: J
-    REAL(kind=r2),INTENT(OUT)        :: randnb
+    INTEGER                          :: J
+    REAL(kind=r2),INTENT(OUT)        :: randno
     !------------------------------------------------------------------------!
       
     J = 1+(97*this%IY)/M
@@ -97,7 +97,7 @@ CONTAINS
     this%IDUM = modulo(IA*this%IDUM+IC,M)
     this%IR(J)= this%IDUM
     
-    randnb = this%rndx
+    randno = this%rndx
   END SUBROUTINE RAN2
 
   PURE FUNCTION GetGenSeed(this) RESULT(ut)

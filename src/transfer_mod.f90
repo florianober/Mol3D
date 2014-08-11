@@ -35,11 +35,11 @@ contains
 
         IMPLICIT NONE
         !--------------------------------------------------------------------------!    
-        TYPE(Grid_TYP),INTENT(INOUT)                      :: grid
+        
         TYPE(Randgen_TYP),INTENT(INOUT)                   :: rand_nr
         TYPE(Model_TYP),INTENT(IN)                        :: model
         TYPE(Dust_TYP),INTENT(IN)                         :: dust
-        
+        TYPE(Grid_TYP),INTENT(INOUT)                      :: grid
         TYPE(PHOTON_TYP),INTENT(INOUT)                    :: photon
         !--------------------------------------------------------------------------!
                     
@@ -52,7 +52,8 @@ contains
         ! 1. determine optical depth (distance) to next point of interaction
         CALL RAN2(rand_nr,rndx)
         tau_end = -log(1.0_r2 - rndx)
-
+!~         grid%cell_energy_sum(1,photon%nr_cell,1) = 12.3_r2
+!~         grid%n(1) = 150
         ! 2. go to next point of interaction
         DO
             ! 2.1. inside the dust sublimation radius: skip

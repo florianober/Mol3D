@@ -365,7 +365,7 @@ CONTAINS
         alpha_dust = 0.0
         alpha_ges  = 0.0
         alpha_ul   = 0.0
-        
+        velo_dir_xyz = 0.0
         SELECT CASE(GetGridName(grid))
         
         CASE('spherical')
@@ -419,13 +419,10 @@ CONTAINS
                                         dust%C_abs(1,dust%num_lam_map(dust%cont_map(tr))) * &
                                         planckhz(grid%t_dust(nr_cell, 1 ),&
                                         con_c/dust%lam(dust%num_lam_map(dust%cont_map(tr))))
-!~                             j_dust = 0.0_r2
-!~                         alpha_dust = 0.0_r2
                         j_ul =      grid%grd_mol_density(nr_cell)                     *   &
                                     grid%lvl_pop(gas%trans_upper(gas%tr_cat(tr)),nr_cell)  *   &
                                     gas%trans_einstA(gas%tr_cat(tr)) * &
                                     basics%linescale*grid%cell_gauss_a(nr_cell)
-!~                             j_ul = 0.0_r2
 
                         alpha_ul =      grid%grd_mol_density(nr_cell)                     *   &
                                         (grid%lvl_pop(gas%trans_lower(gas%tr_cat(tr)),nr_cell) *   &
@@ -434,7 +431,6 @@ CONTAINS
                                         gas%trans_einstB_u(gas%tr_cat(tr))) * &
                                         basics%linescale*grid%cell_gauss_a(nr_cell)
                                         
-!~                             alpha_ul = 0.0_r2
                         DO vch = -gas%i_vel_chan, gas%i_vel_chan
                             cell_d_l = d_l
                             dz = cell_d_l * model%ref_unit
@@ -501,7 +497,6 @@ CONTAINS
                 END IF
                 
                 pos_xyz = pos_xyz_new
-!~                 print '(161(ES15.6E3))', norm(pos_xyz), j_ul(-gas%i_vel_chan:gas%i_vel_chan)
                 nr_cell = nr_cell_new
                 dz_sum = dz_sum + d_l
             END DO !walk in z direction towards observer

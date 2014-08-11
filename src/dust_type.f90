@@ -28,45 +28,45 @@ MODULE Dust_type
         INTEGER                                            :: aniiso      
         INTEGER                                            :: n_scatt_th      
         INTEGER                                            :: nrndpt
-        INTEGER, DIMENSION(:),POINTER                    :: num_lam_map
-        INTEGER, DIMENSION(:), POINTER                   :: cont_map
-        INTEGER, DIMENSION(:,:,:),POINTER                :: SCAANG
+        INTEGER, DIMENSION(:),ALLOCATABLE                    :: num_lam_map
+        INTEGER, DIMENSION(:), ALLOCATABLE                   :: cont_map
+        INTEGER, DIMENSION(:,:,:),ALLOCATABLE                :: SCAANG
         
         REAL(kind=r2)                                      :: sizexp      
         REAL(kind=r2)                                      :: D_ANG      
-        REAL(kind=r2), DIMENSION(:),POINTER                :: den_dust
-        REAL(kind=r2), DIMENSION(:),POINTER                :: r_dust
-        REAL(kind=r2), DIMENSION(:),POINTER                :: sidi
-        REAL(kind=r2), DIMENSION(:,:),POINTER              :: sidi_par
+        REAL(kind=r2), DIMENSION(:),ALLOCATABLE                :: den_dust
+        REAL(kind=r2), DIMENSION(:),ALLOCATABLE                :: r_dust
+        REAL(kind=r2), DIMENSION(:),ALLOCATABLE                :: sidi
+        REAL(kind=r2), DIMENSION(:,:),ALLOCATABLE              :: sidi_par
         
-        REAL(kind=r2), DIMENSION(:),POINTER                :: lam
-        REAL(kind=r2), DIMENSION(:),POINTER                :: d_lam
-        REAL(kind=r2), DIMENSION(:,:),POINTER              :: gscatt_all
-        REAL(kind=r2), DIMENSION(:,:),POINTER              :: REF_RE
-        REAL(kind=r2), DIMENSION(:,:),POINTER              :: REF_IM
-        REAL(kind=r2), DIMENSION(:,:),POINTER              :: sizepar
-        REAL(kind=r2), DIMENSION(:,:),POINTER              :: C_sca
-        REAL(kind=r2), DIMENSION(:,:),POINTER              :: C_ext
-        REAL(kind=r2), DIMENSION(:,:),POINTER              :: C_back
-        REAL(kind=r2), DIMENSION(:,:),POINTER              :: C_abs
-        REAL(kind=r2), DIMENSION(:,:),POINTER              :: Q_abs
-        REAL(kind=r2), DIMENSION(:,:),POINTER              :: albedo
-        REAL(kind=r2), DIMENSION(:,:),POINTER              :: QB
-        REAL(kind=r2), DIMENSION(:,:),POINTER              :: QdB_dT
-        REAL(kind=r2), DIMENSION(:,:,:),POINTER            :: QdB_dT_l
-        REAL(kind=r2), DIMENSION(:,:,:),POINTER            :: QdB_dT_l_cdf
-        REAL(kind=r2), DIMENSION(:,:),POINTER              :: planck_tab
-        REAL(kind=r2), DIMENSION(:,:,:,:,:),POINTER        :: SME
-        REAL(kind=r2), DIMENSION(:),POINTER                :: sctth
-        REAL(kind=r2), DIMENSION(:),POINTER                :: i_star_emi
-        REAL(kind=r2), DIMENSION(:),POINTER                :: c_in_star
-        REAL(kind=r2), DIMENSION(:),POINTER                :: c_in_dust
-        REAL(kind=r1), DIMENSION(:),POINTER                :: tem_tab
+        REAL(kind=r2), DIMENSION(:),ALLOCATABLE                :: lam
+        REAL(kind=r2), DIMENSION(:),ALLOCATABLE                :: d_lam
+        REAL(kind=r2), DIMENSION(:,:),ALLOCATABLE              :: gscatt_all
+        REAL(kind=r2), DIMENSION(:,:),ALLOCATABLE              :: REF_RE
+        REAL(kind=r2), DIMENSION(:,:),ALLOCATABLE              :: REF_IM
+        REAL(kind=r2), DIMENSION(:,:),ALLOCATABLE              :: sizepar
+        REAL(kind=r2), DIMENSION(:,:),ALLOCATABLE              :: C_sca
+        REAL(kind=r2), DIMENSION(:,:),ALLOCATABLE              :: C_ext
+        REAL(kind=r2), DIMENSION(:,:),ALLOCATABLE              :: C_back
+        REAL(kind=r2), DIMENSION(:,:),ALLOCATABLE              :: C_abs
+        REAL(kind=r2), DIMENSION(:,:),ALLOCATABLE              :: Q_abs
+        REAL(kind=r2), DIMENSION(:,:),ALLOCATABLE              :: albedo
+        REAL(kind=r2), DIMENSION(:,:),ALLOCATABLE              :: QB
+        REAL(kind=r2), DIMENSION(:,:),ALLOCATABLE              :: QdB_dT
+        REAL(kind=r2), DIMENSION(:,:,:),ALLOCATABLE            :: QdB_dT_l
+        REAL(kind=r2), DIMENSION(:,:,:),ALLOCATABLE            :: QdB_dT_l_cdf
+        REAL(kind=r2), DIMENSION(:,:),ALLOCATABLE              :: planck_tab
+        REAL(kind=r2), DIMENSION(:,:,:,:,:),ALLOCATABLE        :: SME
+        REAL(kind=r2), DIMENSION(:),ALLOCATABLE                :: sctth
+        REAL(kind=r2), DIMENSION(:),ALLOCATABLE                :: i_star_emi
+        REAL(kind=r2), DIMENSION(:),ALLOCATABLE                :: c_in_star
+        REAL(kind=r2), DIMENSION(:),ALLOCATABLE                :: c_in_dust
+        REAL(kind=r1), DIMENSION(:),ALLOCATABLE                :: tem_tab
         
-        CHARACTER(len=8), DIMENSION(:),POINTER             :: dust_cat
-        CHARACTER(len=12), DIMENSION(:,:),POINTER          :: dust_single
+        CHARACTER(len=8), DIMENSION(:),ALLOCATABLE             :: dust_cat
+        CHARACTER(len=12), DIMENSION(:,:),ALLOCATABLE          :: dust_single
         
-        LOGICAL, DIMENSION(:),POINTER            :: doRT
+        LOGICAL, DIMENSION(:),ALLOCATABLE            :: doRT
         
     END TYPE Dust_TYP
     SAVE

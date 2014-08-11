@@ -31,10 +31,10 @@ MODULE model_type
         REAL(kind=r1)        :: distance
         REAL(kind=r1)        :: kep_const
         
-        REAL(kind=r2),DIMENSION(:),POINTER         :: th_map
-        REAL(kind=r2),DIMENSION(:),POINTER         :: ph_map
-        REAL(kind=r2),DIMENSION(:),POINTER         :: al_map
-        REAL(kind=r2),DIMENSION(:),POINTER         :: zoom_map
+        REAL(kind=r2),DIMENSION(:),ALLOCATABLE         :: th_map
+        REAL(kind=r2),DIMENSION(:),ALLOCATABLE         :: ph_map
+        REAL(kind=r2),DIMENSION(:),ALLOCATABLE         :: al_map
+        REAL(kind=r2),DIMENSION(:),ALLOCATABLE         :: zoom_map
         
         INTEGER               :: n_map
         INTEGER               :: n_bin_map

@@ -135,14 +135,13 @@ CONTAINS
             J_ext(i) = planckhz(2.75_r1,gas%trans_freq(i))
     END DO
     J_mid = J_ext
-    k = 1
+    k = grid%n_cell/100
     !$omp parallel num_threads(basics%num_core)
     !$omp do schedule(dynamic) private(i_cell,new_pop,final_col_para, sum_p, A,c ) 
     DO i_cell = 1, grid%n_cell
-    
-        IF (i_cell == int(k*grid%n_cell*0.01)) THEN
-            WRITE (*,'(A,I3,A)') ' | | | ',int(i_cell/real(grid%n_cell)*100),' % done'//char(27)//'[A'
-            k = k + 1
+               
+        IF (modulo(i_cell,k) == 0 .or. i_cell == grid%n_cell) THEN
+            WRITE (*,'(A,I3,A)') ' | | | ',int(i_cell/real(grid%n_cell)*100.0),' % done'//char(27)//'[A'
         END IF
     
     
@@ -206,16 +205,16 @@ CONTAINS
     J_ext(:) = planckhz(2.75,gas%trans_freq(:))
 !~     J_ext(:) = 0
 
-    k = 1
-    
+    k = grid%n_cell/100
     !$omp parallel num_threads(basics%num_core)
     !$omp do schedule(dynamic) private(i_cell,new_pop,old_pop,J_mid, final_col_para,R_mid, L, sum_p, i,A,c ) 
     
-    DO i_cell = 1,grid%n_cell
-        IF (i_cell == int(k*grid%n_cell*0.01)) THEN
+    DO i_cell=1,grid%n_cell
+               
+        IF (modulo(i_cell,k) == 0 .or. i_cell == grid%n_cell) THEN
             WRITE (*,'(A,I3,A)') ' | | | ',int(i_cell/real(grid%n_cell)*100.0),' % done'//char(27)//'[A'
-            k = k + 1
         END IF
+
         ! Now iterate
     
 

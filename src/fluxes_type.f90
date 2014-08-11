@@ -21,9 +21,9 @@ MODULE fluxes_type
         CHARACTER(len=1), dimension(1:4)               :: stokes_ext
         
         REAL(kind=r2), dimension(1:4)                  :: stokes, stokes_ini
-        !REAL(kind=r2), dimension(:,:,:,:,:), POINTER   :: stokes_map
-        REAL(kind=r2), DIMENSION(:,:,:,:), POINTER     :: channel_map
-        REAL(kind=r2), DIMENSION(:,:,:), POINTER       :: continuum_map
+        !REAL(kind=r2), dimension(:,:,:,:,:), ALLOCATABLE   :: stokes_map
+        REAL(kind=r2), DIMENSION(:,:,:,:), ALLOCATABLE     :: channel_map
+        REAL(kind=r2), DIMENSION(:,:,:), ALLOCATABLE       :: continuum_map
         INTEGER                :: n_dust_emi
         
     END TYPE Fluxes_TYP

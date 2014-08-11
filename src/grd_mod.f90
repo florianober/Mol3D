@@ -590,11 +590,14 @@ CONTAINS
             ! co_mx_b(  0 ) = -PI/2 (-90°)
             ! co_mx_b(n(2)) = +PI/2 (+90°)
             grid%co_mx_b(0) = -PI/2.0_r2
-
+            
             dth = PI / real(grid%n(2), kind=r2)
             do i_th=1, grid%n(2)
                 grid%co_mx_b(i_th) = grid%co_mx_b(0) +  dth * real(i_th, kind=r2)
             end do
+            ! this line prevents to create a cone with an open angle with exact 90 deg, which in fact
+            ! is no cone anymore, maybe we ca find a better solution, but it is working
+            IF (MOD(grid%n(2),2) == 0 ) grid%co_mx_b(grid%n(2)/2) = grid%co_mx_b(grid%n(2)/2+1) * 1.0e-5_r2
         
             ! ---
             ! 1.3 phi
@@ -636,7 +639,9 @@ CONTAINS
             do i_th=1, grid%n(2)
                 grid%co_mx_b(i_th) = grid%co_mx_b(0) +  dth * real(i_th, kind=r2)
             end do
-            
+            ! this line prevents to create a cone with an open angle with exact 90 deg, which in fact
+            ! is no cone anymore, maybe we ca find a better solution, but it is working
+            IF (MOD(grid%n(2),2) == 0 ) grid%co_mx_b(grid%n(2)/2) = grid%co_mx_b(grid%n(2)/2+1) * 1.0e-5_r2
             ! ---
             ! 1.3 phi
             ! co_mx_c(  0 ) = 0    (  0°)

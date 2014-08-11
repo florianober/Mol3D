@@ -64,28 +64,31 @@ MODULE Grid_type
     
     
     END TYPE Cell_TYP
+    
     TYPE Grid_TYP
         TYPE(Common_TYP) :: grdtype                     ! -----------------    !
         !-----------------------------------------------------------------------!
         REAL(kind=r2)                             :: sf
         REAL(kind=r2)                             :: d_l_min
         
-        REAL(kind=r2),DIMENSION(:),POINTER        :: co_mx_a
-        REAL(kind=r2),DIMENSION(:),POINTER        :: co_mx_b
-        REAL(kind=r2),DIMENSION(:),POINTER        :: co_mx_c
+        REAL(kind=r2),DIMENSION(:),ALLOCATABLE    :: co_mx_a
+        REAL(kind=r2),DIMENSION(:),ALLOCATABLE    :: co_mx_b
+        REAL(kind=r2),DIMENSION(:),ALLOCATABLE    :: co_mx_c
+!~         REAL(kind=r2),DIMENSION(:),POINTER        :: co_mx_b
+!~         REAL(kind=r2),DIMENSION(:),POINTER        :: co_mx_c
         
-        REAL(kind=r1),DIMENSION(:),POINTER        :: cell_minA
-        REAL(kind=r1),DIMENSION(:),POINTER        :: cell_gauss_a
-        REAL(kind=r1),DIMENSION(:),POINTER        :: cell_gauss_a2
+        REAL(kind=r1),DIMENSION(:),ALLOCATABLE        :: cell_minA
+        REAL(kind=r1),DIMENSION(:),ALLOCATABLE        :: cell_gauss_a
+        REAL(kind=r1),DIMENSION(:),ALLOCATABLE        :: cell_gauss_a2
         ! cell_vol(i_cell)  : volume of cell #i_cell [m^3]
-        REAL(kind=r2),DIMENSION(:),POINTER        :: cell_vol
+        REAL(kind=r2),DIMENSION(:),ALLOCATABLE        :: cell_vol
         !  Nv(i_cell, i_dust): number of grains of species #i_dust in cell #i_cell
-        REAL(kind=r2),DIMENSION(:,:),POINTER      :: Nv       
-        REAL(kind=r2),DIMENSION(:,:),POINTER      :: Nv_col
-        REAL(kind=r2),DIMENSION(:),POINTER        :: Nv_mol
-        REAL(kind=r1),DIMENSION(:,:),POINTER      :: lvl_pop
+        REAL(kind=r2),DIMENSION(:,:),ALLOCATABLE      :: Nv       
+        REAL(kind=r2),DIMENSION(:,:),ALLOCATABLE      :: Nv_col
+        REAL(kind=r2),DIMENSION(:),ALLOCATABLE        :: Nv_mol
+        REAL(kind=r1),DIMENSION(:,:),ALLOCATABLE      :: lvl_pop
         !  grd_density: this is the number density of the dust component (from mc3d)
-        REAL(kind=r2),DIMENSION(:,:),POINTER      :: grd_dust_density
+        REAL(kind=r2),DIMENSION(:,:),ALLOCATABLE      :: grd_dust_density
         !  grd_coldensity: this is the number density of all(!) possible collision partner for the
         !                  selected molecule
         !                  first dimension: cell identifier
@@ -96,27 +99,27 @@ MODULE Grid_type
         !                                    4) He
         !                                    5) Elektron
         !                                    6) ...
-        REAL(kind=r2),DIMENSION(:,:),POINTER      :: grd_col_density
+        REAL(kind=r2),DIMENSION(:,:),ALLOCATABLE      :: grd_col_density
         !  grd_mol_density: this is the number density of the selected molecule
         !
-        REAL(kind=r2),DIMENSION(:),POINTER        :: grd_mol_density
+        REAL(kind=r2),DIMENSION(:),ALLOCATABLE        :: grd_mol_density
         
-        REAL(kind=r1),DIMENSION(:,:),POINTER      :: velo
-        REAL(kind=r1),DIMENSION(:),POINTER        :: absvelo
-        REAL(kind=r2),DIMENSION(:,:),POINTER      :: cellmidcaco
-        REAL(kind=r2),DIMENSION(:,:),POINTER      :: cell_energy
-        REAL(kind=r2),DIMENSION(:,:,:),POINTER    :: cell_energy_sum
-        REAL(kind=r1),DIMENSION(:,:),POINTER      :: t_dust
-        REAL(kind=r1),DIMENSION(:),POINTER        :: t_gas
-        REAL(kind=r2), DIMENSION(:),POINTER       :: ddust
+        REAL(kind=r1),DIMENSION(:,:),ALLOCATABLE      :: velo
+        REAL(kind=r1),DIMENSION(:),ALLOCATABLE        :: absvelo
+        REAL(kind=r2),DIMENSION(:,:),ALLOCATABLE      :: cellmidcaco
+        REAL(kind=r2),DIMENSION(:,:),ALLOCATABLE      :: cell_energy
+        REAL(kind=r2),DIMENSION(:,:,:),ALLOCATABLE    :: cell_energy_sum
+        REAL(kind=r1),DIMENSION(:,:),ALLOCATABLE      :: t_dust
+        REAL(kind=r1),DIMENSION(:),ALLOCATABLE        :: t_gas
+        REAL(kind=r2), DIMENSION(:),ALLOCATABLE       :: ddust
         REAL(kind=r2),DIMENSION(1:3)              :: dir_xyz
                 
         INTEGER,DIMENSION(1:3)                    :: n
         INTEGER                                   :: n_cell
         INTEGER                                   :: i_cell
         INTEGER                                   :: nh_n_dust
-        INTEGER,DIMENSION(:,:,:),POINTER          :: cell_idx2nr
-        INTEGER,DIMENSION(:,:),POINTER            :: cell_nr2idx
+        INTEGER,DIMENSION(:,:,:),ALLOCATABLE          :: cell_idx2nr
+        INTEGER,DIMENSION(:,:),ALLOCATABLE            :: cell_nr2idx
                 
         INTEGER                                   :: counter
         
@@ -340,7 +343,7 @@ CONTAINS
             this%t_dust(  0:this%n_cell, 1:n_dust ), &
             this%t_gas(  0:this%n_cell), &
             this%lvl_pop( 1:egy_lvl,0:this%n_cell ) )
-            
+        
         this%nh_n_dust = n_dust
         this%co_mx_a(:)           = 0.0_r2
         this%co_mx_b(:)           = 0.0_r2
@@ -370,6 +373,7 @@ CONTAINS
         this%lvl_pop(:,:)         = 0.0
         
         this%counter            = 0
+        IF (show_error) PRINT *, 'grid arrays initialized'
     END SUBROUTINE InitGrid
 
     

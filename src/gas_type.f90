@@ -32,33 +32,26 @@ MODULE gas_type
         INTEGER                                 :: col_trans
         INTEGER                                 :: col_temps
         
-        REAL(kind=r1), DIMENSION(:), POINTER       :: energylevel
-        REAL(kind=r1), DIMENSION(:), POINTER       :: g_level
-        REAL(kind=r1), DIMENSION(:,:), POINTER     :: col_alltemps
-        REAL(kind=r1), DIMENSION(:,:,:), POINTER   :: col_colmatrix
+        REAL(kind=r1), DIMENSION(:), ALLOCATABLE       :: energylevel
+        REAL(kind=r1), DIMENSION(:), ALLOCATABLE       :: g_level
+        REAL(kind=r1), DIMENSION(:,:), ALLOCATABLE     :: col_alltemps
+        REAL(kind=r1), DIMENSION(:,:,:), ALLOCATABLE   :: col_colmatrix
 
         
-        INTEGER, DIMENSION(:,:), POINTER           :: col_upper
-        INTEGER, DIMENSION(:,:), POINTER           :: col_lower
-        INTEGER, DIMENSION(:), POINTER          :: tr_cat
-        INTEGER, DIMENSION(:), POINTER          :: col_id
-        INTEGER, DIMENSION(:), POINTER          :: trans_upper
-        INTEGER, DIMENSION(:), POINTER          :: trans_lower
-        !INTEGER, DIMENSION(:), POINTER          :: trans_selc
-        REAL(kind=r1), DIMENSION(:), POINTER    :: trans_einstA
-        REAL(kind=r1), DIMENSION(:), POINTER    :: trans_einstB_l
-        REAL(kind=r1), DIMENSION(:), POINTER    :: trans_einstB_u
-        REAL(kind=r2), DIMENSION(:), POINTER    :: trans_freq
-        REAL(kind=r1), DIMENSION(:), POINTER    :: trans_inneregy
+        INTEGER, DIMENSION(:,:), ALLOCATABLE           :: col_upper
+        INTEGER, DIMENSION(:,:), ALLOCATABLE           :: col_lower
+        INTEGER, DIMENSION(:), ALLOCATABLE          :: tr_cat
+        INTEGER, DIMENSION(:), ALLOCATABLE          :: col_id
+        INTEGER, DIMENSION(:), ALLOCATABLE          :: trans_upper
+        INTEGER, DIMENSION(:), ALLOCATABLE          :: trans_lower
+        REAL(kind=r1), DIMENSION(:), ALLOCATABLE    :: trans_einstA
+        REAL(kind=r1), DIMENSION(:), ALLOCATABLE    :: trans_einstB_l
+        REAL(kind=r1), DIMENSION(:), ALLOCATABLE    :: trans_einstB_u
+        REAL(kind=r2), DIMENSION(:), ALLOCATABLE    :: trans_freq
+        REAL(kind=r1), DIMENSION(:), ALLOCATABLE    :: trans_inneregy
         
-        REAL(kind=r1), DIMENSION(:), POINTER    :: velo_channel
-!~         REAL(kind=r2), DIMENSION(0:400)         :: gaussian
-!~         REAL(kind=r2), DIMENSION(0:400)         :: gaussian_x
-        
-        
-        
-        
-        
+        REAL(kind=r1), DIMENSION(:), ALLOCATABLE    :: velo_channel
+
     END TYPE Gas_TYP
     SAVE
     !--------------------------------------------------------------------------!
