@@ -110,7 +110,7 @@ CONTAINS
         !------------------------------------------------------------------------!
         CALL CloseCommon(this%mtype)
         
-        DEALLOCATE(this%prob_action)
+        DEALLOCATE(this%prob_action,this%current_albedo)
         
     END SUBROUTINE ClosePhoton
 
