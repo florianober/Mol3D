@@ -211,7 +211,7 @@ CONTAINS
         ! get a new u(nit) number
         call ftgiou(u,sta)
         ! init fits file
-        call ftinit(u,'!'//TRIM(basics%path_results)//Getproname(basics)//'_model.fits.gz',1,sta)
+        call ftinit(u,'!'//TRIM(basics%path_results)//Getproname(basics)//'_model.fits',1,sta)
         ! write header
         call ftphpr(u,.true.,-64,2,(/13,grid%n_cell/),0,1,.true.,sta)
         ! write array to fits file

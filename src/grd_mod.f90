@@ -911,7 +911,7 @@ CONTAINS
             ! get a new u(nit) number
             call ftgiou(u,sta)
             ! init fits file
-            filename = TRIM(basics%path_results)//TRIM(basics%pronam_old)//'_model.fits.gz'
+            filename = TRIM(basics%path_results)//TRIM(basics%pronam_old)//'_model.fits'
             call ftopen(u,TRIM(filename),0,bs,sta)
             ! check axis
             call ftgknj(u,'NAXIS',1,2,naxes,nfound,sta)
