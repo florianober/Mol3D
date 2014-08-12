@@ -205,15 +205,14 @@ CONTAINS
                 ALLOCATE (inten_px (1:no_pixel,-gas%i_vel_chan:gas%i_vel_chan,1:gas%n_tr))
 
                 inten_px = 0.0_r2
-                k = 1
+                k = no_pixel/100
                 
                 !$omp parallel num_threads(basics%num_core)
-                !$omp do schedule(dynamic) private(i) 
+                !$omp do schedule(dynamic) private(i)
                 DO i = 1, no_pixel
-                    IF (i == int(k*no_pixel*0.01)) THEN
-                        WRITE (*,'(A,I3,A)') ' | | | ',int(i/real(no_pixel)*100),' % done'//char(27)//'[A'
-                        k = k + 1
-                    END IF
+                    IF (modulo(i,k) == 0 .or. i == no_pixel) THEN
+                        WRITE (*,'(A,I3,A)') ' | | | ',int(i/real(no_pixel)*100.0),' % done'//char(27)//'[A'
+                    END IF 
                     
                     inten_px(i,:,:)     =   get_intensity_px(basics, grid, &
                                             model, dust, gas, &
@@ -242,14 +241,13 @@ CONTAINS
             IF (basics%do_continuum_map ) THEN
                 ALLOCATE (continuum_px (1:no_pixel,1:dust%n_lam))
                 continuum_px = 0.0_r2
-                k = 1
+                k = no_pixel/100
                 PRINT *, '| | calculating continuum maps'
                 !$omp parallel num_threads(basics%num_core)
                 !$omp do schedule(dynamic) private(i) 
                 DO i = 1, no_pixel
-                    IF (i == int(k*no_pixel*0.01)) THEN
-                        WRITE (*,'(A,I3,A)') ' | | | ',int(i/real(no_pixel)*100),' % done...'//char(27)//'[A'
-                        k = k + 1
+                    IF (modulo(i,k) == 0 .or. i == no_pixel) THEN
+                        WRITE (*,'(A,I3,A)') ' | | | ',int(i/real(no_pixel)*100.0),' % done'//char(27)//'[A'
                     END IF
                     continuum_px(i,:)   =   get_continuum_px(grid, &
                                             model, dust, gas, &

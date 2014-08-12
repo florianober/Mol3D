@@ -886,7 +886,7 @@ CONTAINS
         REAL(kind=r2),DIMENSION(:),ALLOCATABLE      :: pluto_ph
         REAL(kind=r2),DIMENSION(:),ALLOCATABLE      :: pluto_th
         
-        REAL(kind=r2), DIMENSION(10)                :: line
+        REAL(kind=r2), DIMENSION(13)                :: line
         REAL(kind=r2), DIMENSION(3)                 :: moco, velo_hlp
         REAL(kind=r2), DIMENSION(3,3)               :: S
         REAL(kind=r2)                               :: R_gap_in, R_gap_ou
@@ -909,11 +909,11 @@ CONTAINS
             OPEN(unit=1, file=TRIM(filename), &
                 action="read", status="unknown", form="formatted")
             READ(unit=1,fmt=*) waste
-            k = 1
-            DO i_cell = 1, grid%n_cell
-                IF (i_cell >= int(k*grid%n_cell*0.01)) THEN
-                    WRITE (*,'(A,I3,A)') ' | | ',int(i_cell/real(grid%n_cell)*100.0),' % done'//char(27)//'[A'
-                    k = k + 1
+            k = grid%n_cell/100
+            DO i_cell=1,grid%n_cell
+               
+                IF (modulo(i_cell,k) == 0 .or. i_cell == grid%n_cell) THEN
+                    WRITE (*,'(A,I3,A)') ' | | | ',int(i_cell/real(grid%n_cell)*100.0),' % done'//char(27)//'[A'
                 END IF
             
                 READ(unit=1,fmt=*,iostat=io) i_cell_in, line
@@ -930,7 +930,10 @@ CONTAINS
                 ! set temperature
                 grid%t_dust(i_cell,1) = line(9)
                 grid%t_gas(i_cell)    = line(10)
-
+                
+                ! set velocity
+                
+                grid%velo = line(11:13)
             END DO
             print *,"                          "
             CLOSE(unit=1)
@@ -1109,7 +1112,7 @@ CONTAINS
             grid%Nv_col(i_cell,:) = grid%grd_col_density(i_cell,:)  * REAL(grid%cell_vol(i_cell),kind=r2)
             ! set velocity, in a future release we should generalize this
             !
-            IF (GetGridType(grid) /= 9) THEN
+            IF (GetGridType(grid) /= 9 .and. .not. basics%old_model) THEN
                 grid%velo(i_cell,:)  = Set_velo(grid%cellmidcaco(i_cell,:),model%kep_const)
             END IF
             grid%absvelo(i_cell) = norm(REAL(grid%velo(i_cell,:),kind=r2))

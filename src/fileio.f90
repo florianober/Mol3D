@@ -216,20 +216,20 @@ CONTAINS
                 action="write", status="replace", form="formatted")
             
             ! write header:
-            write(unit=1,fmt='(12A)') '#cell  ','mid_x  ','mid_y  ','mid_z  ',  'no_dens_dust  ','no_dens_mol  ', &
+            write(unit=1,fmt='(14A)') '#cell  ','mid_x  ','mid_y  ','mid_z  ',  'no_dens_dust  ','no_dens_mol  ', &
                                         'no_dens_H  ', 'no_dens_Hp  ', 'no_dens_Ho  ','T_dust  ', 'T_gas  ', &
-                                        'abs_velocity'
+                                        'v_x   ','v_y   ','v_z   '
             k = grid%n_cell/100
             DO i_cell=1,grid%n_cell
                
                 IF (modulo(i_cell,k) == 0 .or. i_cell == grid%n_cell) THEN
                     WRITE (*,'(A,I3,A)') ' | | | ',int(i_cell/real(grid%n_cell)*100.0),' % done'//char(27)//'[A'
                 END IF
-                write(unit=1,fmt='(I8,11(ES15.6E3))') i_cell, grid%cellmidcaco(i_cell,:), grid%grd_dust_density(i_cell,1), &
+                write(unit=1,fmt='(I8,13(ES15.6E3))') i_cell, grid%cellmidcaco(i_cell,:), grid%grd_dust_density(i_cell,1), &
                                                        grid%grd_mol_density(i_cell) , &
                                                        grid%grd_col_density(i_cell,1:3), &
                                                        grid%t_dust(i_cell,1), grid%t_gas(i_cell), &
-                                                       grid%absvelo(i_cell)
+                                                       grid%velo(i_cell,:)
                 
             END DO
             CLOSE(unit=1)
