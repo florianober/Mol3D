@@ -198,44 +198,40 @@ CONTAINS
         !--------------------------------------------------------------------------!
         TYPE(Grid_TYP), INTENT(IN)                   :: grid
         TYPE(Basic_TYP), INTENT(IN)                  :: basics
-        !--------------------------------------------------------------------------!                        
-        CHARACTER(len=252)                           :: file_a, file_b
-        
+        !--------------------------------------------------------------------------!                                
         INTEGER                                      :: i_cell
         INTEGER                                      :: k
+        INTEGER                                      :: sta, u
         !--------------------------------------------------------------------------!
+
         
-        file_a = TRIM(basics%path_results)//Getproname(basics)//'_model.dat'
-        IF (basics%old_model) THEN
-            file_b = TRIM(basics%pronam_old)//'_model.dat'
-            !
-            CALL SYSTEM("ln -fs "//TRIM(file_b)//" "//TRIM(file_a))
-        ELSE
-            
-            open(unit=1, file=TRIM(file_a), &
-                action="write", status="replace", form="formatted")
-            
-            ! write header:
-            write(unit=1,fmt='(14A)') '#cell  ','mid_x  ','mid_y  ','mid_z  ',  'no_dens_dust  ','no_dens_mol  ', &
-                                        'no_dens_H  ', 'no_dens_Hp  ', 'no_dens_Ho  ','T_dust  ', 'T_gas  ', &
-                                        'v_x   ','v_y   ','v_z   '
-            k = grid%n_cell/100
-            DO i_cell=1,grid%n_cell
-               
-                IF (modulo(i_cell,k) == 0 .or. i_cell == grid%n_cell) THEN
-                    WRITE (*,'(A,I3,A)') ' | | | ',int(i_cell/real(grid%n_cell)*100.0),' % done'//char(27)//'[A'
-                END IF
-                write(unit=1,fmt='(I8,13(ES15.6E3))') i_cell, grid%cellmidcaco(i_cell,:), grid%grd_dust_density(i_cell,1), &
-                                                       grid%grd_mol_density(i_cell) , &
-                                                       grid%grd_col_density(i_cell,1:3), &
-                                                       grid%t_dust(i_cell,1), grid%t_gas(i_cell), &
-                                                       grid%velo(i_cell,:)
-                
-            END DO
-            CLOSE(unit=1)
-        END IF
+        k = grid%n_cell/100
+        sta = 0
         
-!~         stop
+        ! get a new u(nit) number
+        call ftgiou(u,sta)
+        ! init fits file
+        call ftinit(u,'!'//TRIM(basics%path_results)//Getproname(basics)//'_model.fits.gz',1,sta)
+        ! write header
+        call ftphpr(u,.true.,-64,2,(/13,grid%n_cell/),0,1,.true.,sta)
+        ! write array to fits file
+        DO i_cell=1,grid%n_cell
+            IF (modulo(i_cell,k) == 0 .or. i_cell == grid%n_cell) THEN
+                WRITE (*,'(A,I3,A)') ' | | ',int(i_cell/real(grid%n_cell)*100.0),' % done'//char(27)//'[A'
+            END IF
+            call ftpprd(u,1,(i_cell-1)*13+ 1,13, (/ grid%cellmidcaco(i_cell,:), &
+                                                    grid%grd_dust_density(i_cell,1), &
+                                                    grid%grd_mol_density(i_cell) , &
+                                                    grid%grd_col_density(i_cell,1:3), &
+                                                    REAL(grid%t_dust(i_cell,1),kind=r2), &
+                                                    REAL(grid%t_gas(i_cell),kind=r2), &
+                                                    REAL(grid%velo(i_cell,:),kind=r2)/)  ,sta)
+        
+        END DO
+        ! close the fits file
+        call ftclos(u, sta)
+        ! free the (u)nit number
+        call ftfiou(u, sta)
     END SUBROUTINE save_model
     
     

@@ -879,6 +879,8 @@ CONTAINS
         INTEGER                                     :: i_cell, i_cell_in, i, k
         INTEGER                                     :: i_in, i_r, i_th, i_ph
         INTEGER                                     :: io
+        INTEGER                                     :: sta, u, bs,rw,nfound
+        INTEGER,DIMENSION(2)                        :: naxes
         INTEGER,DIMENSION(1:3)                      :: pluto_n
         
         
@@ -894,7 +896,7 @@ CONTAINS
         REAL(kind=r1)                               :: P_xy, P_z
         CHARACTER(len=256)                          :: filename
         CHARACTER(len=256)                          :: waste
-        
+        LOGICAL                                     :: anyf
         !------------------------------------------------------------------------!
         ! ---
 
@@ -904,25 +906,39 @@ CONTAINS
         IF (basics%old_model) THEN
         
             print '(2A)', ' | loading model parameter from: ', TRIM(basics%pronam_old)
-            ! load the density stored in a model file of the old project
-            filename = TRIM(basics%path_results)//TRIM(basics%pronam_old)//'_model.dat'
-            OPEN(unit=1, file=TRIM(filename), &
-                action="read", status="unknown", form="formatted")
-            READ(unit=1,fmt=*) waste
+            sta = 0
+            
+            ! get a new u(nit) number
+            call ftgiou(u,sta)
+            ! init fits file
+            filename = TRIM(basics%path_results)//TRIM(basics%pronam_old)//'_model.fits.gz'
+            call ftopen(u,TRIM(filename),0,bs,sta)
+            ! check axis
+            call ftgknj(u,'NAXIS',1,2,naxes,nfound,sta)
+            IF (nfound /= 2) THEN
+                print *, "ERROR, NAXIS keyword not found in model fits file"
+                STOP
+            ELSEIF (naxes(1) /= 13) THEN
+                print *, "ERROR, more or less than 13 values found in model fits file"
+                STOP
+            ELSEIF (naxes(2) /= grid%n_cell) THEN 
+                print *, "ERROR, the number of grid cells in model fits file is not correct"
+                STOP
+            END IF
             k = grid%n_cell/100
-            DO i_cell=1,grid%n_cell
-               
+            DO i_cell = 1,grid%n_cell
                 IF (modulo(i_cell,k) == 0 .or. i_cell == grid%n_cell) THEN
-                    WRITE (*,'(A,I3,A)') ' | | | ',int(i_cell/real(grid%n_cell)*100.0),' % done'//char(27)//'[A'
+                    WRITE (*,'(A,I3,A)') ' | | ',int(i_cell/real(grid%n_cell)*100.0),' % done'//char(27)//'[A'
                 END IF
             
-                READ(unit=1,fmt=*,iostat=io) i_cell_in, line
-                IF (io < 0 .or. i_cell_in /= i_cell) THEN
-                    PRINT *,'ERROR in model file ('//TRIM(filename)//') cell not found',i_cell
-                    STOP
-                END IF
-                
+                call ftgpvd(u,1,(i_cell-1)*13 + 1,13,1e-200_r2,line,anyf,sta)
                 ! set dust density and H2, the observed molecules can be set by the model module
+                IF (sta /= 0) THEN
+                    print *,'ERROR'
+                    print *,line
+                    print *,i_cell
+                    stop
+                END IF
                 grid%grd_dust_density(i_cell,1) = line(4)
                 
                 grid%grd_col_density(i_cell,1:3) = line(6:8)
@@ -935,7 +951,12 @@ CONTAINS
                 
                 grid%velo(i_cell,:) = line(11:13)
             END DO
-            print *,"                          "
+            ! close the fits file
+            call ftclos(u, sta)
+            ! free the (u)nit number
+            call ftfiou(u, sta)
+
+            PRINT *, "| done!                        "
             CLOSE(unit=1)
         ELSE IF (basics%pluto_data) THEN
             OPEN(unit=1, file="input/grid/sp1_reduced.dat", &
@@ -1020,7 +1041,10 @@ CONTAINS
                 grid%grd_col_density(i_cell,:)  = 10.0**(value_in)
             END DO
             CLOSE(unit=1)
-        ELSE IF (GetGridType(grid) == 9 .and. GetGridName(grid) == 'spherical' ) THEN            
+        ELSE IF (GetGridType(grid) == 9 .and. GetGridName(grid) == 'spherical' ) THEN
+        
+            ! note: this routine has to be replaced by a more general (grid type 9) one
+            !       this is just the code to read in Marios disk 
             print *,'  read model from text_file'
             OPEN(unit=1, file="input/grid/model.dat", &
                          action="read", status="old", form="formatted")
