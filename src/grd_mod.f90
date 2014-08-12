@@ -933,7 +933,7 @@ CONTAINS
                 
                 ! set velocity
                 
-                grid%velo = line(11:13)
+                grid%velo(i_cell) = line(11:13)
             END DO
             print *,"                          "
             CLOSE(unit=1)
