@@ -1,0 +1,60 @@
+===============================================================================
+Mol3d: 3D line and dust radiative transfer code
+
+--------
+author:         Florian Ober
+version:        Sep 2014
+email:          fober@astrophysik.uni-kiel.de
+
+--------
+Parts of this code are based on MC3D 
+
+MC3D by S.Wolf 	[wolf@astrophysik.uni-kiel.de]
+--------
+===============================================================================
+
+---
+[A]  Preparations
+
+This code needs cfitsio. Therefore, download it either from http://heasarc.gsfc.nasa.gov/fitsio/fitsio.html 
+or have a look into your favored linux distribution software archive.
+
+Install cfitsio globally or into the directory 
+above this Mol3d installation (e.g. './../cfitsio')
+
+Intel Fortran compiler should give the best performence, but Gfortran should also
+work.
+
+-optional
+
+This code uses OpenMP for parallelisation
+
+[B] 
+You have to (re-)compile the code:
+
+>make new
+
+The default compiler is Intel Fortran compiler.
+You can change the compiler in the make process by
+
+>make FC=gfortran new
+
+For better performance we recommend to use:
+
+>make CO=fast new
+
+To use OpenMP:
+
+>make CO=para new
+
+For more options on the make process check out
+>make help
+
+[C]
+
+Visualisation scripts are found in the 'visualize' folder. 
+Python3 (matplotlib, numpy, astropy) is required.
+
+If you have problems in running the code, please do not hesitate to ask me.
+
+You are free to use and extend this code, but if you do so, please cite 'F. Ober 2014 (in prep)'

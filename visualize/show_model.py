@@ -17,7 +17,7 @@ import matplotlib.pyplot as plt
 import os
 import sys
 from scipy.interpolate import griddata    
-
+import matplotlib.patches as mpatches
 
 home         = '../'
 
@@ -198,16 +198,33 @@ def present_plane(file_path):
     #-------------------------------------------------
     #  Velocity
     
-    #~ plt.figure('Velocity, '+ext)
+    #~ plt.figure('abs(Velocity), '+ext)
     #~ plt.title('Velocity, '+ext)
     #~ plt.xlabel(xlab)
     #~ plt.ylabel(ylab)
-#~ 
-    #~ CS = plt.contour(pic[:,:,7],linewidths=1,colors='k',extent=m_range)
+    #~ if pic.shape[2] > 8:
+        #~ data = np.sqrt(pic[:,:,7]**2+pic[:,:,8]**2+pic[:,:,9]**2)
+    #~ else:
+        #~ data = pic[:,:,7]
+    #~ CS = plt.contour(data,linewidths=1,colors='k',extent=m_range)
     #~ plt.clabel(CS,inline=1,fmt='%2.1f', fontsize=10)
-    #~ plt.imshow(pic[:,:,7],extent=m_range,origin='lower',interpolation='None',cmap=plt.cm.jet)
-    #~ plt.colorbar().set_label('Velocity [km/s]')
+    #~ plt.imshow(data,extent=m_range,origin='lower',interpolation='None',cmap=plt.cm.jet)
+    #~ plt.colorbar().set_label('Velocity [m/s]')
+    #~ 
+    #~ plt.figure('Velocity V_z, '+ext)
+    #~ plt.title('Velocity V_z, '+ext)
+    #~ plt.xlabel(xlab)
+    #~ plt.ylabel(ylab)
+    #~ data = pic[:,:,9]
+    #~ CS = plt.contour(data,linewidths=1,colors='k',extent=m_range)
+    #~ plt.clabel(CS,inline=1,fmt='%2.1f', fontsize=10)
+    #~ plt.imshow(data,extent=m_range,origin='lower',interpolation='None',cmap=plt.cm.jet)
+    #~ plt.clim(-400,400)
+    #~ plt.colorbar().set_label('Velocity [m/s]')
     
+    #~ plt.figure('vel cut,  '+ext)
+    #~ plt.title('vel cut,  '+ext)
+    #~ plt.plot(pic[200,:,7])
     
     #-------------------------------------------------
     #  molecule density
@@ -224,26 +241,33 @@ def present_plane(file_path):
     plt.imshow(data,extent=m_range,origin='lower',interpolation='None',cmap=plt.cm.jet)
     plt.clim(2,8)
     plt.colorbar().set_label('molecule density lg [cm^-3]')
-    #~ plt.figure('Molecule number density distribution cut, '+ext)
-    #~ plt.plot(pic[:,200,1])
-        #-------------------------------------------------
+
+    #-------------------------------------------------
     #  H2 density
     
     data = np.log10(pic[:,:,2]*1e-6)
     plt.figure('H2 number density distribution, '+ext)
-    plt.title('H2 number density distribution, '+ext)
+    #~ plt.title('H2 number density distribution, '+ext)
     plt.xlabel(xlab)
     plt.ylabel(ylab)
-    cont = np.round(np.linspace(7.4,8.3,4.),1)
-    cont = [7.8,7.5,7.0,6.0]
+    #~ cont = np.round(np.linspace(5.0,8.0,5.),1)
+    cont = [8.0,7.5,7.0,6.0,5.5]
     
     CS = plt.contour(data,cont,linewidths=1,colors='k',extent=m_range)
     plt.clabel(CS,inline=1,fmt='%2.1f', fontsize=10)
     plt.imshow(data,extent=m_range,origin='lower',interpolation='None',cmap=plt.cm.jet)
-    plt.clim(3,9)
+    plt.annotate('gap', xy=(80, 10),  xycoords='data',color='white',
+                xytext=(0, 80), textcoords='data',
+                arrowprops=dict(width=3,facecolor='white', shrink=0.05),fontsize=24,
+                horizontalalignment='center', verticalalignment='top',
+                )
+    plt.annotate('gap', xy=(-80, 10),  xycoords='data',
+                xytext=(0, 80), textcoords='data',color='white',
+                arrowprops=dict(width=3,facecolor='white', shrink=0.05),fontsize=23,
+                horizontalalignment='center', verticalalignment='top',
+                )
+    plt.clim(5,9)
     plt.colorbar().set_label('H2 number density lg [cm^-3]')
-    
-    
     
 if __name__ == "__main__":
     
