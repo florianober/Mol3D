@@ -7,7 +7,7 @@ ver.: 0.1
 How to get started: ./visual_mol3d.py example
 
 date   : 2014-02-24
-author : F. Ober 
+author : F. Ober
 email  : fober@astrophysik.uni-kiel.de
 """
 
@@ -22,98 +22,85 @@ import show_model as sm
 import mol3d_routines as l
 
 try:
-    p_name = sys.argv[1]
+    P_NAME = sys.argv[1]
 except:
-    p_name = 'temp2'
-    
-try:
-    inp2 = sys.argv[2]
-    
-except:
-    inp2 = ''
+    P_NAME = 'temp2'
 
-if inp2 == '':
+if len(sys.argv) > 2:
+    PATH_RESULTS = sys.argv[2]
 
-    f = open('path_result.dat')
-    inp2 = f.readline().split()[0]
-    f.close()
+else:
+    FILE_IN = open('path_result.dat')
+    PATH_RESULTS = FILE_IN.readline().split()[0]
+    FILE_IN.close()
 
-path_results = inp2
-    
-home         = '../'
-show_all = False
-#~ show_all = True
+SHOW_ALL = True
 
-if len(glob.glob(os.path.join(path_results,p_name+'*'))) < 1:
-    print('results not found, maybe the path in "path_result.dat" is not correct')
+
+if len(glob.glob(os.path.join(PATH_RESULTS, P_NAME + '*'))) < 1:
+    print('results not found,' +
+          'maybe the path in "path_result.dat" is not correct')
     sys.exit()
-    
+
 def main():
-    
-    if show_all:
+    """ Main visualisation routine  """
+
+    project = l.mol3d(P_NAME, PATH_RESULTS)
+    # get attributes
+    attr = project.attr
+
+    if not attr:
+        sys.exit()
+
+    if SHOW_ALL:
         # present the model
+        sm.show_maps(PATH_RESULTS, P_NAME)
 
-        sm.make_model(path_results,p_name)
-        
         # present temperature in x midplane
-        
-        oneD(path_results+p_name+'_temp_x.dat',i=0)
-        
-    # present line spectrum
-        
-    oneD(path_results+p_name+'_velo_ch_mapsum.dat',i=1)
-    
-    # present velocity channel integrated map
-    
-    map_in = l.load_mol3d_map(path_results+p_name+'_velo_ch_mapint.dat')
-    
-    input_file = open(path_results+p_name+'_input_file.dat',"r")
-    full = input_file.readlines()
-    input_file.close()
-    
-    r_ou = 200  # standard value
-    dist = 140  # standard value
-    
-    # search for key in input_file  
 
-    attr = l.get_attr(p_name)
-    
-    
-    
+        one_dim(PATH_RESULTS+P_NAME+'_temp_x.dat', i=0)
+    # present line spectrum
+
+    one_dim(PATH_RESULTS+P_NAME+'_spectrum.dat', i=1)
+
+    # present velocity channel integrated map
+    # tbd
+
     # calculate arcseconds for a disk with given extension and distance
-    #~ arcs = attr['sf']*attr['r_ou'] / attr['distance']
-    #~ arcs = attr['r_ou'] / attr['distance'] / attr['zoom_map']
-    arcs = attr['r_ou'] / attr['zoom_map']
-    extent = [-arcs,arcs,-arcs,arcs]
-    plt.figure(p_name)
-    plt.imshow(map_in*1000,origin='lower',interpolation='None',extent=extent)
+    #~ arcs = attr['sf']*attr['r_ou'] / attr['distance'] / attr['zoom_map']
+    arcs = attr['r_ou'] / attr['distance'] / attr['zoom_map']
+    extent = [-arcs, arcs, -arcs, arcs]
+    plt.figure(P_NAME)
+    map_in = np.sum(project.velo_ch_map, axis = 0) * attr['dvelo']
+    plt.imshow(map_in*1000, origin='lower',
+               interpolation='None', extent=extent)
     #~ plt.clim(vmax=np.nanmax(map_in*1000)/2,vmin=None)
     #~ plt.clim(vmax=0.3,vmin=None)
     plt.colorbar().set_label('Flux [mJy/px]')
-    
-def oneD(file_path,i=0):
 
+def one_dim(file_path, i=0):
+    """ 1D ploting routine """
     pic = np.loadtxt(file_path)
     #print pic
     plt.figure(file_path)
 
     if i == 0:
-            plt.xlabel('distance r [AU]')
-            plt.ylabel('temperature [K]')
-            title='midplane temperature distribution'
-            maxi = 1
+        plt.xlabel('distance r [AU]')
+        plt.ylabel('temperature [K]')
+        title = 'midplane temperature distribution'
+        maxi = 1
     elif i == 1:
-            plt.ylim(0,1.1)
-            plt.xlim(np.min(pic[:,0]),np.max(pic[:,0]))
-            plt.xlabel('velocity [m/s]')
-            plt.ylabel('normalized intensity')
-            title='velocity spectrum'
-            maxi = np.max(pic[:,1])
+        plt.ylim(0, 1.1)
+        plt.xlim(np.min(pic[:, 0]), np.max(pic[:, 0]))
+        plt.xlabel('velocity [m/s]')
+        plt.ylabel('normalized intensity')
+        title = 'velocity spectrum'
+        maxi = np.max(pic[:, 1])
     else:
-        title=''
-        plt.title(title,fontsize=14)
-        
-    plt.plot(pic[:,0],pic[:,1]/maxi)
+        title = ''
+        plt.title(title, fontsize=14)
+
+    plt.plot(pic[:, 0], pic[:, 1] / maxi)
 
 main()
 plt.show()
