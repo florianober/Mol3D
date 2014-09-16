@@ -117,7 +117,7 @@ CONTAINS
             grid%cell_gauss_a(i_cell) = 1.0_r2/(sqrt(2.0_r2*con_k*grid%t_dust(i_cell,1)/ &  
                                                 (gas%mol_weight*1.0e-3_r2/con_Na) &
                                                 +100.0_r2**2)) ! 100.0 eq turb. line width TbD
-                                                !+grid%velo(i_cell,3)**2))   ! use i_z for face one
+                                                !+grid%velo(i_cell,3)**2))   ! use i_z (as an indicator for turbolence)
                                                 !+grid%v_turb(i_cell)**2))   ! use turb array (TbD)
                                                 
             ! save quadratic line width value for faster calculations

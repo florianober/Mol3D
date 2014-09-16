@@ -1171,7 +1171,7 @@ CONTAINS
 
     ELEMENTAL FUNCTION Get_velo(velo1,velo2,x) RESULT(velo_x)
     
-        ! define your velocity distribution here! velo in cartesian coordinates
+        ! interpolate velocity 
         !
         IMPLICIT NONE
         !------------------------------------------------------------------------!

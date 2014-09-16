@@ -144,15 +144,16 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
     n_tem             = 40000
     n_scatt_th        = 361
     nrndpt            = 10000
-    acc_select_level  = 1.0e-6
-    i_lam_show        = 10
+!~     acc_select_level  = 1.0e-6 ! old and not in use anymore
+!~     i_lam_show        = 10 ! old and not in use anymore
     t_dust_min        = 0
     t_dust_max        = 2000.0
     n_interact_max    = 100000
     
     show_error = .False.                             ! show some minor warnings
-    velo_type  = 1                                   ! analytical velocity distri
+    velo_type  = 1                                   ! analytical velocity distribution
 !~     velo_type  = 2                                ! lin. interpolated velocity distribution
+
     ! use results of earlier calculations
     !
     CALL parse('old_model',old_model,new_input_file)

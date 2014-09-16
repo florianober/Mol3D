@@ -493,76 +493,75 @@ CONTAINS
     END SUBROUTINE InitDust
     
     
-    SUBROUTINE acc_select(this) !routine by mc3d v4, is obsolent now!
-
-        
-        IMPLICIT NONE
-        
-        !------------------------------------------------------------------------!
-        TYPE(Dust_TYP)                        :: this
-!~         TYPE(Gas_TYP)                         :: gas
-        !------------------------------------------------------------------------!
-        INTEGER                             :: i_lam, hi3
-        REAL(kind=r2)                       :: hd1, hd2, hd3
-        LOGICAL                             :: hl1
-        
-        !------------------------------------------------------------------------!
-        ! ---
-        ! doRT = .true. -> do RT for this wavelength
-        this%doRT(:) = .false.! [default]
-           
-        ! ---
-        ! mark wavelengths
-        ! 1. wavelengths for which flux > minimal flux
-        hd1 = acc_select_level * maxval(this%lam(:)*this%i_star_emi(:))    !To do set acc_select_level, this%i_star_emi
-        do i_lam=1,this%n_lam
-            if (this%lam(i_lam)*this%i_star_emi(i_lam) > hd1) then
-                this%doRT(i_lam) = .true.
-            end if
-        end do
-           
-        ! 2. wavelength to the left and the right beside the found wavelengths
-        hl1 = .false.
-        do i_lam=1, this%n_lam
-            if (this%doRT(i_lam)) then
-                hl1 = .true.
-            else
-                if (hl1) then
-                    this%doRT(i_lam) = .true.
-                end if
-                if (i_lam+1 <= this%n_lam) then
-                    if (this%doRT(i_lam+1)) then
-                       this%doRT(i_lam) = .true.
-                    end if
-                end if
-                hl1 = .false.
-            endif
-        end do
-           
-        ! hd2 ... neglected amount of energy
-        ! hd3 ... total amount of energy (including hd2)
-        hd3 = integ1( this%lam(:), this%i_star_emi(:), 1, this%n_lam )
-        do i_lam=1, this%n_lam
-            if (.not. this%doRT(i_lam)) then
-                this%i_star_emi(i_lam) = 0.0_r2
-            end if
-        end do
-        hd2 = hd3 - integ1(this%lam(:), this%i_star_emi(:), 1, this%n_lam)
-           
-        ! count number of (re-emitting cells)*wavelengths
-        hi3 = 0
-        do i_lam=1,this%n_lam
-            if (this%doRT(i_lam)) then
-                hi3 = hi3 + 1
-            end if
-        end do
-           
-        print *,"radiative transfer only for fraction of wavelengths [%]: ", &
-                nint(100.0 *real(hi3)/real(this%n_lam))
-        print *,"                      => Neglected amount of energy [%]: ", &
-                real(hd2/hd3*100.0_r2)
-    
-    END SUBROUTINE 
+!~     SUBROUTINE acc_select(this) !routine by mc3d v4, is obsolent now!
+!~ 
+!~         
+!~         IMPLICIT NONE
+!~         
+!~         !------------------------------------------------------------------------!
+!~         TYPE(Dust_TYP)                        :: this
+!~         !------------------------------------------------------------------------!
+!~         INTEGER                             :: i_lam, hi3
+!~         REAL(kind=r2)                       :: hd1, hd2, hd3
+!~         LOGICAL                             :: hl1
+!~         
+!~         !------------------------------------------------------------------------!
+!~         ! ---
+!~         ! doRT = .true. -> do RT for this wavelength
+!~         this%doRT(:) = .false.! [default]
+!~            
+!~         ! ---
+!~         ! mark wavelengths
+!~         ! 1. wavelengths for which flux > minimal flux
+!~         hd1 = acc_select_level * maxval(this%lam(:)*this%i_star_emi(:))    !To do set acc_select_level, this%i_star_emi
+!~         do i_lam=1,this%n_lam
+!~             if (this%lam(i_lam)*this%i_star_emi(i_lam) > hd1) then
+!~                 this%doRT(i_lam) = .true.
+!~             end if
+!~         end do
+!~            
+!~         ! 2. wavelength to the left and the right beside the found wavelengths
+!~         hl1 = .false.
+!~         do i_lam=1, this%n_lam
+!~             if (this%doRT(i_lam)) then
+!~                 hl1 = .true.
+!~             else
+!~                 if (hl1) then
+!~                     this%doRT(i_lam) = .true.
+!~                 end if
+!~                 if (i_lam+1 <= this%n_lam) then
+!~                     if (this%doRT(i_lam+1)) then
+!~                        this%doRT(i_lam) = .true.
+!~                     end if
+!~                 end if
+!~                 hl1 = .false.
+!~             endif
+!~         end do
+!~            
+!~         ! hd2 ... neglected amount of energy
+!~         ! hd3 ... total amount of energy (including hd2)
+!~         hd3 = integ1( this%lam(:), this%i_star_emi(:), 1, this%n_lam )
+!~         do i_lam=1, this%n_lam
+!~             if (.not. this%doRT(i_lam)) then
+!~                 this%i_star_emi(i_lam) = 0.0_r2
+!~             end if
+!~         end do
+!~         hd2 = hd3 - integ1(this%lam(:), this%i_star_emi(:), 1, this%n_lam)
+!~            
+!~         ! count number of (re-emitting cells)*wavelengths
+!~         hi3 = 0
+!~         do i_lam=1,this%n_lam
+!~             if (this%doRT(i_lam)) then
+!~                 hi3 = hi3 + 1
+!~             end if
+!~         end do
+!~            
+!~         print *,"radiative transfer only for fraction of wavelengths [%]: ", &
+!~                 nint(100.0 *real(hi3)/real(this%n_lam))
+!~         print *,"                      => Neglected amount of energy [%]: ", &
+!~                 real(hd2/hd3*100.0_r2)
+!~     
+!~     END SUBROUTINE 
     
     SUBROUTINE prepare_QB(this,basics)
 

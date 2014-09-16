@@ -88,7 +88,7 @@ module var_globalnew
   ! ---
   ! integer
   ! ---
-  integer, public :: pre_ana, i_lam_show
+  integer, public :: pre_ana
   integer, public :: velo_type
 
   integer, public :: kill_photon_count, n_wrong_temp, n_interact_max
@@ -98,7 +98,7 @@ module var_globalnew
   ! real(kind=r2)
   ! ---
   !real(kind=r2), public :: i_min
-  real(kind=r2), public :: acc_select_level
+!~   real(kind=r2), public :: acc_select_level
 
 
   ! ---
