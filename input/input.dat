@@ -9,20 +9,20 @@
 #                                                                                #
 # author: Florian Ober                                                           #
 # email : fober@astrophysik.uni-kiel.de                                          #    
-# date  : Aug 2014                                                               #
+# date  : Sep 2014                                                               #
 ##################################################################################
 
                                           (+) working, (-) not working
-                                          
+
 proname = {example}                       project name
 r_path = {results/}                       define results path, it is recommend to change this path 
 
-num_core    = {001}                       number of cores used (raytracing, temperature calculation (TbD))
+num_core    = {001}                       number of cores to use in parallel mode
 old_model   = {F}                         use results from earlier calculations (F,T)
 old_proname = {oldproname}                the project name of the older calculation 
 
 calc_temp = {T}                           calculate temperature (with monte carlo method)
-do_raytr = {T}                            Note: this is not working at the moment, -> src/initiate/f90
+do_raytr = {T}                            Note: this switch is not working at the moment, -> src/initiate/f90
 
 r_in   = {2.0}                            inner radius
 r_ou   = {120}                            outer radius
