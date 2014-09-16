@@ -1,5 +1,5 @@
 !
-! This module is developed to handle input files in a more dynamic way
+! This module has been developed to handle input files in a more dynamic way
 !
 !
 MODULE parser_mod
