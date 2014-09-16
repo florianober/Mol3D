@@ -125,8 +125,7 @@ def make_spectra(path_results, pname):
 
     map_in = project.velo_ch_map
     vch = project.vch
-    r_ou = project.attr['r_ou'] * project.attr['sf']
-    #~ r_ou = project.attr['r_ou']
+    r_ou = project.attr['r_ou']# * project.attr['sf']
     arcs = r_ou/project.attr['distance']
     extent = [-arcs, arcs, -arcs, arcs]
 
