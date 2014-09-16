@@ -7,6 +7,7 @@ objects and routines to access Mol3d data (output)
 
 """
 from numpy import zeros, array
+from numpy import linspace
 #~ from astropy.convolution import convolve_fft
 #~ from astropy.convolution import Gaussian2DKernel
 from astropy.io import fits as pf
@@ -143,10 +144,11 @@ class mol3d:
     """A class to handle mol3d objects"""
 
     def __init__(self, pname, path_results=PATH_RESULTS):
-
+        
         self.__pname = pname
         self.__attr = {}
         self.__velochmap = []
+        self.__vch = []
         self.__files = []
         self.__path_results = path_results
         for item in MOL3D_FILES:
@@ -210,6 +212,17 @@ class mol3d:
         return self.__velochmap
 
     velo_ch_map = property(return_velo_ch_map)
+
+    def return_vch_array(self):
+        if self.__vch == []:
+            self.__vch = linspace(-self.attr['vel_max'],
+                                  self.attr['vel_max'],
+                                  (self.attr['i_vel_chan']*2)+1)
+        else:
+            pass
+        return self.__vch
+
+    vch = property(return_vch_array)
 
     def return_attr(self):
         return self.__attr

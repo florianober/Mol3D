@@ -193,7 +193,7 @@ def present_plane(file_path):
     plt.title('Velocity, ' + ext)
     plt.xlabel(xlab)
     plt.ylabel(ylab)
-    if pic.shape[2] > 8:
+    if pic.shape[2] > 9:
         data = np.sqrt(pic[:, :, 7]**2 + pic[:, :, 8]**2 + pic[:, :, 9]**2)
     else:
         data = pic[:, :, 7]
@@ -203,17 +203,18 @@ def present_plane(file_path):
                interpolation='None', cmap=plt.cm.jet)
     plt.colorbar().set_label('Velocity [m/s]')
 
-    plt.figure('Velocity V_z, ' + ext)
-    plt.title('Velocity V_z, ' + ext)
-    plt.xlabel(xlab)
-    plt.ylabel(ylab)
-    data = pic[:, :, 9]
-    CS = plt.contour(data, linewidths=1, colors='k', extent=m_range)
-    plt.clabel(CS, inline=1, fmt='%2.1f', fontsize=10)
-    plt.imshow(data, extent=m_range, origin='lower',
-               interpolation='None', cmap=plt.cm.jet)
-    plt.clim(-400, 400)
-    plt.colorbar().set_label('Velocity [m/s]')
+    if pic.shape[2] > 9:
+        plt.figure('Velocity V_z, ' + ext)
+        plt.title('Velocity V_z, ' + ext)
+        plt.xlabel(xlab)
+        plt.ylabel(ylab)
+        data = pic[:, :, 9]
+        CS = plt.contour(data, linewidths=1, colors='k', extent=m_range)
+        plt.clabel(CS, inline=1, fmt='%2.1f', fontsize=10)
+        plt.imshow(data, extent=m_range, origin='lower',
+                   interpolation='None', cmap=plt.cm.jet)
+        plt.clim(-400, 400)
+        plt.colorbar().set_label('Velocity [m/s]')
 
     #~ plt.figure('vel cut, ' + ext)
     #~ plt.title('vel cut, ' + ext)
@@ -251,16 +252,16 @@ def present_plane(file_path):
     plt.clabel(CS, inline=1, fmt='%2.1f', fontsize=10)
     plt.imshow(data, extent=m_range, origin='lower',
                interpolation='None', cmap=plt.cm.jet)
-    plt.annotate('gap', xy=(80, 10), xycoords='data', color='white',
-                 xytext=(0, 80), textcoords='data',
-                 arrowprops=dict(width=3, facecolor='white', shrink=0.05),
-                 fontsize=24,
-                 horizontalalignment='center', verticalalignment='top',)
-    plt.annotate('gap', xy=(-80, 10), xycoords='data',
-                 xytext=(0, 80), textcoords='data', color='white',
-                 arrowprops=dict(width=3, facecolor='white', shrink=0.05),
-                 fontsize=23,
-                 horizontalalignment='center', verticalalignment='top',)
+    #~ plt.annotate('gap', xy=(80, 10), xycoords='data', color='white',
+                 #~ xytext=(0, 80), textcoords='data',
+                 #~ arrowprops=dict(width=3, facecolor='white', shrink=0.05),
+                 #~ fontsize=24,
+                 #~ horizontalalignment='center', verticalalignment='top',)
+    #~ plt.annotate('gap', xy=(-80, 10), xycoords='data',
+                 #~ xytext=(0, 80), textcoords='data', color='white',
+                 #~ arrowprops=dict(width=3, facecolor='white', shrink=0.05),
+                 #~ fontsize=23,
+                 #~ horizontalalignment='center', verticalalignment='top',)
     plt.clim(5, 9)
     plt.colorbar().set_label('H2 number density lg [cm^-3]')
 
