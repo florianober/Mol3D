@@ -22,10 +22,10 @@ import make_spectrum as mkspec
 
 import mol3d_routines as l
 
-try:
+if len(sys.argv) > 1:
     P_NAME = sys.argv[1]
-except:
-    P_NAME = 'temp2'
+else:
+    P_NAME = 'example'
 
 if len(sys.argv) > 2:
     PATH_RESULTS = sys.argv[2]
@@ -36,7 +36,6 @@ else:
     FILE_IN.close()
 
 SHOW_ALL = True
-
 
 if len(glob.glob(os.path.join(PATH_RESULTS, P_NAME + '*'))) < 1:
     print('results not found,' +
@@ -61,7 +60,7 @@ def main():
         # present temperature in x midplane
 
         one_dim(PATH_RESULTS+P_NAME+'_temp_x.dat', i=0)
-        
+
 
     # present line spectrum, intensity map and velocity channel maps
 

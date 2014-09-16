@@ -144,7 +144,6 @@ class mol3d:
     """A class to handle mol3d objects"""
 
     def __init__(self, pname, path_results=PATH_RESULTS):
-        
         self.__pname = pname
         self.__attr = {}
         self.__velochmap = []

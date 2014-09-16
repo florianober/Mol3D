@@ -153,6 +153,5 @@ def make_spectra(path_results, pname):
                       N1, N2, extent=extent, interpol='spline36')
 
 if __name__ == "__main__":
-    """ main routine """
     make_spectra(PATH_RESULTS, P_NAME)
     plt.show()
