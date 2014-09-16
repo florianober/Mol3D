@@ -52,6 +52,24 @@ For more options on the make process check out
 
 [C]
 
+Run the code with:
+
+>./mol3d
+
+All input parameters are given in the ./input/input.dat file.
+Also it it is possible to use another input file:
+
+>./mol3d /path/to/input-file
+
+The disk model can be changed by editing the ./src/model.f90 file.
+Please do not forget to recompile the code afterwards.
+
+In addition, all input settings can be adjusted by editing the ./src/initiate.f90 file
+
+Please note: The code is still in development and bugs may exist!
+
+[D]
+
 Visualisation scripts are found in the 'visualize' folder. 
 Python3 (matplotlib, numpy, astropy) is required.
 
