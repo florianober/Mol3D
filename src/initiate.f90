@@ -507,10 +507,20 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
     !--------------------------------------------------------------------------! 
     
     CALL InitSources(sources_in,1,'sources',dust)
+    ! -------------------------------------
     ! Mode 1: give R_star and T_star
-    CALL AddSources(sources_in,1,(/0.0_r2,0.0_r2,0.0_r2/), R_star=model%r_star, T_star=model%t_star)
+    !   CALL AddSources(sources_in,1,(/0.0_r2,0.0_r2,0.0_r2/), R_star=model%r_star, T_star=model%t_star)
     ! Mode 2: give T_star and Luminosity
-!~     CALL AddSources(sources_in,2,(/0.0_r2,0.0_r2,0.0_r2/), T_star=model%T_star, L_star=REAL(L_sun*1.907343,kind=r1))
+    !   CALL AddSources(sources_in,2,(/0.0_r2,0.0_r2,0.0_r2/), T_star=model%T_star, L_star=REAL(L_sun*1.907343,kind=r1))
+    ! -------------------------------------
+    
+    ! 1 source (used as the primary source, defined in the input file)
+    CALL AddSources(sources_in,1,(/0.0_r2,0.0_r2,0.0_r2/), R_star=model%r_star, T_star=model%t_star)
+    ! 2 source (added by hand, could be a embedded planet or whatever)
+!~     CALL AddSources(sources_in,2,(/sf*4.95_r2,-sf*0.72_r2,0.0_r2/), T_star=1000.0, L_star=REAL(1e-4*L_sun,kind=r1))
+    ! .. source..
+    
+    print '(A,I3)', " Sources found: ", sources_in%n_sources
     print '(A,F5.2,A)'," Total Luminosity included: ", sources_in%L_total/L_sun, " L_sun"
     !--------------------------------------------------------------------------! 
     ! Stokes vector: Unpolarized radiation (assumed initial state)
