@@ -186,9 +186,9 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
     WRITE(unit=3,fmt='(A)')  '#                            mol3d input file                                    #'
     WRITE(unit=3,fmt='(A)')  '#                                                                                #'
     WRITE(unit=3,fmt='(A)')  '# All parameters that can be changed without recompiling mol3d are listed here.  #'
-    WRITE(unit=3,fmt='(A)')  '# Please be aware that some parameters intendet to be changeable yet. Therefore, #'
-    WRITE(unit=3,fmt='(A)')  '# they are note listed here, but accessable via the initiate.f90 source file.    #'
-    WRITE(unit=3,fmt='(A)')  '#                                                                                #'
+    WRITE(unit=3,fmt='(A)')  '# Please be aware that some parameters not intendet to be changeable yet.        #'
+    WRITE(unit=3,fmt='(A)')  '# Therefore, they are note listed here, but accessable via the                   #'
+    WRITE(unit=3,fmt='(A)')  '# "initiate.f90" source file.                                                    #'
     WRITE(unit=3,fmt='(A)')  '# If you have questions, please feel free to ask me.                             #'
     WRITE(unit=3,fmt='(A)')  '#                                                                                #'
     WRITE(unit=3,fmt='(A)')  '# author         : Florian Ober                                                  #'
@@ -425,7 +425,6 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
     ELSE
         ! this is the normal way, read the grid properties from the input file
         CALL parse('grid_name',grid_name,input_file)  
-        
           ! possible values: spherical (mostly mc3d style)
           !                  cylindrical (in progress, working but there are some bugs, test for yourself)
           !                  cartesian   (planed)

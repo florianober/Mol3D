@@ -18,6 +18,7 @@ import numpy as np
 import mol3d_routines as l
 from mpl_toolkits.axes_grid1 import AxesGrid
 import matplotlib as mpl
+import mpl_toolkits.axes_grid1 as axes_grid1
 
 if len(sys.argv) > 1:
     P_NAME = sys.argv[1]
@@ -42,23 +43,30 @@ TEXT_SIZE = mpl.rcParams['font.size'] -2
 
 def make_velo_int_plot(data, dvelo=1, cmap=plt.cm.nipy_spectral,
                        interpol='None', extent=[-1, 1, -1, 1],
-                       label='flux [Jy/px * m/s]'):
+                       label='flux [Jy/px * m/s]',conv=1):
     """ make velocity integrated intensity map """
-
     # show velocity integrated map
     fig = plt.figure('velocity integrated map')
-    plt.imshow(data[:, :, :].sum(axis=0)*dvelo,
+    ax1 = axes_grid1.host_axes([0.09, 0.11, 0.8, 0.8])
+    extent_conv = [extent[0], 0.5* extent[0],0, 0.5*extent[1], extent[1]]
+    if extent != [-1, 1, -1, 1]:
+        ax1.set_ylabel('angular distance ["]')
+        ax1.set_xlabel('angular distance ["]')
+    else:
+        ax1.set_ylabel('distance')
+        ax1.set_xlabel('distance')
+    
+    im = ax1.imshow(data[:, :, :].sum(axis=0)*dvelo,
                origin='lower', interpolation=interpol, cmap=cmap,
                extent=extent)
-
-    plt.colorbar().set_label(label)
-
-    if extent != [-1, 1, -1, 1]:
-        plt.ylabel('angular distance ["]')
-        plt.xlabel('angular distance ["]')
-    else:
-        plt.ylabel('distance')
-        plt.xlabel('distance')
+    plt.colorbar(im).set_label(label)
+    if conv != 1:
+        ax2 = ax1.twin()
+        ax2.axis["right"].toggle(ticklabels=False)
+        #~ ax2.set_xticklabels(ax1.get_xticks()*conv)
+        ax2.set_xticks(extent_conv)
+        ax2.set_xticklabels(np.round(ax2.get_xticks()*conv, 2))
+        ax2.set_xlabel('distance [AU]')
 
 def make_velo_ch_plot(data, vch, N1=3, N2=5, snr=1, cmap=plt.cm.nipy_spectral,
                       interpol='None', extent=[-1, 1, -1, 1],
@@ -92,10 +100,14 @@ def make_velo_ch_plot(data, vch, N1=3, N2=5, snr=1, cmap=plt.cm.nipy_spectral,
                             cmap=cmap,
                             origin='lower', interpolation=interpol,
                             extent=extent, aspect="auto")
+
+        # change the axes color from black to red
         grid[t].spines['right'].set_color('red')
         grid[t].spines['left'].set_color('red')
         grid[t].spines['top'].set_color('red')
         grid[t].spines['bottom'].set_color('red')
+
+        # add velocity channel label to map
         grid[t].text(text_pos[0], text_pos[1], '%2.2f km/s' %(vch[t]*1e-3),
                      fontsize=TEXT_SIZE,
                      bbox={'facecolor':'white', 'alpha':0.7, 'pad':5})
@@ -127,6 +139,7 @@ def make_spectra(path_results, pname):
     vch = project.vch
     r_ou = project.attr['r_ou']# * project.attr['sf']
     arcs = r_ou/project.attr['distance']
+    conv = project.attr['distance']
     extent = [-arcs, arcs, -arcs, arcs]
 
     # make line spectrum
@@ -139,7 +152,7 @@ def make_spectra(path_results, pname):
     plt.ylabel('intensity [Jy]')
 
     # make intensity map
-    make_velo_int_plot(map_in, project.attr['dvelo'], extent=extent)
+    make_velo_int_plot(map_in, project.attr['dvelo'], extent=extent, conv=conv)
 
     # make velocity channel overview map
     mid = project.attr['i_vel_chan']
