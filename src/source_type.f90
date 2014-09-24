@@ -22,7 +22,7 @@ MODULE source_type
         !-----------------------------------------------------------------------!
         REAL(kind=r2)                                        :: Luminosity
         REAL(kind=r2),DIMENSION(1:3)                         :: pos_xyz
-        REAL(kind=r2),DIMENSION(:),ALLOCATABLE                   :: wave_cdf
+        REAL(kind=r2),DIMENSION(:),ALLOCATABLE               :: wave_cdf
         INTEGER                                              :: s_type
 
     END TYPE SOURCE_TYP
@@ -109,7 +109,7 @@ CONTAINS
             ALLOCATE(this%source(1:i_source), &
                      this%source_cdf(1:i_source))
             this%source_cdf = 0.0_r2
-            this%source = source_tmp
+            this%source(1:this%n_sources) = source_tmp
             DEALLOCATE(source_tmp)
             
         ELSE
