@@ -17,6 +17,7 @@ import os
 import sys
 from scipy.interpolate import griddata
 import matplotlib.patches as mpatches
+from astropy.io import fits as pf
 
 if len(sys.argv) > 1:
     P_NAME = sys.argv[1]
@@ -35,40 +36,37 @@ def make_model(path_results, p_name):
 
     #open model file for the given p_name
 
-    model = np.loadtxt(path_results + p_name+'_model.dat', skiprows=1)
-
+    model = pf.open(path_results + p_name+'_model.fits')[0].data
     # tbd: assuming rotational symmetry
-    x = (model[:, 1]**2+model[:, 2]**2)**0.5 * \
-        np.sign(model[:, 1]) * np.sign(model[:, 2])
-    y = model[:, 3]
+    x = (model[:, 0]**2+model[:, 1]**2)**0.5 * \
+        np.sign(model[:, 0]) * np.sign(model[:, 1])
+    y = model[:, 2]
 
     # gas Temperature
 
-    z = model[:, 10]
+    z = model[:, 9]
     create_plot(x, y, z, 'Gas Temperature')
 
     # dust distribution
 
-    z = model[:, 4]
+    z = model[:, 3]
     create_plot(x, y, np.log10(z*1e-6), 'Dust number density distribution')
 
     # H2 distribution
-    #~ z = model[:, 6]
-    #~ create_plot(x, y, np.log10(z*1e-6), 'H2 number density distribution')
+    z = model[:, 5]
+    create_plot(x, y, np.log10(z*1e-6), 'H2 number density distribution')
 
     # molecule distribution
-
-    z = model[:, 5]
+    z = model[:, 4]
     create_plot(x, y, np.log10(z*1e-6), 'Molecule number density distribution')
 
     # molecule distribution in relation to H2
-    #~ z = model[:, 5]/model[:, 6]
-    #~ create_plot(x, y, z, 'Molecule/H2 density distribution')
+    z = model[:, 4]/model[:, 5]
+    create_plot(x, y, z, 'Molecule/H2 density distribution')
 
     #~ # velocity distribution
-    if model.shape[1] > 11:  # just to work with older versions
-        z = model[:, 11] / 1000
-        create_plot(x, y, z, 'Velocity distribution')
+    z = model[:, 10] / 1000
+    create_plot(x, y, z, 'Velocity distribution')
 
 def create_plot(x, y, z, name):
     """ make a plot from arbitary spaced values using griddata XX """
@@ -269,8 +267,7 @@ if __name__ == "__main__":
     """ main routine """
     # two possibilities
     # first present the model itself (old)
-    #~ make_model(path_results,p_name)
-
+    #~ make_model(PATH_RESULTS, P_NAME)
     # present the xy and xz plane maps
     show_maps(PATH_RESULTS, P_NAME)
 
