@@ -62,17 +62,17 @@ endif
 
 ifeq ($(FC),gfortran)
   CFLAGS = -Wall -O2
-  DEPFLAGS = -J$(BUILD_DIR) -I$(BUILD_DIR) -lcfitsio
+  DEPFLAGS = -J$(BUILD_DIR) -I$(BUILD_DIR) -L./../cfitsio -lcfitsio
   OFLAGS = -x f95-cpp-input
   #OFLAGS = 
   ifeq ($(CO),debug)
     CFLAGS = -pg -O3 -fbounds-check -pedantic -Wall
   endif
   ifeq ($(CO),paradebug)
-    CFLAGS = -march=native -ffast-math -funroll-loops -O3 -fopenmp -Wall -fbounds-check -pedantic
+    CFLAGS = -march=native -ffast-math -funroll-loops -O3  -fbounds-check -pedantic -fopenmp
   endif
   ifeq ($(CO),para)
-    CFLAGS = -march=native -ffast-math -funroll-loops -O3 -fopenmp -Wall
+    CFLAGS = -march=native -ffast-math -funroll-loops -O3 -fopenmp
   endif
   ifeq ($(CO),fast)
     CFLAGS = -march=native -mtune=native -ffast-math -funroll-loops -O3

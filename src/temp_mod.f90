@@ -189,7 +189,7 @@ CONTAINS
 
         ! initialize random number generator
         seed = -1
-        !$omp parallel num_threads(basics%num_core) PRIVATE(seed,rand_nr,i_phot,photon)
+        !$omp parallel num_threads(basics%num_core) PRIVATE(seed, i_phot) FIRSTPRIVATE(rand_nr, photon)
         !$ seed = (omp_get_thread_num()+1)*(-1)
 !~         !$ print *,seed
         CALL InitRandgen(rand_nr,seed,'RAN2')
