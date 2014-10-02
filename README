@@ -1,12 +1,11 @@
 ====================================================================
 
---------
 Mol3d: 3D line and dust continuum radiative transfer code
 --------
 
 author:         Florian Ober
-version:        Oct 2014
-email:          fober@astrophysik.uni-kiel.de
+version:        Oct 2014  
+email:          fober@astrophysik.uni-kiel.de  
 
 --------
 Parts of this code are based on MC3D (Wolf et al. 1999/2003)
@@ -18,11 +17,11 @@ Parts of this code are based on MC3D (Wolf et al. 1999/2003)
 
 --  cfitsio library --
 
-This code needs cfitsio. Therefore, download it either from
-http://heasarc.gsfc.nasa.gov/fitsio/fitsio.html 
+This code needs cfitsio. Therefore, download it either from  
+http://heasarc.gsfc.nasa.gov/fitsio/fitsio.html  
 or have a look into your favored linux distribution software archive.
-
-The easiest way is to install cfitsio via your software repository,
+  
+The easiest way is to install cfitsio via your software repository,  
 for example:
 
     Arch linux:
@@ -35,12 +34,12 @@ for example:
 >zypper install cfitsio
 
 
-If you do so you can skip this section and go directly to the next
-section (-- compiler --)
-
-The second possibility is to install cfitsio into the directory 
-above this Mol3d installation (e.g. './../cfitsio'). Please not, it works
-best if you install cfitsio with shared libraries:
+If you do so you can skip this section and go directly to the next  
+section (-- compiler --)  
+  
+The second possibility is to install cfitsio into the directory   
+above this Mol3d installation (e.g. './../cfitsio'). Please not, it works  
+best if you install cfitsio with shared libraries:  
 
 >cd ../cfitsio/
 
@@ -49,27 +48,27 @@ best if you install cfitsio with shared libraries:
 >./make shared
 
 Don't forget to update your LD_LIBRARY_PATH:
-
+  
 >export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/path/to/cfitsio/directory"
 
 The best way is adding this command to your local ~/.bashrc
-
+  
 -- compiler --
-
+  
 Intel Fortran compiler should give the best performence, but Gfortran
 should also work.
-
-
+  
+  
 -- optional --
-Python3 (matplotlib, numpy, astropy) is required for visualisation.
-
+Python3 (matplotlib, numpy, astropy) is required for visualisation.  
+  
 This code uses OpenMP for parallelisation
-
+  
 --------------------------------------------------------------------
-
+  
 [B] 
 You have to (re-)compile the code:
-
+  
 >make new
 
 The default compiler is Intel Fortran compiler.
