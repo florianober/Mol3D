@@ -10,7 +10,6 @@ MODULE initiate
     USE grid_type, ONLY    : Grid_TYP, InitGrid, CloseGrid
     USE dust_type, ONLY    : Dust_TYP, InitDust, CloseDust
     USE gas_type, ONLY     : Gas_TYP, InitGas, CloseGas
-!~     USE source_type, ONLY  : SOURCES, InitSources, CloseSources
     USE source_type
     
     USE parser_mod
@@ -188,7 +187,7 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
     WRITE(unit=3,fmt='(A)')  '# All parameters that can be changed without recompiling mol3d are listed here.  #'
     WRITE(unit=3,fmt='(A)')  '# Please be aware that some parameters not intendet to be changeable yet.        #'
     WRITE(unit=3,fmt='(A)')  '# Therefore, they are note listed here, but accessable via the                   #'
-    WRITE(unit=3,fmt='(A)')  '# "initiate.f90" source file.                                                    #'
+    WRITE(unit=3,fmt='(A)')  '# "src/initiate.f90" source file.                                                    #'
     WRITE(unit=3,fmt='(A)')  '# If you have questions, please feel free to ask me.                             #'
     WRITE(unit=3,fmt='(A)')  '#                                                                                #'
     WRITE(unit=3,fmt='(A)')  '# author         : Florian Ober                                                  #'
@@ -225,7 +224,7 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
     WRITE(help,fmt='(L1)') calc_tmp
     WRITE(unit=3,fmt='(A)') 'calc_temp = {'//TRIM(help)//&
     '}                      calculate temperature (with monte carlo method)'
-    
+
 !~     CALL parse('do_raytr',do_raytr,new_input_file)
 !~     WRITE(help,fmt='(L1)') do_raytr
 !~     WRITE(unit=3,fmt='(A)') 'do_raytr = {'//TRIM(help)//'}'

@@ -67,7 +67,8 @@ def make_velo_int_plot(data, dvelo=1, cmap=plt.cm.nipy_spectral,
         ax2.set_xticks(extent_conv)
         ax2.set_xticklabels(np.round(ax2.get_xticks()*conv, 2))
         ax2.set_xlabel('distance [AU]')
-
+    return fig
+    
 def make_velo_ch_plot(data, vch, N1=3, N2=5, snr=1, cmap=plt.cm.nipy_spectral,
                       interpol='None', extent=[-1, 1, -1, 1],
                       label='flux [mJy/px]'):
@@ -127,8 +128,7 @@ def make_velo_ch_plot(data, vch, N1=3, N2=5, snr=1, cmap=plt.cm.nipy_spectral,
 
     #~ grid.cbar_axes[0].toggle_label(True)
     plt.setp(grid.axes_llc.xaxis.get_majorticklabels(), rotation=70)
-
-    #~ fig.savefig(pname+'_syn_velo_ch_map' +str(i)+'.pdf',bbox_inches='tight')
+    return fig
 
 def make_spectra(path_results, pname):
     """  present the spectral results of the project """
@@ -152,7 +152,8 @@ def make_spectra(path_results, pname):
     plt.ylabel('intensity [Jy]')
 
     # make intensity map
-    make_velo_int_plot(map_in, project.attr['dvelo'], extent=extent, conv=conv)
+    fig = make_velo_int_plot(map_in, project.attr['dvelo'], extent=extent, conv=conv)
+    fig.savefig(pname +'_intensity_map.pdf',bbox_inches='tight')
 
     # make velocity channel overview map
     mid = project.attr['i_vel_chan']
@@ -160,10 +161,10 @@ def make_spectra(path_results, pname):
     N1 = 3
     N2 = 5
     offset = int((N1*N2-1)/2.)
-    make_velo_ch_plot(map_in[mid-(incr*offset): mid + (incr*offset+1): incr],
-                      vch[mid-(incr*offset): mid + (incr*offset+1): incr],
-                      N1, N2, extent=extent, interpol='spline36')
-
+    fig = make_velo_ch_plot(map_in[mid-(incr*offset): mid + (incr*offset+1): incr],
+                            vch[mid-(incr*offset): mid + (incr*offset+1): incr],
+                            N1, N2, extent=extent, interpol='spline36')
+    fig.savefig(pname + '_velo_ch_map.pdf',bbox_inches='tight')
 if __name__ == "__main__":
     make_spectra(PATH_RESULTS, P_NAME)
     plt.show()

@@ -184,19 +184,16 @@ CONTAINS
         grid%t_dust(0,:)  = 0.0_r2
         k_phot = model%n_star_emi/100
 
-        
-!~         !$omp PRIVATE(seed,rand_nr)
-
         ! initialize random number generator
         seed = -1
-        !$omp parallel num_threads(basics%num_core) PRIVATE(seed, i_phot) FIRSTPRIVATE(rand_nr, photon)
+        !$omp parallel num_threads(basics%num_core) PRIVATE(rand_nr) FIRSTPRIVATE(seed)
         !$ seed = (omp_get_thread_num()+1)*(-1)
 !~         !$ print *,seed
         CALL InitRandgen(rand_nr,seed,'RAN2')
         !--------------------------------------------------------------------------! 
 !~         DO lucy = 1,5 ! TbD, in future we will use lucy iterations again, 
                          !      -> parallelisation should be more efficient
-        !$omp do schedule(dynamic)
+        !$omp do schedule(dynamic) PRIVATE(i_phot) FIRSTPRIVATE(photon)
         DO i_phot=1,model%n_star_emi
             ! show progress
             IF (modulo(i_phot, k_phot) == 0 .or. i_phot==model%n_star_emi) THEN

@@ -1,34 +1,70 @@
-===============================================================================
-Mol3d: 3D line and dust radiative transfer code
+====================================================================
+
+Mol3d: 3D line and dust continuum radiative transfer code
 
 --------
 author:         Florian Ober
-version:        Sep 2014
+version:        Oct 2014
 email:          fober@astrophysik.uni-kiel.de
 
 --------
-Parts of this code are based on MC3D 
-
-MC3D by S.Wolf 	[wolf@astrophysik.uni-kiel.de]
+Parts of this code are based on MC3D (Wolf et al. 1999/2003)
 --------
-===============================================================================
+====================================================================
 
----
+
 [A]  Preparations
+
+--  cfitsio library --
 
 This code needs cfitsio. Therefore, download it either from
 http://heasarc.gsfc.nasa.gov/fitsio/fitsio.html 
 or have a look into your favored linux distribution software archive.
 
-Install cfitsio globally or into the directory 
-above this Mol3d installation (e.g. './../cfitsio')
+The easiest way is to install cfitsio via your software repository,
+for example:
+
+    Arch linux:
+>pacman -S cfitsio
+
+    Ubuntu (14.04):
+>apt-get install libcfitsio3
+
+    openSUSE (13.1)
+>zypper install cfitsio
+
+
+If you do so you can skip this section and go directly to the next
+section (-- compiler --)
+
+The second possibility is to install cfitsio into the directory 
+above this Mol3d installation (e.g. './../cfitsio'). Please not, it works
+best if you install cfitsio with shared libraries:
+
+>cd ../cfitsio/
+
+>./configure
+
+>./make shared
+
+Don't forget to update your LD_LIBRARY_PATH:
+
+>export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/path/to/cfitsio/directory"
+
+The best way is adding this command to your local ~/.bashrc
+
+-- compiler --
 
 Intel Fortran compiler should give the best performence, but Gfortran
 should also work.
 
--optional
+
+-- optional --
+Python3 (matplotlib, numpy, astropy) is required for visualisation.
 
 This code uses OpenMP for parallelisation
+
+--------------------------------------------------------------------
 
 [B] 
 You have to (re-)compile the code:
@@ -51,6 +87,8 @@ To use OpenMP:
 For more options on the make process check out
 >make help
 
+--------------------------------------------------------------------
+
 [C]
 
 Run the code:
@@ -60,15 +98,18 @@ Run the code:
 All input parameters are stored in the ./input/input.dat file.
 Also it is possible to use another input file:
 
->./mol3d "/path/to/input-file""
+>./mol3d "/path/to/input-file"
 
-The disk model can be changed by editing the ./src/model_f90 file.
+The disk model can be changed by editing the ./src/model_mod.f90 file.
 Please do not forget to recompile the code afterwards.
 
 In addition, all input settings can be adjusted by editing the
 ./src/initiate.f90 file
 
-Please note: The code is still in development and bugs may exist!
+Please note: The code is still in development and bugs may exist! If
+you find one, please report to fober@astrophysik.uni-kiel.de
+
+--------------------------------------------------------------------
 
 [D]
 
@@ -78,6 +119,7 @@ Python3 (matplotlib, numpy, astropy) is required.
 There are 3 main routines to visualize your results:
 
 >cd visualize
+
 >./show_model.py "project_name"         # shows density, temperature and velocity maps
 
 >./make_spectrum.py "project_name"      # shows spectra
@@ -85,7 +127,7 @@ There are 3 main routines to visualize your results:
 >./visual_mol3d.py "project_name"       # shows everything (calls the routines above)
 
 If you changed the result path in the input file, you also need to adjust
-the file "path_results" in the visualize directory, or you can provide the path:
+the file "path_results" in the visualize directory, otherwise you can provide the path:
 
 >./visual_mol3d.py "project_name" "results_path"
 
@@ -93,5 +135,5 @@ the file "path_results" in the visualize directory, or you can provide the path:
 If you have further problems in running the code, please do not hesitate
 to ask me.
 
-You are free to use and extend this code, but if you do so,
+You are free to use and extend this code, but if you do so
 please cite 'F. Ober 2014 (in prep)'

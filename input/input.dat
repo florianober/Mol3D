@@ -1,28 +1,31 @@
-##################################################################################
-#                            mol3d input file                                    #
-#                                                                                #
-# All parameters that can be changed without recompiling mol3d are listed here.  #
-# Please be aware that some parameters intendet to be changeable yet. Therefore, #
-# they are note listed here, but accessable via the initiate.f90 source file.    #
-#                                                                                #
-# If you have questions, please feel free to ask me.                             #
-#                                                                                #
-# author: Florian Ober                                                           #
-# email : fober@astrophysik.uni-kiel.de                                          #    
-# date  : Sep 2014                                                               #
-##################################################################################
+#####################################################################################
+#                            mol3d input file                                       #
+#                                                                                   #
+# All parameters that can be changed without recompiling mol3d are listed here.     #
+# Please be aware that some parameters intendet to be changeable yet. Therefore,    #
+# they are note listed here, but accessable via the src/initiate.f90 source file.   #
+#                                                                                   #
+# If you have questions, please feel free to ask me.                                #
+#                                                                                   #
+# author: Florian Ober                                                              #
+# email : fober@astrophysik.uni-kiel.de                                             #
+# date  : Sep 2014                                                                  #
+#####################################################################################
 
                                           (+) working, (-) not working
 
 proname = {example}                       project name
 r_path = {results/}                       define results path, it is recommend to change this path 
 
-num_core    = {001}                       number of cores to use in parallel mode
+num_core    = {002}                       number of cores to use in parallel mode
 old_model   = {F}                         use results from earlier calculations (F,T)
 old_proname = {oldproname}                the project name of the older calculation 
 
 calc_temp = {T}                           calculate temperature (with monte carlo method)
-do_raytr = {T}                            Note: this switch is not working at the moment, -> src/initiate/f90
+                                          If F(alse) an analytical temperature distribution is
+                                          used, see src/temp_mod.f90 -> "Get_temp" function
+do_raytr = {T}                            Note: this switch is not working at the moment,
+                                          see src/initiate.f90
 
 r_in   = {2.0}                            inner radius
 r_ou   = {120}                            outer radius
@@ -45,15 +48,15 @@ line = {3}                                line transition no (see gas_input file
 i_vel_chan = {36}                         (half) Number of velocity channels
 vel_max = {4000.0}                        max velocity in spectrum (in m/s)
 
-gas_cat_name = {co.dat}                   gas catalog name (in input/mol) (leiden databaase style)
+gas_cat_name = {co.dat}                   gas catalog name (in input/mol) (Leiden database style)
 dust_cat_name = {mrn---v4}                dust catalog name (in input/dust) (in mc3d style)
 grid_name = {spherical}                   possible values: spherical (+), cylindrical (+), cartesian (-)
 grid_type = {1}                           default = 1. 2 and higher values for user defined grids
                                                     9 is reserved for a grid defined in a text file
 
-n_a = {100}                               x - cartesian(-), rho   - cylindrical(+), r   - spherical(+)
-n_b = {101}                               y - cartesian(-), phi   - cylindrical(+), z   - spherical(+)
-n_c = {1}                                 z - cartesian(-), theta - cylindrical(+), phi - spherical(+)
+n_a = {100}                               x - cartesian(-), rho - cylindrical(+), r     - spherical(+)
+n_b = {101}                               y - cartesian(-), phi - cylindrical(+), theta - spherical(+)
+n_c = {1}                                 z - cartesian(-), z   - cylindrical(+), phi   - spherical(+)
 sf = {1.03}
 
 flux_unit = {Jy_pix}                      possible values: Jy_pix, T_mb (check results)
