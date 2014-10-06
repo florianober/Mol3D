@@ -1,8 +1,14 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
+"""
+this script provides an alternative to start Mol3d.
+It is usefull if you want to run several instances of Mol3d
+for example for fitting prozesses. But this file has to
+adapted for the particular situation.
+
+"""
 
 import os
-#~ import math
 import sys
 import time
 import random
