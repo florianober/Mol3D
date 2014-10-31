@@ -16,9 +16,12 @@ import helper as hlp
 
 
 # some general definitions
-FILE_IN = open('path_result.dat')
-PATH_RESULTS = FILE_IN.readline().split()[0]
-FILE_IN.close()
+try:
+    FILE_IN = open('path_result.dat')
+    PATH_RESULTS = FILE_IN.readline().split()[0]
+    FILE_IN.close()
+except:
+    PATH_RESULTS = './'
 
 MOL3D_FILES = array(['_cell_boundaries.dat', '_input_file.dat',
                      '_model.dat', '_temp_x.dat',
@@ -163,7 +166,10 @@ class mol3d:
             self.__attr['r_in'] = float(self.get_attr_from_file('r_in'))
             self.__attr['sf'] = float(self.get_attr_from_file('sf'))
             self.__attr['distance'] = float(self.get_attr_from_file('distance'))
+            self.__attr['th_map'] = float(self.get_attr_from_file('th_map'))
+            self.__attr['ph_map'] = float(self.get_attr_from_file('ph_map'))
             self.__attr['n_bin_map'] = int(self.get_attr_from_file('n_bin_map'))
+
             self.__attr['line'] = int(self.get_attr_from_file('line'))
             self.__attr['gas_cat_name'] = self.get_attr_from_file('gas_cat_name')
             self.__attr['i_vel_chan'] = int(self.get_attr_from_file('i_vel_chan'))
@@ -182,6 +188,9 @@ class mol3d:
 
             elif self.__attr['gas_cat_name'] == 'hco+@xpol.dat':
                 self.__attr['tr_freq'] = (hlp.HCO_lines_freq[self.__attr['line']-1])
+
+            elif self.__attr['gas_cat_name'] == 'c18o.dat':
+                self.__attr['tr_freq'] = (hlp.C18O_lines_freq[self.__attr['line']-1])
             else:
                 print("ERROR, gas type unknown")
                 self.__attr['tr_freq'] = 1.0

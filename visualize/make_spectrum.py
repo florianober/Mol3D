@@ -28,10 +28,12 @@ else:
 if len(sys.argv) > 2:
     PATH_RESULTS = sys.argv[2]
 else:
-    FILE_IN = open('path_result.dat')
-    PATH_RESULTS = FILE_IN.readline().split()[0]
-    FILE_IN.close()
-
+    try:
+        FILE_IN = open('path_result.dat')
+        PATH_RESULTS = FILE_IN.readline().split()[0]
+        FILE_IN.close()
+    except:
+        PATH_RESULTS = '../results'
 ########################################################
 ### main
 
@@ -43,7 +45,7 @@ TEXT_SIZE = mpl.rcParams['font.size'] -2
 
 def make_velo_int_plot(data, dvelo=1, cmap=plt.cm.nipy_spectral,
                        interpol='None', extent=[-1, 1, -1, 1],
-                       label='flux [Jy/px * m/s]',conv=1):
+                       label='flux [Jy/px * m/s]',conv=1,snr=-1):
     """ make velocity integrated intensity map """
     # show velocity integrated map
     fig = plt.figure('velocity integrated map')
@@ -55,11 +57,17 @@ def make_velo_int_plot(data, dvelo=1, cmap=plt.cm.nipy_spectral,
     else:
         ax1.set_ylabel('distance')
         ax1.set_xlabel('distance')
+    if snr == -1:
+        im = ax1.imshow(data[:, :, :].sum(axis=0)*dvelo,
+                   origin='lower', interpolation=interpol, cmap=cmap,
+                   extent=extent)
+        plt.colorbar(im).set_label(label)
+    else:
+        im = ax1.imshow(data[:, :, :].sum(axis=0)*dvelo/(snr),
+                   origin='lower', interpolation=interpol, cmap=cmap,
+                   extent=extent)
+        plt.colorbar(im).set_label('SNR')
     
-    im = ax1.imshow(data[:, :, :].sum(axis=0)*dvelo,
-               origin='lower', interpolation=interpol, cmap=cmap,
-               extent=extent)
-    plt.colorbar(im).set_label(label)
     if conv != 1:
         ax2 = ax1.twin()
         ax2.axis["right"].toggle(ticklabels=False)
@@ -80,7 +88,6 @@ def make_velo_ch_plot(data, vch, N1=3, N2=5, snr=1, cmap=plt.cm.nipy_spectral,
         print(len(vch), data.shape[0], N1*N2)
         print("ERROR, data and velocity array do not have the same shape")
         return
-
     fig = plt.figure('velocity channel overview map')
     grid = AxesGrid(fig, 111, # similar to subplot(132)
                     nrows_ncols=(N1, N2),
@@ -152,7 +159,8 @@ def make_spectra(path_results, pname):
     plt.ylabel('intensity [Jy]')
 
     # make intensity map
-    fig = make_velo_int_plot(map_in, project.attr['dvelo'], extent=extent, conv=conv)
+    fig = make_velo_int_plot(map_in, project.attr['dvelo'], extent=extent,
+                             conv=conv)
     fig.savefig(pname +'_intensity_map.pdf',bbox_inches='tight')
 
     # make velocity channel overview map
@@ -163,7 +171,7 @@ def make_spectra(path_results, pname):
     offset = int((N1*N2-1)/2.)
     fig = make_velo_ch_plot(map_in[mid-(incr*offset): mid + (incr*offset+1): incr],
                             vch[mid-(incr*offset): mid + (incr*offset+1): incr],
-                            N1, N2, extent=extent, interpol='spline36')
+                            N1, N2, extent=extent, interpol='spline36',snr=8.17)
     fig.savefig(pname + '_velo_ch_map.pdf',bbox_inches='tight')
 if __name__ == "__main__":
     make_spectra(PATH_RESULTS, P_NAME)

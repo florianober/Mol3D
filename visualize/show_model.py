@@ -214,9 +214,9 @@ def present_plane(file_path):
         plt.clim(-400, 400)
         plt.colorbar().set_label('Velocity [m/s]')
 
-    #~ plt.figure('vel cut, ' + ext)
-    #~ plt.title('vel cut, ' + ext)
-    #~ plt.plot(pic[200, :, 7])
+    plt.figure('vel cut, ' + ext)
+    plt.title('vel cut, ' + ext)
+    plt.plot(pic[200, :, 7])
 
     #-------------------------------------------------
     #  molecule density
@@ -234,6 +234,23 @@ def present_plane(file_path):
                interpolation='None', cmap=plt.cm.jet)
     plt.clim(2, 8)
     plt.colorbar().set_label('molecule density lg [cm^-3]')
+
+    #-------------------------------------------------
+    #  dust density
+
+    data = np.log10(pic[:, :, 0] * 1e-6)
+    plt.figure('Dust number density distribution, ' + ext)
+    plt.title('Dust number density distribution, ' + ext)
+    plt.xlabel(xlab)
+    plt.ylabel(ylab)
+    cont = np.round(np.linspace(-5, 0, 10))
+
+    #~ CS = plt.contour(data, cont, linewidths=1, colors='k', extent=m_range)
+    #~ plt.clabel(CS, inline=1, fmt='%2.1f', fontsize=10)
+    plt.imshow(data, extent=m_range, origin='lower',
+               interpolation='None', cmap=plt.cm.jet)
+    plt.clim(-5, 0)
+    plt.colorbar().set_label('dust density lg [cm^-3]')
 
     #-------------------------------------------------
     #  H2 density

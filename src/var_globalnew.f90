@@ -35,6 +35,11 @@ module var_globalnew
         SBK       = 5.67e-8_r2, &
         w2erg     = 1.0e+07_r2
     REAL(kind=r2),PARAMETER,DIMENSION(1:5)    :: &
+        ! mass of collision partners (not final and needs an update)
+        ! 1 = H2 = 2.01588 u
+        ! 2 = He
+        ! 3 = Electron
+        !
         col_p_weight = (/2.01588_r2,0.0_r2,0.0_r2,0.0_r2,0.0_r2/)
         
     REAL(kind=r2),PARAMETER,DIMENSION(1:6)       ::  &
