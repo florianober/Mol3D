@@ -24,6 +24,7 @@ MODULE fluxes_type
         !REAL(kind=r2), dimension(:,:,:,:,:), ALLOCATABLE   :: stokes_map
         REAL(kind=r2), DIMENSION(:,:,:,:), ALLOCATABLE     :: channel_map
         REAL(kind=r2), DIMENSION(:,:,:), ALLOCATABLE       :: continuum_map
+        REAL(kind=r2), DIMENSION(:,:,:), ALLOCATABLE       :: continuum_map_temp
         INTEGER                :: n_dust_emi
         
     END TYPE Fluxes_TYP
@@ -81,11 +82,13 @@ CONTAINS
         
         allocate(  &
                   this%channel_map(0:2*n_bin_map, 0:2*n_bin_map,-vch:vch,1:n_tr), &
-                  this%continuum_map(0:2*n_bin_map, 0:2*n_bin_map,1:n_lam))
+                  this%continuum_map(0:2*n_bin_map, 0:2*n_bin_map,1:n_lam), &
+                  this%continuum_map_temp(0:2*n_bin_map, 0:2*n_bin_map,1:n_lam))
                   
         !this%stokes_map(:,:,:,:,:) = 0.0_r2
         this%channel_map(:,:,:,:)    = 0.0_r2
         this%continuum_map(:,:,:)    = 0.0_r2
+        this%continuum_map_temp(:,:,:)    = 0.0_r2
 
     END SUBROUTINE InitFluxes
 
@@ -96,7 +99,7 @@ CONTAINS
         TYPE(Fluxes_TYP), INTENT(INOUT) :: this
         !------------------------------------------------------------------------!
         CALL CloseCommon(this%fltype)
-        DEALLOCATE(this%channel_map,this%continuum_map )
+        DEALLOCATE(this%channel_map,this%continuum_map,this%continuum_map_temp )
         
         
     END SUBROUTINE CloseFluxes

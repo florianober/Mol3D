@@ -49,7 +49,7 @@ CONTAINS
     TYPE(Model_TYP),INTENT(IN)                       :: model
     TYPE(Dust_TYP),INTENT(IN)                        :: dust
     TYPE(Gas_TYP),INTENT(INOUT)                      :: gas
-    TYPE(Fluxes_TYP) ,INTENT(IN)                     :: fluxes
+    TYPE(Fluxes_TYP) ,INTENT(INOUT)                  :: fluxes
     TYPE(SOURCES),INTENT(IN)                         :: sources_in
     !--------------------------------------------------------------------------!  
     REAL(kind=r2), DIMENSION(1:3)                    :: caco
@@ -156,7 +156,7 @@ CONTAINS
         
         !--------------------------------------------------------------------------!
         TYPE(Basic_TYP),INTENT(IN)                       :: basics
-        TYPE(Fluxes_TYP),INTENT(IN)                      :: fluxes
+        TYPE(Fluxes_TYP),INTENT(INOUT)                   :: fluxes
         TYPE(Grid_TYP),INTENT(INOUT)                     :: grid
         TYPE(Model_TYP),INTENT(IN)                       :: model
         TYPE(Dust_TYP),INTENT(IN)                        :: dust
@@ -228,9 +228,9 @@ CONTAINS
                         kill_photon_count = kill_photon_count +1 
                     ELSEIF (.not. photon%inside .and. photon%observe) THEN
                             ! observe photon
-                        print *, photon%inside
-                        print *, kill_photon_count    
-                        CALL observe_photon(basics, model, grid, photon)
+!~                         print *, photon%inside
+!~                         print *, kill_photon_count    
+                        CALL observe_photon(basics, fluxes, model, grid, photon)
                     END IF
                     EXIT
                 END IF
@@ -251,13 +251,13 @@ CONTAINS
 
     END SUBROUTINE primary_temp
     
-    SUBROUTINE observe_photon(basics, model, grid, photon)
+    SUBROUTINE observe_photon(basics, fluxes, model, grid, photon)
         ! This routine should be moved to an own module (e.g. observe_mod)
         IMPLICIT NONE
         
         !----------------------------------------------------------------------!
         TYPE(Basic_TYP),INTENT(IN)                       :: basics
-!~         TYPE(Fluxes_TYP),INTENT(IN)                      :: fluxes
+        TYPE(Fluxes_TYP),INTENT(INOUT)                      :: fluxes
         TYPE(Grid_TYP),INTENT(INOUT)                     :: grid
         TYPE(Model_TYP),INTENT(IN)                       :: model
 !~         TYPE(Dust_TYP),INTENT(IN)                        :: dust
@@ -267,6 +267,8 @@ CONTAINS
         
         !----------------------------------------------------------------------!
         INTEGER                                          :: i_map
+        REAL(kind=r2), DIMENSION(3)                      :: ex, ey
+        REAL(kind=r2)                                    :: angle
 !~         INTEGER                                          :: x, y
         ! TbD: this should be done in advance and we should write observation
         !      variables in an own type
@@ -274,10 +276,32 @@ CONTAINS
         grid%dir_xyz(1) = sin(model%th_map(i_map)) * sin(basics%PI2-model%ph_map(i_map))
         grid%dir_xyz(2) = sin(model%th_map(i_map)) * sin(model%ph_map(i_map))
         grid%dir_xyz(3) = sin(basics%PI2-model%th_map(i_map))
-
-        print *, photon%pos_xyz_li
-        print *, photon%pos_xyz
-        stop
+        ! vector marking the +x-direction in the map
+            
+        ex(1) = -sin(model%ph_map(i_map))
+        ex(2) =  sin(basics%PI2-model%ph_map(i_map))
+        ex(3) =  0.0_r2
+        
+        ! vector marking the +y-direction in the map
+        
+        ey(1) = sin(basics%PI2-model%th_map(i_map)) * (-sin(basics%PI2-model%ph_map(i_map)))
+        ey(2) = sin(basics%PI2-model%th_map(i_map)) * (-sin(model%ph_map(i_map)))
+        ey(3) = sin(model%th_map(i_map))
+        
+        ! calculate the size of each px  
+        !user unit, but should be fixed to [AU]
+!~         rho_size_i = model%r_ou/(REAL(model%n_bin_map,KIND=r2)+0.5_r2)/model%zoom_map(1)   
+!~         rho_size_j = model%r_ou/(REAL(model%n_bin_map,KIND=r2)+0.5_r2)/model%zoom_map(1)
+!~         
+!~         pix_res_i  = rho_size_i/model%distance *PI /(3600.0_r2*180.0_r2)
+!~         pix_res_j  = rho_size_j/model%distance *PI /(3600.0_r2*180.0_r2)
+        angle = acos(dot_product(photon%dir_xyz,grid%dir_xyz))/PI*180
+        IF ( angle .lt. 5) THEN
+            print *, angle
+            print *, dot_product(photon%pos_xyz_li,ex)
+            print *, dot_product(photon%pos_xyz_li,ey)
+            
+        END IF
         
     END SUBROUTINE observe_photon
   
