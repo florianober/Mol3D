@@ -26,9 +26,13 @@ MODULE simulation_mod
     IMPLICIT NONE
     
     !--------------------------------------------------------------------------!
-    PRIVATE :: get_intensity_px
+    PRIVATE :: get_intensity_px, get_map_px, get_continuum_px
+               ! Note: these routines should be moved to a
+               ! new module (observe_mod, or raytracing_mod).
+               ! They don't belong to the simulation in general but can be
+               ! called.
     !--------------------------------------------------------------------------!
-    PUBLIC :: run_simu!, primary_temp, primary_scatt, dust_RT
+    PUBLIC  :: run_simu ! this should be the only function here.
     !--------------------------------------------------------------------------!
 CONTAINS
 
@@ -228,8 +232,6 @@ CONTAINS
                              inten_px(i,:,:)*(calc_px(i,3)*calc_px(i,4)*4.)/(rho_size_i*rho_size_j)
                 END DO
                 
-                
-                
                 DEALLOCATE(inten_px)
                 print *, '| | | saving channel maps'
 
@@ -255,7 +257,6 @@ CONTAINS
     !~                 print *,i
                 END DO
 
-                
                 !$omp end do nowait
                 !$omp end parallel
                 

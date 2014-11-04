@@ -204,7 +204,7 @@ CONTAINS
 
             ! initiate photon
             CALL InitPhoton(photon, 1, 'Photon',dust%n_dust)
-            
+            photon%observe = .True.
             ! 1. start photon (from primary source only)
             CALL start_photon(basics,grid, model, rand_nr, fluxes, dust, photon, sources_in)
 
@@ -226,10 +226,11 @@ CONTAINS
                 ELSE 
                     IF (photon%inside) THEN
                         kill_photon_count = kill_photon_count +1 
-                        
-                    ELSE
-                    ! observe photon, in work...
-                    CALL observe_photon(grid, photon)
+                    ELSEIF (.not. photon%inside .and. photon%observe) THEN
+                            ! observe photon
+                        print *, photon%inside
+                        print *, kill_photon_count    
+                        CALL observe_photon(basics, model, grid, photon)
                     END IF
                     EXIT
                 END IF
@@ -242,34 +243,41 @@ CONTAINS
         print *, '| | | photon transfer finished                '
         ! prepare & save final results
         DO i_dust=1,dust%n_dust
-            grid%cell_energy(i_dust,:) = grid%cell_energy_sum(i_dust,:,1)/ (basics%PIx4 * grid%cell_vol(:))
+            grid%cell_energy(i_dust,:) = grid%cell_energy_sum(i_dust,:,1)/ &
+                                         (basics%PIx4 * grid%cell_vol(:))
             grid%cell_energy_sum(i_dust,:,:) = 0.0_r2
         END DO
         CALL temp_final(basics, grid, dust)
 
     END SUBROUTINE primary_temp
     
-    SUBROUTINE observe_photon(grid, photon)
-    
+    SUBROUTINE observe_photon(basics, model, grid, photon)
+        ! This routine should be moved to an own module (e.g. observe_mod)
         IMPLICIT NONE
         
-        !--------------------------------------------------------------------------!
-!~         TYPE(Basic_TYP),INTENT(IN)                       :: basics
+        !----------------------------------------------------------------------!
+        TYPE(Basic_TYP),INTENT(IN)                       :: basics
 !~         TYPE(Fluxes_TYP),INTENT(IN)                      :: fluxes
         TYPE(Grid_TYP),INTENT(INOUT)                     :: grid
-!~         TYPE(Model_TYP),INTENT(IN)                       :: model
+        TYPE(Model_TYP),INTENT(IN)                       :: model
 !~         TYPE(Dust_TYP),INTENT(IN)                        :: dust
 !~         TYPE(SOURCES),INTENT(IN)                         :: sources_in
-        TYPE(PHOTON_TYP)                                 :: photon
+        TYPE(PHOTON_TYP),INTENT(IN)                      :: photon
 !~         TYPE(Randgen_TYP)                                :: rand_nr
         
-        !--------------------------------------------------------------------------!  
-!~         INTEGER                                          :: i, j
+        !----------------------------------------------------------------------!
+        INTEGER                                          :: i_map
 !~         INTEGER                                          :: x, y
-        !$ INTEGER omp_get_thread_num 
-                
-        
-        
+        ! TbD: this should be done in advance and we should write observation
+        !      variables in an own type
+        i_map = 1
+        grid%dir_xyz(1) = sin(model%th_map(i_map)) * sin(basics%PI2-model%ph_map(i_map))
+        grid%dir_xyz(2) = sin(model%th_map(i_map)) * sin(model%ph_map(i_map))
+        grid%dir_xyz(3) = sin(basics%PI2-model%th_map(i_map))
+
+        print *, photon%pos_xyz_li
+        print *, photon%pos_xyz
+        stop
         
     END SUBROUTINE observe_photon
   

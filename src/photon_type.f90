@@ -1,7 +1,7 @@
-!----------------------------------------------------------------------------!
+!------------------------------------------------------------------------------!
 ! def PHOTON_TYP: This type includes all informations of the active photon
 ! inspired by fosite by T. Illenseer 2011
-!----------------------------------------------------------------------------!
+!------------------------------------------------------------------------------!
 MODULE photon_type
   
     USE datatype
@@ -18,13 +18,15 @@ MODULE photon_type
     !--------------------------------------------------------------------------!
     TYPE PHOTON_TYP
         TYPE(Common_TYP) :: mtype                      ! -----------------     !
-        !-----------------------------------------------------------------------!
-        LOGICAL                                          :: inside
+        !----------------------------------------------------------------------!
+        LOGICAL                                         :: inside
+        LOGICAL                                         :: peel_off
+        LOGICAL                                         :: observe
         
-        INTEGER                                          :: n_interact
-        INTEGER                                          :: nr_cell
-        INTEGER                                          :: nr_cell_new
-        INTEGER                                          :: nr_lam
+        INTEGER                                         :: n_interact
+        INTEGER                                         :: nr_cell
+        INTEGER                                         :: nr_cell_new
+        INTEGER                                         :: nr_lam
         
         REAL(kind=r2), DIMENSION(1:3)                   :: pos_xyz
         REAL(kind=r2), DIMENSION(1:3)                   :: pos_xyz_li
@@ -36,9 +38,9 @@ MODULE photon_type
         REAL(kind=r2)                                   :: SIN2PH, COS2PH
         REAL(kind=r2)                                   :: SINTHE, COSTHE
         
-        REAL(kind=r2)                                  :: energy
-        REAL(kind=r2), DIMENSION(:),ALLOCATABLE            :: prob_action
-        REAL(kind=r2), DIMENSION(:),ALLOCATABLE            :: current_albedo
+        REAL(kind=r2)                                   :: energy
+        REAL(kind=r2), DIMENSION(:),ALLOCATABLE         :: prob_action
+        REAL(kind=r2), DIMENSION(:),ALLOCATABLE         :: current_albedo
         
 
     END TYPE PHOTON_TYP
@@ -59,20 +61,24 @@ CONTAINS
 
     SUBROUTINE InitPhoton(this, ut, un, n_dust)
         IMPLICIT NONE
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         TYPE(PHOTON_TYP)        :: this
         
-        INTEGER               :: ut, n_dust
+        INTEGER                 :: ut, n_dust
         
-        CHARACTER(LEN=*)      :: un
-        
-        !------------------------------------------------------------------------!
-        INTENT(IN)            :: ut,un ,n_dust
-        INTENT(INOUT)         :: this
-        !------------------------------------------------------------------------!
+        CHARACTER(LEN=*)        :: un
+
+!~         LOGICAL,OPTIONAL        :: observe
+        !----------------------------------------------------------------------!
+        INTENT(IN)              :: ut,un ,n_dust
+        INTENT(INOUT)           :: this
+        !----------------------------------------------------------------------!
         CALL InitCommon(this%mtype,ut,un)
         
-        this%inside      = .true.
+        this%inside      = .True.
+        this%observe     = .False.
+        this%peel_off    = .False.
+
         this%n_interact  = 0
         this%nr_cell     = 0
         this%nr_cell_new = 0
@@ -94,7 +100,6 @@ CONTAINS
         this%COS2PH      = 0.0_r2
         
         this%energy    = 0.0_r2
-
         ALLOCATE ( this%prob_action( 1:n_dust), &
                    this%current_albedo( 1:n_dust))
         this%prob_action(:)   = 0.0_r2
@@ -105,9 +110,9 @@ CONTAINS
 
     SUBROUTINE ClosePhoton(this)
         IMPLICIT NONE
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         TYPE(PHOTON_TYP), INTENT(INOUT) :: this
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         CALL CloseCommon(this%mtype)
         
         DEALLOCATE(this%prob_action,this%current_albedo)
@@ -117,29 +122,29 @@ CONTAINS
 
     PURE FUNCTION GetPhotonType(this) RESULT(ut)
         IMPLICIT NONE
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         TYPE(PHOTON_TYP), INTENT(IN) :: this
         INTEGER :: ut
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         ut = GetType_common(this%mtype)
     END FUNCTION GetPhotonType
 
 
     PURE FUNCTION GetPhotonName(this) RESULT(un)
         IMPLICIT NONE
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         TYPE(PHOTON_TYP), INTENT(IN) :: this
         CHARACTER(LEN=32) :: un
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         un = GetName_common(this%mtype)
     END FUNCTION GetPhotonName
 
     PURE FUNCTION PhotonInitialized(this) RESULT(i)
         IMPLICIT NONE
-          !------------------------------------------------------------------------!
+          !--------------------------------------------------------------------!
           TYPE(PHOTON_TYP), INTENT(IN) :: this
           LOGICAL :: i
-          !------------------------------------------------------------------------!
+          !--------------------------------------------------------------------!
           i = Initialized_common(this%mtype)
     END FUNCTION PhotonInitialized
     
