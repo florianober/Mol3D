@@ -43,7 +43,7 @@ contains
     TYPE(PHOTON_TYP),INTENT(INOUT)                   :: photon
     !--------------------------------------------------------------------------!
 
-    !CALL interact_temp(basics,grid,dust,rand_nr,fluxes,photon)
+    CALL interact_temp(basics,grid,dust,rand_nr,fluxes,photon)
 
     
     ! update last point of interaction

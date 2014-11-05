@@ -169,6 +169,7 @@ CONTAINS
         INTEGER                                          :: seed
         INTEGER(8)                                       :: i_phot, k_phot
         REAL(kind=r2),dimension(1:dust%n_lam)            :: sed
+        REAL(kind=r2)                                    :: unit_value
         !$ INTEGER omp_get_thread_num 
                 
         TYPE(PHOTON_TYP)                                 :: photon
@@ -240,19 +241,21 @@ CONTAINS
         END DO
         !$omp end do nowait
         !$omp end parallel
-!~         fluxes%continuum_map_temp = fluxes%continuum_map_temp*1.0e26_r2/(model%distance*con_pc)**2
+!~         fluxes%continuum_map_temp = fluxes%continuum_map_temp*1.0e26_r2/(model%distance*con_pc)**2/((1.0_r2-cos(al*PI/180.0))*(PI*2.0_r2))
+!~         fluxes%continuum_map_temp = fluxes%continuum_map_temp/((1.0_r2-cos(5.0_r2*PI/180.0_r2))*(PI*2.0_r2))
 !~         print *, sum(fluxes%continuum_map_temp(:,:,:))
-        print * , sum(fluxes%continuum_map_temp(:,:,:))
-!~         DO i_lam = 1, dust%n_lam
-!~             fluxes%continuum_map_temp(:,:,i_lam) = fluxes%continuum_map_temp(:,:,i_lam)/dust%d_lam(i_lam)
-!~             sed(i_lam) = sum(fluxes%continuum_map_temp(:,:,i_lam))
-!~         END DO
+!~         print * , sum(fluxes%continuum_map_temp(:,:,:))
+        DO i_lam = 1, dust%n_lam
+            unit_value = dust%lam(i_lam)**2/con_c/((1.0_r2-cos(5.0_r2*PI/180.0_r2))*(PI*2.0_r2))/ &
+                         dust%d_lam(i_lam)*1.0e26_r2/(model%distance*con_pc)**2
+            fluxes%continuum_map_temp(:,:,i_lam) = fluxes%continuum_map_temp(:,:,i_lam)* unit_value
+            sed(i_lam) = sum(fluxes%continuum_map_temp(:,:,i_lam))
+        END DO
 !~         print *, integ1(dust%lam(:), sed(:), 1, dust%n_lam )
         
         CALL save_continuum_map(model, basics, dust, fluxes, 1)
         
         print *, '| | | photon transfer finished                '
-        stop
         ! prepare & save final results
         DO i_dust=1,dust%n_dust
             grid%cell_energy(i_dust,:) = grid%cell_energy_sum(i_dust,:,1)/ &
@@ -320,15 +323,18 @@ CONTAINS
         ! calculate the angle
 !~         angle = dot_product(photon%dir_xyz,grid%dir_xyz)
         v_product = dot_product(photon%dir_xyz,grid%dir_xyz)
-        if (v_product .gt. 0.0_r2 ) THEN
+!~         if (v_product .gt. 0.0_r2 ) THEN
         angle = acos(v_product)*180.0_r2/PI
+!~             print *, 'pos', v_product, angle
 !~         ELSE
-!~             angle = acos(v_product)*180.0_r2/PI+180.0_r2
+!~             angle = acos(v_product)*180.0_r2/PI
+!~             print *, 'neg', v_product, angle
+!~ 
 !~         END IF
         ! cos(5.0_r2/180.0_r2*PI should be calculated before
 !~         IF ( angle .lt. cos(5.0_r2/180.0_r2*PI)) THEN
 !~         print *, angle
-        al = 45.0_r2
+        al = 5.0_r2
 !~         al = 90.0_r2/180.0_r2*PI
 !~         if (angle -abs( arcdis( photon%dir_xyz(3),sqrt( photon%dir_xyz(1)**2 + photon%dir_xyz(2)**2), &
 !~                            atanx(photon%dir_xyz(2), photon%dir_xyz(1) ), &
@@ -350,13 +356,13 @@ CONTAINS
 !~             unit_value = dust%lam(photon%nr_lam)**2/con_c
 !~             print *,angle
 !~             unit_value = (1.0_r2-cos(al*PI/360.0))/(PI*4.0_r2)
-            unit_value = 1.0_r2/((1.0_r2-cos(al*PI/180.0))*(PI*2.0_r2))
+!~             unit_value = 1.0_r2/((1.0_r2-cos(al*PI/180.0))*(PI*2.0_r2))
 !~             print *, unit_value
 !~             unit_value = 1/(2*PI*(1.0-angle))
 !~             print *, unit_value
 !~             stop
             fluxes%continuum_map_temp(x,y,photon%nr_lam) = fluxes%continuum_map_temp(x,y,photon%nr_lam) + &
-                                                           photon%energy*unit_value
+                                                           photon%energy!*unit_value
 !~             print *, photon%energy
 !~             print *, unit_value
 !~             print *, dust%lam(photon%nr_lam)
