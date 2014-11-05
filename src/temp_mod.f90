@@ -165,8 +165,10 @@ CONTAINS
         TYPE(Randgen_TYP)                                :: rand_nr
         
         !--------------------------------------------------------------------------!  
-        INTEGER                                          :: i_phot, i_dust
-        INTEGER                                          :: seed, k_phot
+        INTEGER                                          :: i_dust, i_lam
+        INTEGER                                          :: seed
+        INTEGER(8)                                       :: i_phot, k_phot
+        REAL(kind=r2),dimension(1:dust%n_lam)            :: sed
         !$ INTEGER omp_get_thread_num 
                 
         TYPE(PHOTON_TYP)                                 :: photon
@@ -182,7 +184,7 @@ CONTAINS
         !--------------------------------------------------------------------------!
         grid%t_dust(:,:)  = basics%t_dust_min
         grid%t_dust(0,:)  = 0.0_r2
-        k_phot = model%n_star_emi/100
+        k_phot = model%no_photon/100
 
         ! initialize random number generator
         seed = -1
@@ -194,11 +196,11 @@ CONTAINS
 !~         DO lucy = 1,5 ! TbD, in future we will use lucy iterations again, 
                          !      -> parallelisation should be more efficient
         !$omp do schedule(dynamic) PRIVATE(i_phot) FIRSTPRIVATE(photon)
-        DO i_phot=1,model%n_star_emi
+        DO i_phot=1,model%no_photon
             ! show progress
-            IF (modulo(i_phot, k_phot) == 0 .or. i_phot==model%n_star_emi) THEN
+            IF (modulo(i_phot, k_phot) == 0 .or. i_phot==model%no_photon) THEN
                     write (*,'(A,I3,A)') " | | | - progress : ", &
-                    int(i_phot/real(model%n_star_emi)*100.0), ' % done...'//char(27)//'[A'
+                    int(i_phot/real(model%no_photon)*100.0), ' % done...'//char(27)//'[A'
             END IF
 
 
@@ -227,10 +229,9 @@ CONTAINS
                     IF (photon%inside) THEN
                         kill_photon_count = kill_photon_count +1 
                     ELSEIF (.not. photon%inside .and. photon%observe) THEN
-                            ! observe photon
-!~                         print *, photon%inside
-!~                         print *, kill_photon_count    
-                        CALL observe_photon(basics, fluxes, model, grid, photon)
+                        ! observe photon  
+                        CALL observe_photon(basics, fluxes, model, dust,grid, photon)
+!~                         print *, i_phot
                     END IF
                     EXIT
                 END IF
@@ -239,8 +240,19 @@ CONTAINS
         END DO
         !$omp end do nowait
         !$omp end parallel
+!~         fluxes%continuum_map_temp = fluxes%continuum_map_temp*1.0e26_r2/(model%distance*con_pc)**2
+!~         print *, sum(fluxes%continuum_map_temp(:,:,:))
+        print * , sum(fluxes%continuum_map_temp(:,:,:))
+!~         DO i_lam = 1, dust%n_lam
+!~             fluxes%continuum_map_temp(:,:,i_lam) = fluxes%continuum_map_temp(:,:,i_lam)/dust%d_lam(i_lam)
+!~             sed(i_lam) = sum(fluxes%continuum_map_temp(:,:,i_lam))
+!~         END DO
+!~         print *, integ1(dust%lam(:), sed(:), 1, dust%n_lam )
+        
+        CALL save_continuum_map(model, basics, dust, fluxes, 1)
         
         print *, '| | | photon transfer finished                '
+        stop
         ! prepare & save final results
         DO i_dust=1,dust%n_dust
             grid%cell_energy(i_dust,:) = grid%cell_energy_sum(i_dust,:,1)/ &
@@ -251,7 +263,7 @@ CONTAINS
 
     END SUBROUTINE primary_temp
     
-    SUBROUTINE observe_photon(basics, fluxes, model, grid, photon)
+    SUBROUTINE observe_photon(basics, fluxes, model, dust, grid, photon)
         ! This routine should be moved to an own module (e.g. observe_mod)
         IMPLICIT NONE
         
@@ -260,7 +272,7 @@ CONTAINS
         TYPE(Fluxes_TYP),INTENT(INOUT)                      :: fluxes
         TYPE(Grid_TYP),INTENT(INOUT)                     :: grid
         TYPE(Model_TYP),INTENT(IN)                       :: model
-!~         TYPE(Dust_TYP),INTENT(IN)                        :: dust
+        TYPE(Dust_TYP),INTENT(IN)                        :: dust
 !~         TYPE(SOURCES),INTENT(IN)                         :: sources_in
         TYPE(PHOTON_TYP),INTENT(IN)                      :: photon
 !~         TYPE(Randgen_TYP)                                :: rand_nr
@@ -268,8 +280,15 @@ CONTAINS
         !----------------------------------------------------------------------!
         INTEGER                                          :: i_map
         REAL(kind=r2), DIMENSION(3)                      :: ex, ey
-        REAL(kind=r2)                                    :: angle
-!~         INTEGER                                          :: x, y
+        INTEGER                                          :: x, y
+        REAL(kind=r2)                                    :: angle, al
+        REAL(kind=r2)                                    :: v_product
+        REAL(kind=r2)                                    :: unit_value
+        REAL(kind=r2)                                    :: rho_size_x, rho_size_y
+        REAL(kind=r2)                                    :: pix_res_x, pix_res_y
+        
+
+
         ! TbD: this should be done in advance and we should write observation
         !      variables in an own type
         i_map = 1
@@ -288,19 +307,62 @@ CONTAINS
         ey(2) = sin(basics%PI2-model%th_map(i_map)) * (-sin(model%ph_map(i_map)))
         ey(3) = sin(model%th_map(i_map))
         
-        ! calculate the size of each px  
+        !
         !user unit, but should be fixed to [AU]
-!~         rho_size_i = model%r_ou/(REAL(model%n_bin_map,KIND=r2)+0.5_r2)/model%zoom_map(1)   
-!~         rho_size_j = model%r_ou/(REAL(model%n_bin_map,KIND=r2)+0.5_r2)/model%zoom_map(1)
+!~         rho_size_x = model%r_ou/(REAL(model%n_bin_map,KIND=r2)+0.5_r2)/model%zoom_map(1)   
+!~         rho_size_y = model%r_ou/(REAL(model%n_bin_map,KIND=r2)+0.5_r2)/model%zoom_map(1)
+        rho_size_x = model%r_ou/(REAL(model%n_bin_map,KIND=r2))/model%zoom_map(1)   
+        rho_size_y = model%r_ou/(REAL(model%n_bin_map,KIND=r2))/model%zoom_map(1)
 !~         
-!~         pix_res_i  = rho_size_i/model%distance *PI /(3600.0_r2*180.0_r2)
-!~         pix_res_j  = rho_size_j/model%distance *PI /(3600.0_r2*180.0_r2)
-        angle = acos(dot_product(photon%dir_xyz,grid%dir_xyz))/PI*180
-        IF ( angle .lt. 5) THEN
-            print *, angle
-            print *, dot_product(photon%pos_xyz_li,ex)
-            print *, dot_product(photon%pos_xyz_li,ey)
-            
+        pix_res_x  = rho_size_x/model%distance *PI /(3600.0_r2*180.0_r2)
+        pix_res_y  = rho_size_y/model%distance *PI /(3600.0_r2*180.0_r2)
+!~         unit_value = 1.0e26_r2*pix_res_x*pix_res_y
+        ! calculate the angle
+!~         angle = dot_product(photon%dir_xyz,grid%dir_xyz)
+        v_product = dot_product(photon%dir_xyz,grid%dir_xyz)
+        if (v_product .gt. 0.0_r2 ) THEN
+        angle = acos(v_product)*180.0_r2/PI
+!~         ELSE
+!~             angle = acos(v_product)*180.0_r2/PI+180.0_r2
+!~         END IF
+        ! cos(5.0_r2/180.0_r2*PI should be calculated before
+!~         IF ( angle .lt. cos(5.0_r2/180.0_r2*PI)) THEN
+!~         print *, angle
+        al = 45.0_r2
+!~         al = 90.0_r2/180.0_r2*PI
+!~         if (angle -abs( arcdis( photon%dir_xyz(3),sqrt( photon%dir_xyz(1)**2 + photon%dir_xyz(2)**2), &
+!~                            atanx(photon%dir_xyz(2), photon%dir_xyz(1) ), &
+!~                            cos(model%th_map(i_map)),sin(model%th_map(i_map)), model%ph_map(i_map) ) )*180.0/PI &
+!~                             .gt. 1.0) THEN
+
+!~         END IF
+        IF ( angle .le. al ) THEN
+!~         IF ( angle .lt. 0.0873 ) THEN
+!~             print *, angle
+!~             print *, acos(dot_product(photon%dir_xyz,grid%dir_xyz))*180/PI
+!~             
+            ! now find position on map
+!~             print *, dot_product(photon%pos_xyz_li,ex)
+!~             print *, dot_product(photon%pos_xyz_li,ey)
+!~             print *, photon%pos_xyz_li
+            x = dot_product(photon%pos_xyz_li,ex)/rho_size_x + REAL(model%n_bin_map+1,KIND=r2)
+            y = dot_product(photon%pos_xyz_li,ey)/rho_size_y + REAL(model%n_bin_map+1,KIND=r2)
+!~             unit_value = dust%lam(photon%nr_lam)**2/con_c
+!~             print *,angle
+!~             unit_value = (1.0_r2-cos(al*PI/360.0))/(PI*4.0_r2)
+            unit_value = 1.0_r2/((1.0_r2-cos(al*PI/180.0))*(PI*2.0_r2))
+!~             print *, unit_value
+!~             unit_value = 1/(2*PI*(1.0-angle))
+!~             print *, unit_value
+!~             stop
+            fluxes%continuum_map_temp(x,y,photon%nr_lam) = fluxes%continuum_map_temp(x,y,photon%nr_lam) + &
+                                                           photon%energy*unit_value
+!~             print *, photon%energy
+!~             print *, unit_value
+!~             print *, dust%lam(photon%nr_lam)
+!~             print *, unit_value * photon%energy
+!~ 
+!~             stop
         END IF
         
     END SUBROUTINE observe_photon

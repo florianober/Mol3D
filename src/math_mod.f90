@@ -303,7 +303,7 @@ contains
   ! ################################################################################################
   ! x & y => arcustanges(y/x)=w  [rad]                -3.14 <= w <= 3.14
   !  ---
-  function atanx( yy, xx ) result(atanx_result)
+  pure function atanx( yy, xx ) result(atanx_result)
     use datatype
 
     real(kind=r2), intent(in) :: xx, yy

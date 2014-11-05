@@ -84,7 +84,7 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
     INTEGER                                          :: concept_ps
     INTEGER                                          :: n_map
     INTEGER                                          :: n_dust_emi
-    INTEGER                                          :: n_star_emi
+    INTEGER(8)                                       :: no_photon
     INTEGER                                          :: n_bin_map
     INTEGER                                          :: n_dust
     INTEGER                                          :: n_tr
@@ -113,10 +113,8 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
                                                         dust, &
                                                         gas, &
                                                         sources_in
-    
 
     print *, "Code initialization"
-    
     IF ( iargc() == 1 ) THEN
         ! use command line given input name
         CALL getarg(1, in_arg)
@@ -233,7 +231,7 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
 !~     pluto_data = .True.
     pluto_data = .False.
     do_continuum_map = .True.
-    do_velo_ch_map   = .True.
+    do_velo_ch_map   = .False.
     IF (do_continuum_map .or. do_velo_ch_map) THEN
         do_raytr = .True.
     ELSE
@@ -291,9 +289,9 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
     '}                   half number of pixel, total pixel = 2 * n_bin_map1 + 1'
     
     
-    CALL parse('n_star_emi',n_star_emi,input_file)
-    WRITE(help,fmt='(I10)') n_star_emi
-    WRITE(unit=3,fmt='(A)') 'n_star_emi = {'//TRIM(help)// &
+    CALL parse('no_photon',no_photon,input_file)
+    WRITE(help,fmt='(ES9.2)') real(no_photon,kind=r2)
+    WRITE(unit=3,fmt='(A)') 'no_photon = {'//TRIM(help)// &
     '}            number of photons per wavelength'
     
     ALLOCATE(th_map(1:n_map))
@@ -324,7 +322,7 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
     al_map(1)   = 1
     
     CALL InitModel(model,1, ref_u_str, ref_u, r_in, r_ou, mass_dust, t_eff, R_star, M_star, n_map, distance, &
-                   n_star_emi,th_map,ph_map,zoom_map,al_map,n_bin_map)
+                   no_photon,th_map,ph_map,zoom_map,al_map,n_bin_map)
                     
     DEALLOCATE( th_map, &
                 ph_map, &
@@ -516,6 +514,8 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
     CALL AddSources(sources_in,1,(/0.0_r2,0.0_r2,0.0_r2/), R_star=model%r_star, T_star=model%t_star)
     ! 2 source (added by hand, could be a embedded planet or whatever)
 !~     CALL AddSources(sources_in,2,(/sf*4.95_r2,-sf*0.72_r2,0.0_r2/), T_star=1000.0, L_star=REAL(1e-4*L_sun,kind=r1))
+    print *, sources_in%L_total
+    print *, sources_in%L_total/(4*PI)
     ! .. source..
     
     print '(A,I3)', " Sources found: ", sources_in%n_sources

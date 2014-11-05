@@ -93,9 +93,9 @@ contains
     
 !~     photon%energy         = dust%c_in_star(i_lam)
 !~     photon%energy         = sources_in%source(i_source)%Luminosity/&
-!~                            (model%n_star_emi*sources_in%source_cdf(i_source))    ! set energy of photon package
-    photon%energy         = sources_in%L_total/&
-                           (model%n_star_emi)  ! set energy of photon package
+!~                            (model%no_photon*sources_in%source_cdf(i_source))    ! set energy of photon package
+    photon%energy         = sources_in%L_total / &
+                            model%no_photon   ! set energy of photon package
     
     
     

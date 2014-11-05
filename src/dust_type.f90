@@ -483,7 +483,7 @@ CONTAINS
         END DO
         DO i_lam = 1, this%n_lam
             this%i_star_emi(i_lam) = PI * 4.0_r2 * PI * model%r_star**2 * planck(model%t_star,this%lam(i_lam))  ! [W/m]
-            this%c_in_star( i_lam) = this%i_star_emi(i_lam) / model%n_star_emi
+            this%c_in_star( i_lam) = this%i_star_emi(i_lam) / model%no_photon
         END DO
         
         !CALL acc_select(this)

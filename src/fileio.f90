@@ -576,7 +576,7 @@ CONTAINS
         
     END SUBROUTINE save_input
     
-    SUBROUTINE save_continuum_map(model, basics, dust, fluxes)
+    SUBROUTINE save_continuum_map(model, basics, dust, fluxes, mode)
         
         IMPLICIT NONE
         !--------------------------------------------------------------------------!
@@ -585,39 +585,52 @@ CONTAINS
         TYPE(Dust_TYP), INTENT(IN)                   :: dust
         TYPE(Fluxes_TYP), INTENT(IN)                 :: fluxes
         !--------------------------------------------------------------------------!
+        INTEGER, INTENT(IN)                          :: mode
         INTEGER                                      :: i_lam, sta, u
+        CHARACTER(len=100)                           :: outname
+        REAL(kind=r2), DIMENSION(2*model%n_bin_map+1,2*model%n_bin_map+1,dust%n_lam)              :: map_out
         !--------------------------------------------------------------------------!
-        
+        IF (mode .eq. 1) THEN
+            outname = '_temp'
+            map_out = fluxes%continuum_map_temp
+        ELSEIF  (mode .eq. 2) THEN
+            outname = '_raytrace'
+            map_out = fluxes%continuum_map
+        ELSE
+            PRINT *, 'ERROR, wrong mode to write continuum map'
+            RETURN
+        END IF
         sta = 0
-        
         ! get a new u(nit) number
-        call ftgiou(u,sta)
+        CALL ftgiou(u,sta)
         ! init fits file
-        call ftinit(u,'!'//TRIM(basics%path_results)//Getproname(basics)//'_continuum_map.fits.gz',1,sta)
+        CALL ftinit(u,'!'//TRIM(basics%path_results)//Getproname(basics)//'_continuum_map'//TRIM(outname)//'.fits.gz',1,sta)
         ! write header
-        call ftphpr(u,.true.,-32,3,(/2*model%n_bin_map+1,2*model%n_bin_map+1,dust%n_lam/),0,1,.true.,sta)
+        CALL ftphpr(u,.true.,-32,3,(/2*model%n_bin_map+1,2*model%n_bin_map+1,dust%n_lam/),0,1,.true.,sta)
         ! write array to fits file
-        call ftpprd(u,1,1,(2*model%n_bin_map+1)**2*dust%n_lam,fluxes%continuum_map(:,:,:),sta)
+        CALL ftpprd(u,1,1,(2*model%n_bin_map+1)**2*dust%n_lam, map_out(:,:,:), sta)
         ! add other header keywords
-        call ftpkyj(u,'EXPOSURE',1500,'Total Exposure Time',sta)
+        CALL ftpkyj(u,'EXPOSURE',1500,'Total Exposure Time',sta)
         ! close the fits file
-        call ftclos(u, sta)
+        CALL ftclos(u, sta)
         ! free the (u)nit number
-        call ftfiou(u, sta)
+        CALL ftfiou(u, sta)
         
         !write sed in ascii format
-        OPEN(unit=2, file=TRIM(basics%path_results)//Getproname(basics)//'_continuum_sed.dat', &
+        
+        OPEN(unit=2, file=TRIM(basics%path_results)//Getproname(basics)//'_continuum_sed'//TRIM(outname)//'.dat', &
             action="write", status="unknown", form="formatted")
         WRITE(unit=2,fmt='(A)') '#wavelength [m]    flux [Jy]'
         WRITE(unit=2,fmt=*) ''
         DO i_lam =1, dust%n_lam
-            WRITE (unit=2,fmt='(2(ES15.6E3))') dust%lam(i_lam), sum(fluxes%continuum_map(:,:,i_lam))
+            WRITE (unit=2,fmt='(2(ES15.6E3))') dust%lam(i_lam), sum(map_out(:,:,i_lam))
 
         END DO
             
         CLOSE(unit=2)
 
     END SUBROUTINE save_continuum_map
+    
     
     SUBROUTINE save_ch_map(model, basics, gas, fluxes)
         

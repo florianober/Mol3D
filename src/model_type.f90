@@ -40,7 +40,7 @@ MODULE model_type
         INTEGER               :: n_bin_map
         INTEGER               :: n_r_sub
         INTEGER               :: n_pix_sub
-        INTEGER               :: n_star_emi
+        INTEGER(8)            :: no_photon
         
         
     END TYPE Model_TYP
@@ -61,7 +61,7 @@ CONTAINS
 
     SUBROUTINE InitModel(this, ut , un, ref_u, r_in, r_ou, &
                     mass_dust, t_eff, r_star,M_star, n_map, distance, &
-                    n_star_emi,th_map,ph_map,zoom_map,al_map,n_bin_map)
+                    no_photon,th_map,ph_map,zoom_map,al_map,n_bin_map)
         IMPLICIT NONE
         !------------------------------------------------------------------------!
         TYPE(Model_TYP)       :: this
@@ -70,7 +70,7 @@ CONTAINS
         INTEGER               :: n_map
         INTEGER               :: n_bin_map
         INTEGER               :: i_map
-        INTEGER               :: n_star_emi
+        INTEGER(8)            :: no_photon
         
         CHARACTER(LEN=*)      :: un
         
@@ -92,7 +92,7 @@ CONTAINS
         !------------------------------------------------------------------------!
         INTENT(IN)          ::  ut,un,ref_u, r_in, r_ou, &
                                 mass_dust, t_eff, r_star, M_star, n_map, distance, &
-                                th_map,ph_map,zoom_map,al_map,n_bin_map,n_star_emi
+                                th_map,ph_map,zoom_map,al_map,n_bin_map,no_photon
         !tbd: add l_star
         INTENT(INOUT)       :: this
         !------------------------------------------------------------------------!
@@ -124,7 +124,7 @@ CONTAINS
         this%r_in       = r_in
         this%r_ou       = r_ou
         this%n_map      = n_map
-        this%n_star_emi = n_star_emi
+        this%no_photon  = no_photon
         
         this%n_r_sub   = 2          !raytracing: nr of subdiv. in radial direction
         this%n_pix_sub = 11         !raytracing: ... in r/phi dir. in project. on pix.

@@ -95,17 +95,17 @@ CONTAINS
     print *, "| done!                 "
     print *, "|"
     IF (basics%do_raytr) THEN
-    
         ! --- first calculate level populations
-        print *,"| calculate level populations"
-        CALL calc_lvlpop(basics, grid , model, gas)
-        print *, "| done!                 "
-        print *, "|"
+        IF (basics%do_velo_ch_map ) THEN
+            print *,"| calculate level populations"
+            CALL calc_lvlpop(basics, grid , model, gas)
+            print *, "| done!                 "
+            print *, "|"
+        END IF
         hd_stepwidth = 0.2_r2
         
-        ! 1. allocations
        
-        ! 2. define step width = f(radial grid cell index)
+        ! define step width = f(radial grid cell index)
         dz_min = grid%co_mx_a(grid%n(1))
         do i_r=1,grid%n(1)
             if ( (grid%co_mx_a(i_r) - grid%co_mx_a(i_r-1)) < dz_min ) then
@@ -268,7 +268,7 @@ CONTAINS
                 DEALLOCATE(continuum_px)
                 print *, '| | | saving continuum maps'
         
-                CALL save_continuum_map(model, basics, dust, fluxes)
+                CALL save_continuum_map(model, basics, dust, fluxes, 2)
                 PRINT *, '| | done!'
             END IF
             DEALLOCATE( calc_px, notopx)
