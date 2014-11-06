@@ -15,7 +15,7 @@
 !
 ! ---
 program mol3d
-    USE var_globalnew
+    USE var_global
     USE datatype
     
     USE basic_type

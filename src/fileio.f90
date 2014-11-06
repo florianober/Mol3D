@@ -1,6 +1,6 @@
 MODULE fileio
 
-    USE var_globalnew
+    USE var_global
     USE datatype
     USE grid_type
     USE basic_type
@@ -588,7 +588,7 @@ CONTAINS
         INTEGER, INTENT(IN)                          :: mode
         INTEGER                                      :: i_lam, sta, u
         CHARACTER(len=100)                           :: outname
-        REAL(kind=r2), DIMENSION(2*model%n_bin_map+1,2*model%n_bin_map+1,dust%n_lam)              :: map_out
+        REAL(kind=r2), DIMENSION(0:2*model%n_bin_map,0:2*model%n_bin_map,1:dust%n_lam)              :: map_out
         !--------------------------------------------------------------------------!
         IF (mode .eq. 1) THEN
             outname = '_temp'

@@ -5,7 +5,7 @@
 module transfer_mod
 
     USE datatype
-    USE var_globalnew
+    USE var_global
     
     USE grid_type
     USE dust_type
@@ -14,7 +14,6 @@ module transfer_mod
     USE photon_type
     
     USE math_mod
-    USE tools_mod
     USE grd_mod
 
     IMPLICIT NONE
@@ -444,7 +443,6 @@ contains
         IF (d_l < grid%d_l_min) then
            ! step width too small
             kill_photon       = .true.
-            kill_photon_count = kill_photon_count +1
             d_l = d_l+1.0e3_r2*epsilon(d_l) 
         end if
 
@@ -452,12 +450,13 @@ contains
     END SUBROUTINE path_cy
   
   
-    SUBROUTINE path_sp( grid, p0_vec, pos_xyz_new, nr_cell, nr_cell_new, d_l, kill_photon, d_vec)
+    SUBROUTINE path_sp( grid, p0_vec, pos_xyz_new, nr_cell, nr_cell_new, d_l,  &
+                        kill_photon, d_vec)
     
         IMPLICIT NONE
-        !--------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         TYPE(Grid_TYP),INTENT(IN)                         :: grid
-        !--------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         
         real(kind=r2),               intent(out)         :: d_l
         real(kind=r2), dimension(1:3), intent(in)        :: p0_vec
@@ -467,9 +466,10 @@ contains
         
         integer,                     intent(in)           :: nr_cell
         integer,                     intent(out)          :: nr_cell_new
+        integer                                           :: nr_cell_new2
 
         logical,                     intent(out)          :: kill_photon
-        !--------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         integer                                           :: hi1
         integer, dimension(1)                             :: hi_arr1
         real(kind=r2)                                     :: hd1, hd2, hd3
@@ -480,7 +480,7 @@ contains
         real(kind=r2), dimension(1:6)                     :: d_lx
         real(kind=r2), dimension(1:2)                     :: hd_arr1
         
-        !--------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         ! ---
         ! default:
         kill_photon = .false.
@@ -537,10 +537,12 @@ contains
         ! 1.2. theta_min, theta_max
         ! rewritten from scratch
         ! We have to calculate the intersection of a line with a cone
-        ! We follow David Eberly : "Intersection of a Line and a Cone", www.geometrictools.com
+        ! We follow David Eberly : "Intersection of a Line and a Cone",
+        ! www.geometrictools.com
         !
         ! 
-        ! We use the fact, that the cones axis is the z axis in our model space, therefore
+        ! We use the fact, that the cones axis is the z axis in our model space,
+        ! therefore
         ! A = (/0.0_r2,0.0_r2,1.0_r2/) = e_z
         ! 
         IF (grid%n(2) > 1) THEN
@@ -559,7 +561,8 @@ contains
                 l1 = (-c1 + sqrt(disc))/c2
                 l2 = (-c1 - sqrt(disc))/c2
               
-                ! test if the resulting point is on the correct cone and not the refelcted one
+                ! test if the resulting point is on the correct cone and not the
+                ! refelected one
                 
                 IF ( sign(1.0_r2,hd_th1) * (p0_vec(3) + l1*d_vec(3) ) .gt. 0.0_r2) THEN
                     hd_arr1(1) = l1
@@ -574,7 +577,8 @@ contains
                 END IF
               
             ELSE
-                ! We are not interested in the cone if it does not have an intersection.
+                ! We are not interested in the cone if it does not have
+                ! an intersection.
                 ! Even we don't care about tangents (c2 == 0)
                 !
                 hd_arr1(1) = -1.0_r2
@@ -612,7 +616,8 @@ contains
                 l1 = (-c1 + sqrt(disc))/c2
                 l2 = (-c1 - sqrt(disc))/c2
               
-                ! test if the resulting point is on the correct cone and not the refelcted one
+                ! test if the resulting point is on the correct cone and not the
+                ! refelected one
                 
                 IF ( sign(1.0_r2,hd_th1) * (p0_vec(3) + l1*d_vec(3) ) .gt. 0.0_r2) THEN
                     hd_arr1(1) = l1
@@ -670,34 +675,6 @@ contains
         else
             d_lx(5:6) = -1.0_r2
         end if
-        
-        ! -
-        ! 2. determine closest boundary & new new cell number
-        ! check: is there any boundary in forward direction of the photon (distance > 0)?
-!~         if (maxval(d_lx(:)) <= 0.0_r2) then
-!~            ! closest boundary NOT found :-(
-!~            kill_photon       = .true.
-!~            kill_photon_count = kill_photon_count +1
-!~        
-!~            if (show_error) then
-!~               print *, "*** problem in sr path():"
-!~               print *, "*** no cell boundary in forward direction."
-!~               
-!~               print *, "pos_xyz"
-!~               print *, real(pos_xyz_new)
-!~               ! -
-!~               print *, "rtp"
-!~               print *, &
-!~                    real(norm(pos_xyz_new)), &
-!~                    !real(rad2grad(atan2(pos_xyz_new(3),norm(pos_xyz_new(1:2))))), &
-!~                    real(rad2grad(atan3(pos_xyz_new(2),pos_xyz_new(1))))
-!~               ! -
-!~               print *, "cell #", grid%cell_nr2idx(:,nr_cell)
-!~               
-!~               print *, "---"
-!~               print *, "check line: 'd_l = d_lx_sel(hi1) * 1.0000001_r2'"
-!~            end if
-!~         end if
 
 
         ! determine d_l
@@ -707,20 +684,13 @@ contains
         IF (hi1 .gt. 6 .or. hi1 .lt. 1) THEN
             ! no min gt. 0 in d_lx
             ! we procced with a minimum step 
-            ! This case should not be raised, but in fact, if some routine is buggy, it can happen
+            ! This case should not be raised, but in fact, if some routine is
+            ! buggy, it can happen
             IF (show_error) print *, "WARNING, no boundary in forward direction found"
             d_l = grid%d_l_min+epsilon(d_l)
         ELSE
             d_l = d_lx(hi1) +1.0e6_r2*epsilon(d_l)
         END IF
-            
-        ! check: is the calculated step width large than the minimum allowed step width?
-!~         if (d_l < grid%d_l_min) then
-!~            ! step width too small
-!~            kill_photon       = .true.
-!~            kill_photon_count = kill_photon_count +1
-!~            d_l = d_l+1.0e5_r2*epsilon(d_l) 
-!~         end if
 
         ! -
         ! 3.new position
@@ -728,52 +698,67 @@ contains
         ! 
         ! 4. new cell number
         ! a) use the generic routine
-        nr_cell_new = get_cell_nr( grid,pos_xyz_new )
+!~         nr_cell_new = get_cell_nr( grid,pos_xyz_new )
         
         ! b) use the cell id's (should be much faster)
-    !~     IF (hi1 == 1 ) THEN
-    !~         nr_cell_new2 = nr_cell - grid%n(2)*grid%n(3)
-    !~     ELSEIF (hi1 == 2 ) THEN
-    !~         nr_cell_new2 = nr_cell + grid%n(2)*grid%n(3)
-    !~     ELSEIF (hi1 == 3 ) THEN
-    !~         nr_cell_new2 = nr_cell - grid%n(3)
-    !~     ELSEIF (hi1 == 4 ) THEN
-    !~         nr_cell_new2 = nr_cell + grid%n(3)
-    !~     ELSEIF (hi1 == 5 ) THEN
-    !~         nr_cell_new2 = nr_cell - 1
-    !~     ELSEIF (hi1 == 6 ) THEN
-    !~         nr_cell_new2 = nr_cell + 1
-    !~     END IF
-        IF (show_error) THEN
-            IF (grid%cell_nr2idx(2,nr_cell)+1 /= grid%cell_nr2idx(2,nr_cell_new) .and. &
-                grid%cell_nr2idx(2,nr_cell)-1 /= grid%cell_nr2idx(2,nr_cell_new) .and. &
-                grid%cell_nr2idx(2,nr_cell)  /= grid%cell_nr2idx(2,nr_cell_new) .and. &
-                grid%cell_nr2idx(2,nr_cell_new) /= 0 ) THEN
-                print *, 'main error'
-                print *, d_lx
-                print *, hi1
-                print *, 'pos:'
-                print *, ca2sp(p0_vec)
-                print *, ca2sp(pos_xyz_new)
-                print *, p0_vec
-                print *, pos_xyz_new
-                print *, d_vec
-                
-                print *, ''
-                print *, grid%cell_nr2idx(:,nr_cell)
-                print *, grid%cell_nr2idx(:,nr_cell_new)
-                print *, nr_cell
-
-            ELSEIF (grid%cell_nr2idx(2,nr_cell) /= grid%cell_nr2idx(2,nr_cell_new) .and. nr_cell_new /= 0 ) THEN
-                IF  (hi1 > 4 .or. hi1 < 3) THEN
-                    print *, 'theta change without theta wall detected'
-                    print *, hi1
-                    print *, grid%cell_nr2idx(1,nr_cell) ,grid%cell_nr2idx(1,nr_cell_new)
-                    print *, grid%cell_nr2idx(2,nr_cell) ,grid%cell_nr2idx(2,nr_cell_new)
-                    print *, grid%cell_nr2idx(3,nr_cell) ,grid%cell_nr2idx(3,nr_cell_new)
-                END IF
+        IF (hi1 == 1 ) THEN
+            nr_cell_new2 = nr_cell - grid%n(2)*grid%n(3)
+            IF (nr_cell_new2 <= 0 ) THEN
+                nr_cell_new2 = 0
             END IF
+        ELSEIF (hi1 == 2 ) THEN
+            nr_cell_new2 = nr_cell + grid%n(2)*grid%n(3)
+            IF (nr_cell_new2 > grid%n_cell ) THEN
+                nr_cell_new2 = nr_cell
+            END IF
+        ELSEIF (hi1 == 3 ) THEN
+            nr_cell_new2 = nr_cell - grid%n(3)
+        ELSEIF (hi1 == 4 ) THEN
+            nr_cell_new2 = nr_cell + grid%n(3)
+        ELSEIF (hi1 == 5 ) THEN
+            nr_cell_new2 = nr_cell - 1
+        ELSEIF (hi1 == 6 ) THEN
+            nr_cell_new2 = nr_cell + 1
         END IF
+        nr_cell_new = nr_cell_new2
+!~         IF (show_error) THEN
+!~             IF (nr_cell_new2 /= nr_cell_new) THEN
+!~                 print *, nr_cell_new2, nr_cell_new, nr_cell
+!~                 print *,hi1
+!~                 stop
+!~             END IF
+!~         END IF
+!~         nr_cell_new = nr_cell_new2
+!~         IF (show_error) THEN
+!~             IF (grid%cell_nr2idx(2,nr_cell)+1 /= grid%cell_nr2idx(2,nr_cell_new) .and. &
+!~                 grid%cell_nr2idx(2,nr_cell)-1 /= grid%cell_nr2idx(2,nr_cell_new) .and. &
+!~                 grid%cell_nr2idx(2,nr_cell)  /= grid%cell_nr2idx(2,nr_cell_new) .and. &
+!~                 grid%cell_nr2idx(2,nr_cell_new) /= 0 ) THEN
+!~                 print *, 'main error'
+!~                 print *, d_lx
+!~                 print *, hi1
+!~                 print *, 'pos:'
+!~                 print *, ca2sp(p0_vec)
+!~                 print *, ca2sp(pos_xyz_new)
+!~                 print *, p0_vec
+!~                 print *, pos_xyz_new
+!~                 print *, d_vec
+!~                 
+!~                 print *, ''
+!~                 print *, grid%cell_nr2idx(:,nr_cell)
+!~                 print *, grid%cell_nr2idx(:,nr_cell_new)
+!~                 print *, nr_cell
+!~ 
+!~             ELSEIF (grid%cell_nr2idx(2,nr_cell) /= grid%cell_nr2idx(2,nr_cell_new) .and. nr_cell_new /= 0 ) THEN
+!~                 IF  (hi1 > 4 .or. hi1 < 3) THEN
+!~                     print *, 'theta change without theta wall detected'
+!~                     print *, hi1
+!~                     print *, grid%cell_nr2idx(1,nr_cell) ,grid%cell_nr2idx(1,nr_cell_new)
+!~                     print *, grid%cell_nr2idx(2,nr_cell) ,grid%cell_nr2idx(2,nr_cell_new)
+!~                     print *, grid%cell_nr2idx(3,nr_cell) ,grid%cell_nr2idx(3,nr_cell_new)
+!~                 END IF
+!~             END IF
+!~         END IF
     END SUBROUTINE path_sp
 
 end module transfer_mod

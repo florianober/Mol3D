@@ -1,4 +1,4 @@
-module var_globalnew
+module var_global
   use datatype
 
   implicit none
@@ -14,9 +14,7 @@ module var_globalnew
   ! con_mu    ... atomic mass unit        [kg]
   ! con_ c2   ... con_h*con_c/con_k
   ! real(kind=r3), public, parameter :: &
-  !     PI        = 3.14159265358979324_r3
-  
-  
+
     real(kind=r2),parameter :: &
         PI        = 3.14159265358979324_r2, &
         con_h     = 6.626176e-34_r2, &
@@ -33,7 +31,9 @@ module var_globalnew
         M_sun     = 1.9891e+30_r2, &
         R_sun     = 0.6960e+9, &
         SBK       = 5.67e-8_r2, &
-        w2erg     = 1.0e+07_r2
+        w2erg     = 1.0e+07_r2, &
+        rel_err   = 1.0e-8, &   ! controls the rel error in the raytracing alg
+        abs_err   = 1.0e-20     ! controls the abs error in the raytracing alg
     REAL(kind=r2),PARAMETER,DIMENSION(1:5)    :: &
         ! mass of collision partners (not final and needs an update)
         ! 1 = H2 = 2.01588 u
@@ -81,10 +81,6 @@ module var_globalnew
   character(len=13), public, parameter :: path_extern      = "input/extern/"
   character(len=10), public, parameter :: path_mol         = "input/mol/"
   
-  
-  
-
-
   ! ---
   ! strings
   ! ---
@@ -93,24 +89,14 @@ module var_globalnew
   ! ---
   ! integer
   ! ---
-  integer, public :: pre_ana
   integer, public :: velo_type
 
-  integer, public :: kill_photon_count, n_wrong_temp, n_interact_max
-
-
-  ! ---
-  ! real(kind=r2)
-  ! ---
-  !real(kind=r2), public :: i_min
-!~   real(kind=r2), public :: acc_select_level
-
+  integer, public :: n_interact_max
 
   ! ---
   ! logical
   ! ---
   logical, public :: show_error
-  !logical, public :: inside, show_error, scatt_mat
 
 
-end module var_globalnew
+end module var_global

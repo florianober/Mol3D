@@ -5,7 +5,7 @@
 MODULE source_type
   
     USE datatype
-    USE var_globalnew
+    USE var_global
     USE dust_type
     USE math_mod
     USE common_type, &
@@ -19,7 +19,7 @@ MODULE source_type
     ! 
     !--------------------------------------------------------------------------!
         TYPE SOURCE_TYP
-        !-----------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         REAL(kind=r2)                                        :: Luminosity
         REAL(kind=r2),DIMENSION(1:3)                         :: pos_xyz
         REAL(kind=r2),DIMENSION(:),ALLOCATABLE               :: wave_cdf
@@ -29,8 +29,8 @@ MODULE source_type
     
     
     TYPE SOURCES
-        TYPE(Common_TYP) :: mtype                       ! -----------------     !
-        !-----------------------------------------------------------------------!
+        TYPE(Common_TYP) :: mtype                       ! -----------------    !
+        !----------------------------------------------------------------------!
         REAL(kind=r2)                                        :: L_total
         TYPE(SOURCE_TYP),DIMENSION(:),ALLOCATABLE                :: source
         REAL(kind=r2),DIMENSION(:),ALLOCATABLE                   :: source_cdf
@@ -61,17 +61,17 @@ CONTAINS
 
     SUBROUTINE InitSources(this, ut, un,dust)
         IMPLICIT NONE
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         TYPE(SOURCES)          :: this
         TYPE(Dust_TYP)         :: dust
         INTEGER                :: ut
         
         CHARACTER(LEN=*)       :: un
         
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         INTENT(IN)             :: ut,un
         INTENT(INOUT)          :: this
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         CALL InitCommon(this%mtype,ut,un)
         this%n_sources = 0
         ALLOCATE(this%lam(1:dust%n_lam))
@@ -84,7 +84,7 @@ CONTAINS
 
     SUBROUTINE AddSources(this, s_type ,pos_xyz, T_star, R_star, L_star)
         IMPLICIT NONE
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         TYPE(SOURCES)                              :: this
         INTEGER                                    :: i_source, s_type, i
         REAL(kind=r2)                              :: L, B
@@ -93,10 +93,10 @@ CONTAINS
         REAL(kind=r2),DIMENSION(1:3)               :: pos_xyz
         TYPE(SOURCE_TYP),DIMENSION(:), ALLOCATABLE :: source_tmp
         
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         INTENT(INOUT)         :: this
         INTENT(IN)            :: pos_xyz, s_type, R_star,T_star
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         i_source = this%n_sources + 1
         B = 0.0_r2
         L = 0.0_r2
@@ -139,7 +139,8 @@ CONTAINS
                 L = L_star
             ELSE
                 IF (present(R_star)) THEN
-                    L = integ1(this%lam(:),PI * 4.0_r2 * PI * R_star**2 * planck(T_star,this%lam(:)) , 1, this%n_lam)
+                    L = integ1(this%lam(:),PI * 4.0_r2 * PI * R_star**2 *      &
+                        planck(T_star,this%lam(:)) , 1, this%n_lam)
                 ELSE
                     print *,'ERROR: star radius not given'
                     return
@@ -182,7 +183,8 @@ CONTAINS
             IF (i == 1) THEN
                 this%source_cdf(i) = this%source(i)%Luminosity /this%L_total
             ELSE
-                this%source_cdf(i) = this%source_cdf(i-1) + this%source(i)%Luminosity /this%L_total
+                this%source_cdf(i) = this%source_cdf(i-1) +                    &
+                                     this%source(i)%Luminosity /this%L_total
             END IF
         END DO
         
@@ -193,9 +195,9 @@ CONTAINS
 
     SUBROUTINE CloseSources(this)
         IMPLICIT NONE
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         TYPE(SOURCES), INTENT(INOUT) :: this
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         CALL CloseCommon(this%mtype)
         DEALLOCATE(this%source)
         
@@ -204,31 +206,31 @@ CONTAINS
 
     PURE FUNCTION GetSourcesType(this) RESULT(ut)
         IMPLICIT NONE
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         TYPE(SOURCES), INTENT(IN)      :: this
         INTEGER :: ut
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         ut = GetType_common(this%mtype)
     END FUNCTION GetSourcesType
 
 
     PURE FUNCTION GetSourcesName(this) RESULT(un)
         IMPLICIT NONE
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         TYPE(SOURCES), INTENT(IN)       :: this
         CHARACTER(LEN=32) :: un
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         un = GetName_common(this%mtype)
     END FUNCTION GetSourcesName
     
     FUNCTION GetNewSource(this,rndx) RESULT(i)
         
         IMPLICIT NONE
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         TYPE(SOURCES), INTENT(IN) :: this
         REAL(kind=r2), INTENT(IN) :: rndx
         INTEGER                   :: i
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         IF (this%n_sources == 1) THEN
             i = 1
         ELSE
@@ -241,12 +243,12 @@ CONTAINS
     FUNCTION GetNewLam(this,i_source,rndx) RESULT(i)
         
         IMPLICIT NONE
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         TYPE(SOURCES), INTENT(IN) :: this
         REAL(kind=r2), INTENT(IN) :: rndx
         INTEGER, INTENT(IN)       :: i_source
         INTEGER                   :: i
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
 
         i = binary_search(rndx, this%source(i_source)%wave_cdf)+1
     
@@ -255,10 +257,10 @@ CONTAINS
 
     PURE FUNCTION SourcesInitialized(this) RESULT(i)
         IMPLICIT NONE
-          !------------------------------------------------------------------------!
+          !--------------------------------------------------------------------!
           TYPE(SOURCES), INTENT(IN) :: this
           LOGICAL :: i
-          !------------------------------------------------------------------------!
+          !--------------------------------------------------------------------!
           i = Initialized_common(this%mtype)
           
           IF (i .and. this%n_sources == 0) THEN

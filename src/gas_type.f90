@@ -5,7 +5,7 @@
 MODULE gas_type
   
     USE datatype
-    USE var_globalnew
+    USE var_global
     USE common_type, &
         GetType_common => GetType, GetName_common => GetName, &
         Initialized_common => Initialized

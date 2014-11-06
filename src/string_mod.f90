@@ -1,6 +1,7 @@
 module string_mod
   implicit none
-  public :: read_int, read_real, check_int, check_real, real2strg, strg2real, int2strg, strg2int, num2strg4, manual
+  public :: read_int, read_real, check_int, check_real, real2strg, strg2real,  &
+            int2strg, strg2int, num2strg4, manual
 
 contains
 
@@ -376,7 +377,7 @@ contains
   ! read manual entry
   ! ---
   subroutine manual(manpage)
-    use var_globalnew
+    use var_global
     
     integer, intent(in) :: manpage
     logical :: hl1, hl2

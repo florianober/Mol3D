@@ -5,7 +5,7 @@
 MODULE photon_type
   
     USE datatype
-    USE var_globalnew
+    USE var_global
     USE common_type, &
         GetType_common => GetType, GetName_common => GetName, &
         Initialized_common => Initialized
@@ -59,10 +59,11 @@ MODULE photon_type
     !--------------------------------------------------------------------------!
 CONTAINS
 
-    SUBROUTINE InitPhoton(this, ut, un, n_dust)
+    SUBROUTINE InitPhoton(this, ut, un, n_dust, observe)
         IMPLICIT NONE
         !----------------------------------------------------------------------!
         TYPE(PHOTON_TYP)        :: this
+        LOGICAL                 :: observe
         
         INTEGER                 :: ut, n_dust
         
@@ -70,13 +71,13 @@ CONTAINS
 
 !~         LOGICAL,OPTIONAL        :: observe
         !----------------------------------------------------------------------!
-        INTENT(IN)              :: ut,un ,n_dust
+        INTENT(IN)              :: ut,un ,n_dust, observe
         INTENT(INOUT)           :: this
         !----------------------------------------------------------------------!
         CALL InitCommon(this%mtype,ut,un)
         
         this%inside      = .True.
-        this%observe     = .False.
+        this%observe     =  observe
         this%peel_off    = .False.
 
         this%n_interact  = 0

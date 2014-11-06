@@ -1,7 +1,7 @@
 MODULE initiate
 
     USE datatype
-    USE var_globalnew
+    USE var_global
 
     USE basic_type, ONLY   : Basic_TYP, InitBasic, CloseBasic
     USE randgen_type, ONLY : Randgen_TYP, InitRandgen, CloseRandgen
@@ -230,7 +230,7 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
     
 !~     pluto_data = .True.
     pluto_data = .False.
-    do_continuum_map = .True.
+    do_continuum_map = .False.
     do_velo_ch_map   = .False.
     IF (do_continuum_map .or. do_velo_ch_map) THEN
         do_raytr = .True.
@@ -238,11 +238,11 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
         do_raytr = .False.
     END IF
     
-    CALL InitBasic(basics,photon_type,'Reemission map',proname,r_path, concept_ps, calc_tmp, old_proname, &
-                    old_model, &
-                    do_raytr,do_continuum_map,do_velo_ch_map, n_tem, t_dust_min, t_dust_max, &
-                    num_core, pluto_data)
-    !--------------------------------------------------------------------------! 
+    CALL InitBasic(basics,photon_type,'Reemission map', proname, r_path,       &
+                   concept_ps, calc_tmp, old_proname,                          &
+                   old_model, do_raytr, do_continuum_map, do_velo_ch_map,      &
+                   n_tem, t_dust_min, t_dust_max, num_core, pluto_data)
+    !--------------------------------------------------------------------------!
      
     
     CALL parse('r_in',r_in,input_file)
@@ -310,7 +310,6 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
     '}                   '
     WRITE(unit=3,fmt='(A)') ''
     
-!~    zoom_map(1) = 1.0_r2
     
     CALL parse('zoom_map',zoom_map(1),new_input_file) 
     WRITE(help,fmt='(F6.2)') zoom_map(1)
@@ -319,7 +318,7 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
     WRITE(unit=3,fmt='(A)') ''
     
     
-    al_map(1)   = 1
+    al_map(1)   = 5.0
     
     CALL InitModel(model,1, ref_u_str, ref_u, r_in, r_ou, mass_dust, t_eff, R_star, M_star, n_map, distance, &
                    no_photon,th_map,ph_map,zoom_map,al_map,n_bin_map)
@@ -514,8 +513,8 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
     CALL AddSources(sources_in,1,(/0.0_r2,0.0_r2,0.0_r2/), R_star=model%r_star, T_star=model%t_star)
     ! 2 source (added by hand, could be a embedded planet or whatever)
 !~     CALL AddSources(sources_in,2,(/sf*4.95_r2,-sf*0.72_r2,0.0_r2/), T_star=1000.0, L_star=REAL(1e-4*L_sun,kind=r1))
-    print *, sources_in%L_total
-    print *, sources_in%L_total/(4*PI)
+!~     print *, sources_in%L_total
+!~     print *, sources_in%L_total/(4*PI)
     ! .. source..
     
     print '(A,I3)', " Sources found: ", sources_in%n_sources

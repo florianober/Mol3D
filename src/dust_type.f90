@@ -8,7 +8,7 @@ MODULE Dust_type
     USE gas_type
     USE basic_type
     USE model_type
-    USE var_globalnew
+    USE var_global
     USE math_mod
     USE common_type, &
         GetType_common => GetType, GetName_common => GetName, &
@@ -20,8 +20,8 @@ MODULE Dust_type
     ! 
     !--------------------------------------------------------------------------!
     TYPE Dust_TYP
-        TYPE(Common_TYP) :: dttype                       ! -----------------    !
-        !-----------------------------------------------------------------------!
+        TYPE(Common_TYP) :: dttype                       ! -----------------   !
+        !----------------------------------------------------------------------!
         INTEGER                                            :: n_dust
         INTEGER                                            :: n_lam
         INTEGER                                            :: n_lam_map
@@ -84,11 +84,12 @@ MODULE Dust_type
     !--------------------------------------------------------------------------!
 CONTAINS
 
-    SUBROUTINE InitDust(this,basics , gas, model, ut,un,ndust,dendust, sizexp, aniso, dust_cat,n_scatt_th, nrndpt)
+    SUBROUTINE InitDust(this,basics , gas, model, ut,un,ndust,dendust, sizexp, &
+                        aniso, dust_cat,n_scatt_th, nrndpt)
         
         USE math_mod
         IMPLICIT NONE
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         TYPE(Basic_TYP)  , INTENT(IN)        :: basics
         TYPE(Dust_TYP)                        :: this
         TYPE(Gas_TYP)                         :: gas
@@ -120,10 +121,11 @@ CONTAINS
         CHARACTER(len=8), DIMENSION(ndust)    :: dust_cat
         CHARACTER(LEN=*)                       :: un
     
-        !------------------------------------------------------------------------!
-        INTENT(IN)          :: ut,un, ndust, dendust, sizexp, aniso, dust_cat, n_scatt_th, nrndpt
+        !----------------------------------------------------------------------!
+        INTENT(IN)          :: ut,un, ndust, dendust, sizexp, aniso, dust_cat, &
+                               n_scatt_th, nrndpt
         INTENT(INOUT)       :: this, gas
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         CALL InitCommon(this%dttype,ut,un)
         
         this%n_dust = ndust
@@ -158,19 +160,19 @@ CONTAINS
             this%C_abs(       1:this%n_dust, 1:this%n_lam ), &
             this%Q_abs(       1:this%n_dust, 1:this%n_lam ), &
             this%albedo(      1:this%n_dust, 1:this%n_lam ), &
-            this%QdB_dT_l(    1:this%n_lam,0:basics%n_tem, 1:this%n_dust ), &
-            this%QdB_dT_l_cdf(    1:this%n_lam,0:basics%n_tem, 1:this%n_dust ), &
-            this%QB(       -1:basics%n_tem,1:this%n_dust ), &
-            this%QdB_dT(        0:basics%n_tem,1:this%n_dust ), &
-            this%planck_tab(  1:this%n_lam,0:basics%n_tem ), &
-            this%doRT(       1:this%n_lam ), &
-            this%tem_tab(      0:basics%n_tem ), &
-            this%i_star_emi( 1:this%n_lam ), &
-            this%c_in_star(  1:this%n_lam ), &
-            this%c_in_dust(  1:this%n_lam ), &
-            this%SME(1:4, 1:4, 1:this%n_dust, this%n_lam, this%n_scatt_th), &
-            this%SCAANG(1:this%n_dust,1:this%n_lam,0:this%nrndpt), &
-            this%cont_map(1:gas%n_tr), &
+            this%QdB_dT_l(    1:this%n_lam,0:basics%n_tem, 1:this%n_dust ),    &
+            this%QdB_dT_l_cdf( 1:this%n_lam,0:basics%n_tem, 1:this%n_dust ),   &
+            this%QB(       -1:basics%n_tem,1:this%n_dust ),                    &
+            this%QdB_dT(        0:basics%n_tem,1:this%n_dust ),                &
+            this%planck_tab(  1:this%n_lam,0:basics%n_tem ),                   &
+            this%doRT(       1:this%n_lam ),                                   &
+            this%tem_tab(      0:basics%n_tem ),                               &
+            this%i_star_emi( 1:this%n_lam ),                                   &
+            this%c_in_star(  1:this%n_lam ),                                   &
+            this%c_in_dust(  1:this%n_lam ),                                   &
+            this%SME(1:4, 1:4, 1:this%n_dust, this%n_lam, this%n_scatt_th),    &
+            this%SCAANG(1:this%n_dust,1:this%n_lam,0:this%nrndpt),             &
+            this%cont_map(1:gas%n_tr),                                         &
             this%sctth(1:n_scatt_th) ) 
         
         
@@ -250,7 +252,7 @@ CONTAINS
                     if (((hd1-this%lam(i_lam))/hd1) > 1.0e-3) then
                         print *,"!!! Warning: subroutine ld_dust():"
                         print *,"    Wavelengths of different kinds of dust do not agree with each other"
-                        !call stop_mc3d()  !TBD!~!
+                        stop
                     end if
                 end if
           
@@ -307,7 +309,7 @@ CONTAINS
                         print *,"              i_dust: ", i_dust
                         print *,"            required: ", hd2
                         print *,"           available: ", this%r_dust(i_dust)
-                        !call stop_mc3d() TBD!~!
+                        stop
                     end if
                 end if
                 read(unit=1,fmt=*)  this%sizepar(i_dust,i_lam)
@@ -343,7 +345,7 @@ CONTAINS
                     if (N_AN/=181) then
                         print *,"!!! Warning: subroutine ld_dust()"
                         print *,"             mie-scattering prepared for 181 scattering angles only"
-                        !call stop_mc3d() !TBD!~!
+                        stop
                     end if
              
                     phg(:)  = 0.0_r2
@@ -392,7 +394,7 @@ CONTAINS
 !             if (N_AN/=181) then
 !                print *,"!!! Warning: subroutine ld_dust()"
 !                print *,"             mie-scattering prepared for 181 scattering angles only"
-!                call stop_mc3d()
+!                stop
 !             end if
 
 !             phg(:)  = 0.0_r2
@@ -428,7 +430,7 @@ CONTAINS
              
                 case default
                     print *,"<!> subroutine ld_dust: select case(aniiso): wrong input parameter. stopped."
-                    !call stop_mc3d()
+                    stop
                 end select
             end do ! end do i_lam
         end do   !end do i_dust
@@ -482,7 +484,8 @@ CONTAINS
           END IF
         END DO
         DO i_lam = 1, this%n_lam
-            this%i_star_emi(i_lam) = PI * 4.0_r2 * PI * model%r_star**2 * planck(model%t_star,this%lam(i_lam))  ! [W/m]
+            this%i_star_emi(i_lam) = PI * 4.0_r2 * PI * model%r_star**2 *      &
+                                     planck(model%t_star,this%lam(i_lam))! [W/m]
             this%c_in_star( i_lam) = this%i_star_emi(i_lam) / model%no_photon
         END DO
         
@@ -491,8 +494,7 @@ CONTAINS
     
         
     END SUBROUTINE InitDust
-    
-    
+
 !~     SUBROUTINE acc_select(this) !routine by mc3d v4, is obsolent now!
 !~ 
 !~         

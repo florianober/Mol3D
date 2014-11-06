@@ -3,7 +3,7 @@
 ! ---
 MODULE start_mod
     USE datatype
-    USE var_globalnew
+    USE var_global
     
     USE grid_type
     USE dust_type
@@ -15,8 +15,6 @@ MODULE start_mod
     USE source_type
     
     USE math_mod
-    !USE tools_mod
-    !USE grd_mod
   
     IMPLICIT NONE
     !--------------------------------------------------------------------------!

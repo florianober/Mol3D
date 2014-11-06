@@ -4,7 +4,7 @@
 module math_mod
 
     USE datatype
-    USE var_globalnew
+    USE var_global
 
     implicit none
     public :: planck, planckhz, integ1, rad2grad, grad2rad, atan3, atanx, norm,cy2ca, sp2ca, ca2sp, ipol1, ipol2, &
@@ -249,7 +249,7 @@ contains
   ! ---
   function rad2grad(rad) result(rad2grad_result)
     use datatype
-    use var_globalnew
+    use var_global
 
     implicit none
     real(kind=r2), intent(in) :: rad
@@ -262,9 +262,9 @@ contains
   ! ################################################################################################
   ! grad -> rad
   ! ---
-  function grad2rad(grad) result(grad2rad_result)
+  ELEMENTAL function grad2rad(grad) result(grad2rad_result)
     use datatype
-    use var_globalnew
+    use var_global
 
     implicit none
     real(kind=r2), intent(in) :: grad
@@ -284,7 +284,7 @@ contains
   ! ---
   PURE function atan3(y,x) result(atan3_result)
     use datatype
-    use var_globalnew
+    use var_global
 
     implicit none
     real(kind=r2), intent(in) :: x,y
@@ -566,7 +566,7 @@ contains
   ! ---
 !~     PURE FUNCTION cnv_Wmsr( lum_x, map_x ) result(cnv_Wmsr_result)
 !~         use datatype
-!~         use var_globalnew
+!~         use var_global
 !~         
 !~         IMPLICIT NONE
 !~         
@@ -600,7 +600,7 @@ contains
   ! ---
 !~     function cnv_lum2Jy( lum_x, lam_x, map_x, distance ) result(cnv_lum2Jy_result)
 !~         use datatype
-!~         use var_globalnew
+!~         use var_global
 !~         
 !~         IMPLICIT NONE
 !~         

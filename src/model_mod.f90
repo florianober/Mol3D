@@ -6,7 +6,7 @@
 ! ---
 module model_mod
     use datatype
-    use var_globalnew
+    use var_global
     implicit none
     public :: get_den!, get_n_den_par 
 contains

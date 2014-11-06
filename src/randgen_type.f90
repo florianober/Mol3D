@@ -17,7 +17,7 @@ MODULE randgen_type
   INTEGER, PARAMETER, PRIVATE       :: M=714025, IA=1366, IC=150889
 
   TYPE Randgen_TYP
-     TYPE(Common_TYP)               :: gentype              !   RAN2 ...       !
+     TYPE(Common_TYP)               :: gentype            !   RAN2 ...       !
      REAL(kind=r2)                  :: RM, rndx
      INTEGER                        :: IDUM, IY, IFF
      INTEGER, dimension(97)        :: IR

@@ -4,7 +4,7 @@
 !----------------------------------------------------------------------------!
 MODULE basic_type
     USE datatype
-    USE var_globalnew
+    USE var_global
     USE common_type, &
         GetType_common => GetType, GetName_common => GetName, &
         Initialized_common => Initialized
@@ -28,8 +28,8 @@ MODULE basic_type
     ! 
     !--------------------------------------------------------------------------!
     TYPE Basic_TYP
-        TYPE(Common_TYP) :: mtype                       ! -----------------     !
-        !-----------------------------------------------------------------------!
+        TYPE(Common_TYP) :: mtype                       ! -----------------    !
+        !----------------------------------------------------------------------!
         INTEGER          :: pnamelen
         INTEGER          :: concept_ps
         INTEGER          :: num_core
@@ -86,7 +86,7 @@ CONTAINS
     SUBROUTINE InitBasic(this, ut, un, pname, presult, concept, calc_tmp,old_pname, old_model, &
                             do_raytr, do_continuum_map,do_velo_ch_map,n_tem, t_dust_min, t_dust_max, num_core,pluto_data)
         IMPLICIT NONE
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         TYPE(Basic_TYP)       :: this
         
         INTEGER               :: ut
@@ -109,12 +109,12 @@ CONTAINS
         LOGICAL               :: do_continuum_map
         LOGICAL               :: do_velo_ch_map
 
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         INTENT(IN)          :: ut,un,presult, pname, concept, num_core, &
                                 n_tem, t_dust_max, t_dust_min, calc_tmp,old_model,old_pname, &
                                 pluto_data,do_continuum_map,do_velo_ch_map
         INTENT(INOUT)       :: this
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         CALL InitCommon(this%mtype,ut,un)
     
         this%PIx2  = PI * 2.0_r2

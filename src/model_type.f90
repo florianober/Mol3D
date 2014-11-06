@@ -5,7 +5,7 @@
 MODULE model_type
   
     USE datatype
-    USE var_globalnew
+    USE var_global
     USE common_type, &
         GetType_common => GetType, GetName_common => GetName, &
         Initialized_common => Initialized
@@ -35,11 +35,16 @@ MODULE model_type
         REAL(kind=r2),DIMENSION(:),ALLOCATABLE         :: ph_map
         REAL(kind=r2),DIMENSION(:),ALLOCATABLE         :: al_map
         REAL(kind=r2),DIMENSION(:),ALLOCATABLE         :: zoom_map
+        REAL(kind=r2),DIMENSION(:),ALLOCATABLE         :: px_model_length_x
+        REAL(kind=r2),DIMENSION(:),ALLOCATABLE         :: px_model_length_y
+        
+        REAL(kind=r2),DIMENSION(:,:),ALLOCATABLE       :: dir_xyz
+        REAL(kind=r2),DIMENSION(:,:),ALLOCATABLE       :: e_x
+        REAL(kind=r2),DIMENSION(:,:),ALLOCATABLE       :: e_y
+        
         
         INTEGER               :: n_map
         INTEGER               :: n_bin_map
-        INTEGER               :: n_r_sub
-        INTEGER               :: n_pix_sub
         INTEGER(8)            :: no_photon
         
         
@@ -93,7 +98,6 @@ CONTAINS
         INTENT(IN)          ::  ut,un,ref_u, r_in, r_ou, &
                                 mass_dust, t_eff, r_star, M_star, n_map, distance, &
                                 th_map,ph_map,zoom_map,al_map,n_bin_map,no_photon
-        !tbd: add l_star
         INTENT(INOUT)       :: this
         !------------------------------------------------------------------------!
         CALL InitCommon(this%modltype,ut,un)
@@ -106,13 +110,17 @@ CONTAINS
         this%M_star = M_star*M_sun
         
         this%kep_const = (con_gamma * this%M_star/con_AU)**0.5  ! in units of m/s
-!~         print *, this%kep_const
         this%l_star = 4.0_r2 * PI * this%r_star**2 * con_sigma * this%t_star**4
-!~         print *, " => Stellar luminosity [L_sun]: ", this%l_star/L_sun
+
         ALLOCATE(   this%th_map(1:n_map), &
                     this%ph_map(1:n_map), &
                     this%zoom_map(1:n_map), &
-                    this%al_map(1:n_map)   )
+                    this%al_map(1:n_map), &
+                    this%px_model_length_x(1:n_map), &
+                    this%px_model_length_y(1:n_map), &
+                    this%dir_xyz(1:3,1:n_map), &
+                    this%e_x(1:3,1:n_map), &
+                    this%e_y(1:3,1:n_map) )
                     
         this%th_map     = th_map
         this%ph_map     = ph_map
@@ -125,14 +133,31 @@ CONTAINS
         this%r_ou       = r_ou
         this%n_map      = n_map
         this%no_photon  = no_photon
-        
-        this%n_r_sub   = 2          !raytracing: nr of subdiv. in radial direction
-        this%n_pix_sub = 11         !raytracing: ... in r/phi dir. in project. on pix.
-        
-        
+
         DO i_map=1, this%n_map
             this%th_map(i_map) = grad2rad(th_map(i_map))
             this%ph_map(i_map) = grad2rad(ph_map(i_map))
+            this%al_map(i_map) = cos(grad2rad(al_map(i_map)))
+            
+            this%dir_xyz(1, i_map) = sin(this%th_map(i_map)) * sin(PI/2.0_r2 - this%ph_map(i_map))
+            this%dir_xyz(2, i_map) = sin(this%th_map(i_map)) * sin(this%ph_map(i_map))
+            this%dir_xyz(3, i_map) = sin(PI/2.0_r2 - this%th_map(i_map))
+            ! vector marking the +x-direction in the observers map
+                
+            this%e_x(1, i_map) = -sin(this%ph_map(i_map))
+            this%e_x(2, i_map) =  sin(PI/2.0_r2-this%ph_map(i_map))
+            this%e_x(3, i_map) =  0.0_r2
+            
+            ! vector marking the +y-direction in the observers map
+            
+            this%e_y(1, i_map) = sin(PI/2.0_r2-this%th_map(i_map)) * (-sin(PI/2.0_r2-this%ph_map(i_map)))
+            this%e_y(2, i_map) = sin(PI/2.0_r2-this%th_map(i_map)) * (-sin(this%ph_map(i_map)))
+            this%e_y(3, i_map) = sin(this%th_map(i_map))
+            
+            !
+            ! user unit, but should be fixed to [AU]
+            this%px_model_length_x = this%r_ou/(REAL(this%n_bin_map,KIND=r2)+0.5_r2)/this%zoom_map(i_map)   
+            this%px_model_length_y = this%r_ou/(REAL(this%n_bin_map,KIND=r2)+0.5_r2)/this%zoom_map(i_map)
         END DO
     END SUBROUTINE InitModel
 
@@ -146,7 +171,12 @@ CONTAINS
         DEALLOCATE( this%th_map, &
                     this%ph_map, &
                     this%al_map, &
-                    this%zoom_map )
+                    this%zoom_map, &
+                    this%px_model_length_x, &
+                    this%px_model_length_y, &
+                    this%dir_xyz, &
+                    this%e_x, &
+                    this%e_y)
         
         
     END SUBROUTINE CloseModel

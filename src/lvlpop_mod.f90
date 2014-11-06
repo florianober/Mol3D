@@ -1,7 +1,7 @@
 MODULE lvlpop_mod
 
     USE datatype
-    USE var_globalnew
+    USE var_global
 
     USE basic_type
     USE randgen_type
@@ -13,14 +13,13 @@ MODULE lvlpop_mod
     
     USE grd_mod
     USE math_mod
-    USE tools_mod
     USE transfer_mod
-    USE string_mod
     
     IMPLICIT NONE
     
     !--------------------------------------------------------------------------!
-    PRIVATE :: pop_LTE, pop_FEP, pop_LVG, elem_LVG, create_matrix, calc_collision_parameter
+    PRIVATE :: pop_LTE, pop_FEP, pop_LVG, elem_LVG,                            &
+               create_matrix, calc_collision_parameter
     !--------------------------------------------------------------------------!
     PUBLIC :: calc_lvlpop
     !--------------------------------------------------------------------------!
@@ -40,7 +39,7 @@ CONTAINS
 !~     CHARACTER(len=4)                                 :: fileext
 !~     CHARACTER(len=256)                               :: outname
     
-    !--------------------------------------------------------------------------!  
+    !--------------------------------------------------------------------------!
     SELECT CASE(GetGasType(gas))
     CASE(1)
         print *, '| | using LTE method'
@@ -59,8 +58,8 @@ CONTAINS
     END SELECT
         
     ! save results
-    ! for default we don't save the level populations to hdd, but you can enable it
-    ! by uncomment the following lines:
+    ! for default we don't save the level populations to hdd, but you can enable
+    ! it by uncomment the following lines:
     ! Note: depending on the no of grid cells, this file can be enormous
     
 !~     fileext = '.dat'
@@ -95,16 +94,18 @@ CONTAINS
     TYPE(Gas_TYP),INTENT(IN)                         :: gas
     
     INTEGER                                          :: i_cell
-    !--------------------------------------------------------------------------!        
+    !--------------------------------------------------------------------------!
         
     DO i_cell = 1, grid%n_cell
         IF ( grid%t_dust(i_cell,1) .lt. 1.0e-20 ) THEN
             grid%lvl_pop(:,i_cell) = 0.0
         ELSE
-            grid%lvl_pop(:,i_cell) =  gas%g_level(:)/gas%g_level(1) *exp(-con_h/(con_k*grid%t_dust(i_cell,1)) &
-                                    *(gas%energylevel(:))*con_c*100.0_r2)
+            grid%lvl_pop(:,i_cell) =  gas%g_level(:)/gas%g_level(1) *          &
+                                      exp(-con_h/(con_k*grid%t_dust(i_cell,1))*&
+                                      (gas%energylevel(:))*con_c*100.0_r2)
                                     
-            grid%lvl_pop(:,i_cell) = grid%lvl_pop(:,i_cell)/sum(grid%lvl_pop(:,i_cell)) !normalize array
+            grid%lvl_pop(:,i_cell) = grid%lvl_pop(:,i_cell) /                  &
+                                     sum(grid%lvl_pop(:,i_cell))!normalize array
         END IF
     END DO
     
@@ -131,7 +132,8 @@ CONTAINS
     !--------------------------------------------------------------------------!        
     new_pop = 0.0_r2
     DO i=1, gas%trans_lvl
-!~             J_ext(i) = 1e-14_r2*planckhz(1000.0_r2,gas%trans_freq(i)) + planckhz(2.72_r2,gas%trans_freq(i))
+!~             J_ext(i) = 1e-14_r2*planckhz(1000.0_r2,gas%trans_freq(i)) + &
+!~                         planckhz(2.72_r2,gas%trans_freq(i))
             J_ext(i) = planckhz(2.75_r1,gas%trans_freq(i))
     END DO
     J_mid = J_ext
@@ -172,8 +174,8 @@ CONTAINS
     SUBROUTINE pop_LVG(basics, grid, model, gas)
     !
     ! In the LVG (for a keplerian disk) approach we estimate the
-    ! coherence length L at each cells mitpoint. Here, we assume that the disk is rotating in the
-    ! equatorial disk plane only!
+    ! coherence length L at each cells mitpoint. Here, we assume that the disk 
+    ! is rotating in the equatorial disk plane only!
     ! Maybe we can generalize this in future
     !
     ! ---    
@@ -194,8 +196,8 @@ CONTAINS
     REAL(kind=r2)                                              :: R_mid, L
     REAL(kind=r2),DIMENSION(1:gas%col_trans,1:2)               :: final_col_para
     
-    INTEGER                                           :: i_cell, i, max_iteration, k
-    !--------------------------------------------------------------------------!        
+    INTEGER                                       :: i_cell, i, max_iteration, k
+    !--------------------------------------------------------------------------!
 
     new_pop(:) = 0.0_r2
     old_pop(:) = 0.0_r2
@@ -281,7 +283,7 @@ CONTAINS
                                RESULT(J_mid)
         ! ---    
         IMPLICIT NONE
-        !--------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         REAL(kind=r2),INTENT(IN)                                 :: mol_dens
         REAL(kind=r1),INTENT(IN)                                 :: lvl_pop_u
         REAL(kind=r1),INTENT(IN)                                 :: lvl_pop_l
@@ -301,7 +303,7 @@ CONTAINS
         REAL(kind=r2)                                            :: J_mid
 
         
-        !--------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         j       =  mol_dens * lvl_pop_u * A * line_konst*doppler
         alpha   =  mol_dens *(lvl_pop_l*B_l-lvl_pop_u*B_u)*line_konst*doppler
                 
@@ -330,16 +332,16 @@ CONTAINS
     ! ---    
     IMPLICIT NONE
     !--------------------------------------------------------------------------!
-    TYPE(Gas_TYP),INTENT(IN)                                           :: gas
+    TYPE(Gas_TYP),INTENT(IN)                                          :: gas
     
-    REAL(kind=r1),DIMENSION(1:gas%egy_lvl,1:gas%egy_lvl),INTENT(OUT)   :: A
-    REAL(kind=r1),DIMENSION(1:gas%egy_lvl),INTENT(OUT)                 :: c
-    REAL(kind=r2),DIMENSION(1:gas%trans_lvl),INTENT(IN)                :: J_mid
-    REAL(kind=r2),DIMENSION(1:gas%col_trans,1:2),INTENT(IN)            :: final_col_para
+    REAL(kind=r1),DIMENSION(1:gas%egy_lvl,1:gas%egy_lvl),INTENT(OUT)  :: A
+    REAL(kind=r1),DIMENSION(1:gas%egy_lvl),INTENT(OUT)                :: c
+    REAL(kind=r2),DIMENSION(1:gas%trans_lvl),INTENT(IN)               :: J_mid
+    REAL(kind=r2),DIMENSION(1:gas%col_trans,1:2),INTENT(IN)    :: final_col_para
 
-    INTEGER                                                            :: col_tr
-    INTEGER                                                            :: i, j, k
-    !--------------------------------------------------------------------------!    
+    INTEGER                                                           :: col_tr
+    INTEGER                                                           :: i, j, k
+    !--------------------------------------------------------------------------!
     A(:,:) = 0.0
     c(:)   = 0.0
     DO i=1, gas%egy_lvl
@@ -370,7 +372,8 @@ CONTAINS
     END DO
     
 
-    ! The first(last?, first gives better/cleaner results) entry should be one to solve linear equation 
+    ! The first(last?, first gives better/cleaner results) entry should be one
+    ! to solve linear equation 
     c(1) = 1.0_r2
 !~     c(gas%egy_lvl) = 1.0_r2
 

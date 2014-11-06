@@ -3,7 +3,7 @@
 ! ---
 MODULE immediate_mod
     USE datatype
-    USE var_globalnew
+    USE var_global
     
     USE grid_type
     USE dust_type

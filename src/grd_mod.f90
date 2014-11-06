@@ -5,14 +5,13 @@
 MODULE grd_mod
     
     USE datatype
-    USE var_globalnew
+    USE var_global
     USE basic_type
     USE dust_type
     USE grid_type
     USE gas_type
     USE model_type
     USE math_mod
-    USE tools_mod
     USE fileio
     IMPLICIT NONE
     
@@ -29,13 +28,13 @@ CONTAINS
 
 
 
-  ! ################################################################################################
+  ! ############################################################################
   ! make grid
   ! ---
     SUBROUTINE make_grid(basics, grid, model, dust, gas)
         
         IMPLICIT NONE
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         
         TYPE(Grid_TYP), INTENT(INOUT)               :: grid
         TYPE(Basic_TYP), INTENT(IN)                 :: basics
@@ -43,7 +42,7 @@ CONTAINS
         TYPE(Dust_TYP), INTENT(IN)                  :: dust
         TYPE(Gas_TYP), INTENT(INOUT)                :: gas
         
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
 
         INTEGER                                     :: i_a
         INTEGER                                     :: i_b
@@ -60,7 +59,7 @@ CONTAINS
         REAL(kind=r2), DIMENSION(1:3)               :: moco
         
         LOGICAL                                     :: mass_dens
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         
         ! ---
         ! 1. set boundaries of each cell for the selected coordinate system
@@ -90,8 +89,7 @@ CONTAINS
                     grid%cell_nr2idx(2,i_cell) = i_b
                     grid%cell_nr2idx(3,i_cell) = i_c
                     
-                    
-                    ! find cell volume and min A cell-Wall
+                    ! find cell volume and min A cell-Wall and cell, neighbours
                     CALL calc_cell_properties(grid,model,i_a,i_b,i_c)
                     ! calculate midpoint coordinate
                     moco(1) = ( grid%co_mx_a( i_a ) + grid%co_mx_a( i_a  -1) ) / 2.0_r2
@@ -104,7 +102,14 @@ CONTAINS
                 end do
             end do
         end do
+
         
+        print *, grid%cell_neighbours(5, 1)
+        print *, grid%cell_neighbours(6, 1)
+        print *, grid%cell_neighbours(5, 2)
+        print *, grid%cell_neighbours(6, 2)
+        print *, grid%cell_neighbours(5, 101)
+        print *, grid%cell_neighbours(6, 101)
         grid%cell_minA(0) = model%r_in**2*PI
 !~         print *, minval(grid%cell_minA), grid%cell_minA(0)
 !    ! fill grid with disk properties,e.g. temp, density, velocity...
@@ -113,7 +118,7 @@ CONTAINS
         if ( i_cell /= grid%n_cell ) then
             print *,"subroutine mk_grd(): wrong number of ESCs: ", i_cell
             print *,"should be                                : ", grid%n_cell 
-            !call stop_mc3d()!TBD!
+            stop
         end if
        
 !   ! verification
@@ -255,7 +260,7 @@ CONTAINS
         print '(A)', ' ---------------------------------------'
         print '(A,ES11.4,A)',' total disk mass     : ',hd_totalmass, ' M_sun'
         print *,''
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         ! ---
         ! set smallest step width for photon transfer
         ! - goal: avoid step widths smaller than the amount that will change a r2 type floating point
@@ -282,18 +287,18 @@ CONTAINS
         
     END SUBROUTINE make_grid
     
-    !  ! ################################################################################################
+    !  ! #######################################################################
     
     SUBROUTINE calc_cell_properties(grid,model,i_a,i_b,i_c)
         !generic routine
         IMPLICIT NONE
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         
         TYPE(Grid_TYP), INTENT(INOUT)               :: grid
         TYPE(Model_TYP), INTENT(IN)                 :: model
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         INTEGER,INTENT(IN)                         :: i_a,i_b,i_c
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         SELECT CASE(GetGridName(grid))
         CASE('spherical')
             CALL calc_cell_properties_sp(grid,model,i_a,i_b,i_c)
@@ -319,16 +324,16 @@ CONTAINS
     SUBROUTINE calc_cell_properties_cy(grid,model,i_r,i_ph,i_z)
 
         IMPLICIT NONE
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         
         TYPE(Grid_TYP), INTENT(INOUT)              :: grid
-        TYPE(Model_TYP), INTENT(IN)                 :: model
-        !------------------------------------------------------------------------!
+        TYPE(Model_TYP), INTENT(IN)                :: model
+        !----------------------------------------------------------------------!
         INTEGER,INTENT(IN)                         :: i_r,i_ph,i_z
-        INTEGER                                     :: i_cell
-        REAL(kind=r2)                               :: dth
-        REAL(kind=r2)                               :: dz
-        !------------------------------------------------------------------------!
+        INTEGER                                    :: i_cell
+        REAL(kind=r2)                              :: dth
+        REAL(kind=r2)                              :: dz
+        !----------------------------------------------------------------------!
         
         i_cell = grid%cell_idx2nr(i_r,i_ph,i_z)
         dz = abs(grid%co_mx_c(i_z-1) - grid%co_mx_c(i_z))
@@ -348,30 +353,20 @@ CONTAINS
     END SUBROUTINE calc_cell_properties_cy
     
     
-    
-    
-    
-    SUBROUTINE calc_cell_properties_sp(grid,model,i_r,i_th,i_ph)
+    SUBROUTINE calc_cell_properties_sp(grid,model, i_r, i_th, i_ph)
 
         IMPLICIT NONE
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         
         TYPE(Grid_TYP), INTENT(INOUT)               :: grid
         TYPE(Model_TYP), INTENT(IN)                 :: model
-        !------------------------------------------------------------------------!
-        INTEGER,INTENT(IN)                         :: i_r,i_th,i_ph
+        !----------------------------------------------------------------------!
+        INTEGER,INTENT(IN)                          :: i_r, i_th, i_ph
         INTEGER                                     :: i_cell
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         
-        i_cell = grid%cell_idx2nr(i_r,i_th,i_ph)
-!~         grid%cell_minA(i_cell) = ( &
-!~                                 grid%co_mx_a(i_r-1)**2.0_r2 * &
-!~                                 (grid%co_mx_c(i_ph) - grid%co_mx_c(i_ph-1) ) * &
-!~                                 abs(grid%co_mx_b(i_th) - grid%co_mx_b(i_th-1) ) + &
-!~                                 (grid%co_mx_a(i_r)**2.0_r2-grid%co_mx_a(i_r-1)**2.0_r2 ) * &
-!~                                 abs(grid%co_mx_b(i_th) - grid%co_mx_b(i_th-1)) + &
-!~                                 (grid%co_mx_a(i_r)**2.0_r2-grid%co_mx_a(i_r-1)**2.0_r2 )* &
-!~                                 (grid%co_mx_c(i_ph) - grid%co_mx_c(i_ph-1) ) )/3.0_r2
+        i_cell = grid%cell_idx2nr(i_r, i_th , i_ph)
+
         grid%cell_minA(i_cell) = MIN( &
                                 grid%co_mx_a(i_r-1)**2.0_r2 * &
                                 (grid%co_mx_c(i_ph) - grid%co_mx_c(i_ph-1) ) * &
@@ -380,7 +375,7 @@ CONTAINS
                                 abs(grid%co_mx_b(i_th) - grid%co_mx_b(i_th-1)) , &
                                 (grid%co_mx_a(i_r)**2.0_r2-grid%co_mx_a(i_r-1)**2.0_r2 )* &
                                 (grid%co_mx_c(i_ph) - grid%co_mx_c(i_ph-1) ) )
-!~         print *, grid%co_mx_a(i_r-1)
+
         ! volume of individual cells [m^3]
         grid%cell_minA(i_cell) = grid%cell_minA(i_cell)
         grid%cell_vol(i_cell) = &
@@ -390,23 +385,70 @@ CONTAINS
                                 (sin(grid%co_mx_b(i_th)) - sin(grid%co_mx_b(i_th-1))) * &
                                 ((grid%co_mx_c(i_ph) - grid%co_mx_c(i_ph-1))/(2.0_r2*PI)) &
                                 ) * model%ref_unit**3
-        
+        ! set cell neighbours
+!~         IF (grid%n(1) == 1) THEN
+!~             grid%cell_neighbours(3, i_cell) = i_cell 
+!~             grid%cell_neighbours(4, i_cell) = i_cell
+!~         ELSE
+!~         IF ( i_th == 1 ) THEN
+!~                 grid%cell_neighbours(3, i_cell) = i_cell + grid%n(3) - 1
+!~                 grid%cell_neighbours(4, i_cell) = i_cell + 1
+!~             ELSEIF ( i_ph == grid%n(3) ) THEN
+!~                 grid%cell_neighbours(3, i_cell) = i_cell - 1
+!~                 grid%cell_neighbours(4, i_cell) = i_cell - grid%n(3) + 1
+!~             ELSE
+!~                 grid%cell_neighbours(3, i_cell) = i_cell - 1 
+!~                 grid%cell_neighbours(4, i_cell) = i_cell + 1
+!~             END IF
+!~         END IF
+!~ 
+!~         
+!~         IF (grid%n(2) == 1) THEN
+!~             grid%cell_neighbours(3, i_cell) = i_cell 
+!~             grid%cell_neighbours(4, i_cell) = i_cell
+!~         ELSE
+!~         IF ( i_th == 1 ) THEN
+!~                 grid%cell_neighbours(3, i_cell) = i_cell + grid%n(3) - 1
+!~                 grid%cell_neighbours(4, i_cell) = i_cell + 1
+!~             ELSEIF ( i_ph == grid%n(3) ) THEN
+!~                 grid%cell_neighbours(3, i_cell) = i_cell - 1
+!~                 grid%cell_neighbours(4, i_cell) = i_cell - grid%n(3) + 1
+!~             ELSE
+!~                 grid%cell_neighbours(3, i_cell) = i_cell - 1 
+!~                 grid%cell_neighbours(4, i_cell) = i_cell + 1
+!~             END IF
+!~         END IF
+!~         IF (grid%n(3) == 1) THEN
+!~             grid%cell_neighbours(5, i_cell) = i_cell 
+!~             grid%cell_neighbours(6, i_cell) = i_cell
+!~         ELSE
+!~             IF ( i_ph == 1 ) THEN
+!~                 grid%cell_neighbours(5, i_cell) = i_cell + grid%n(3) - 1
+!~                 grid%cell_neighbours(6, i_cell) = i_cell + 1
+!~             ELSEIF ( i_ph == grid%n(3) ) THEN
+!~                 grid%cell_neighbours(5, i_cell) = i_cell - 1
+!~                 grid%cell_neighbours(6, i_cell) = i_cell - grid%n(3) + 1
+!~             ELSE
+!~                 grid%cell_neighbours(5, i_cell) = i_cell - 1 
+!~                 grid%cell_neighbours(6, i_cell) = i_cell + 1
+!~             END IF
+!~         END IF
     END SUBROUTINE calc_cell_properties_sp
     
     
     
     
-    !  ! ################################################################################################    
+    !  ! #######################################################################
     SUBROUTINE set_boundaries(grid,model,basics)
         !generic routine
         IMPLICIT NONE
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         
         TYPE(Grid_TYP), INTENT(INOUT)               :: grid
         TYPE(Model_TYP), INTENT(INOUT)              :: model
         TYPE(Basic_TYP), INTENT(IN)                 :: basics
         CHARACTER(len=252)                          :: file_a,file_b,file_c
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         IF (basics%old_model) THEN
             ! if we use an old model, we simply read the boundaries from the input files
             file_a = TRIM(basics%path_results)//TRIM(basics%pronam_old)//'_a_boundaries.dat'
@@ -439,11 +481,11 @@ CONTAINS
     SUBROUTINE set_boundaries_cy(grid,model)
     
         IMPLICIT NONE
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         
         TYPE(Grid_TYP), INTENT(INOUT)               :: grid
         TYPE(Model_TYP), INTENT(IN)                 :: model
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         INTEGER                                     :: i_r
         INTEGER                                     :: i_th
         INTEGER                                     :: i_z
@@ -452,7 +494,7 @@ CONTAINS
         REAL(kind=r2)                               :: dth
         REAL(kind=r2)                               :: dz
         REAL(kind=r2)                               :: sf
-        !------------------------------------------------------------------------!        
+        !----------------------------------------------------------------------!
         
         SELECT CASE(GetGridType(grid))
         CASE(1)
@@ -491,7 +533,7 @@ CONTAINS
             ! co_mx_c( 0 )  =- r_out
             ! co_mx_c(n(3)) =  r_out
             ! dz should not be constant, because we want to have small cells in the inner region
-            !      -> we use sf too, but not the user given value but a fixed one
+            !     -> we use sf too, but not the user given value but a fixed one
             
     !~         grid%co_mx_c(grid%n(3)*0.5) = 0.0_r2
     !~         sf = 1.08_r2

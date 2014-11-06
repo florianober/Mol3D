@@ -5,7 +5,7 @@
 MODULE Grid_type
   
     USE datatype
-    USE var_globalnew
+    USE var_global
     USE model_type
     USE common_type, &
         GetType_common => GetType, GetName_common => GetName, &
@@ -32,38 +32,6 @@ MODULE Grid_type
     !                 \ 3 = z /
     !
     !--------------------------------------------------------------------------!
-    TYPE Cell_TYP !this is a new type, so ongoing work
-        
-        REAL(kind=r2)                          :: vol
-        REAL(kind=r2),DIMENSION(1:3)           :: cell_index
-        REAL(kind=r2)                          :: minA
-        REAL(kind=r2)                          :: gauss_a
-        REAL(kind=r2)                          :: gauss_a2
-        
-        REAL(kind=r2),DIMENSION(1:3)           :: velocity
-        REAL(kind=r2)                          :: absvelo
-        REAL(kind=r2),DIMENSION(1:3)           :: cellmidcaco
-!~         REAL(kind=r2),DIMENSION(1:n_dust)   :: Nv
-        REAL(kind=r2),DIMENSION(:),POINTER     :: Nv
-        REAL(kind=r2),DIMENSION(1:6)           :: Nv_col
-        REAL(kind=r2)                          :: Nv_mol
-!~         REAL(kind=r2),DIMENSION(1:n_dust)   :: dust_density
-        REAL(kind=r2),DIMENSION(:),POINTER     :: dust_density
-        REAL(kind=r2),DIMENSION(1:6)           :: col_density
-        REAL(kind=r2)                          :: mol_density
-        
-!~         REAL(kind=r2),DIMENSION(1:n_dust)   :: internal_energy
-        REAL(kind=r2),DIMENSION(:),POINTER     :: internal_energy
-        REAL(kind=r2),DIMENSION(:),POINTER     :: internal_energy_sum
-        
-!~         REAL(kind=r2),DIMENSION(1:n_dust)   :: t_dust
-        REAL(kind=r2),DIMENSION(:),POINTER     :: t_dust
-        REAL(kind=r2)                          :: t_gas
-!~         REAL(kind=r2),DIMENSION(1:egy_lvl)  :: lvl_pop
-        REAL(kind=r2),DIMENSION(:),POINTER     :: lvl_pop
-    
-    
-    END TYPE Cell_TYP
     
     TYPE Grid_TYP
         TYPE(Common_TYP) :: grdtype                     ! -----------------    !
@@ -112,9 +80,9 @@ MODULE Grid_type
         REAL(kind=r1),DIMENSION(:,:),ALLOCATABLE      :: t_dust
         REAL(kind=r1),DIMENSION(:),ALLOCATABLE        :: t_gas
         REAL(kind=r2), DIMENSION(:),ALLOCATABLE       :: ddust
-        REAL(kind=r2),DIMENSION(1:3)              :: dir_xyz
                 
         INTEGER,DIMENSION(1:3)                    :: n
+        INTEGER,DIMENSION(:,:),ALLOCATABLE        :: cell_neighbours
         INTEGER                                   :: n_cell
         INTEGER                                   :: i_cell
         INTEGER                                   :: nh_n_dust
@@ -340,6 +308,7 @@ CONTAINS
             this%absvelo( 0:this%n_cell), &
             this%cell_idx2nr( 0:this%n(1), 0:this%n(2), 0:this%n(3) ), &
             this%cell_nr2idx( 1:3, 0:this%n_cell ), &
+            this%cell_neighbours( 1:6, 0:this%n_cell ), &
             this%t_dust(  0:this%n_cell, 1:n_dust ), &
             this%t_gas(  0:this%n_cell), &
             this%lvl_pop( 1:egy_lvl,0:this%n_cell ) )
@@ -367,12 +336,11 @@ CONTAINS
         this%t_dust(:,:)          = 0.0
         this%t_gas(:)             = 0.0
         this%d_l_min              = 0.0_r2
-        this%dir_xyz(:)           = 0.0_r2
         this%cell_energy(:,:)     = 0.0_r2
         this%cell_energy_sum(:,:,:)     = 0.0_r2
         this%lvl_pop(:,:)         = 0.0
-        
-        this%counter            = 0
+        this%cell_neighbours(:,:)        = 0
+        this%counter              = 0
         IF (show_error) PRINT *, 'grid arrays initialized'
     END SUBROUTINE InitGrid
 
@@ -399,6 +367,7 @@ CONTAINS
             this%grd_col_density, &
             this%grd_mol_density, &
             this%cellmidcaco, &
+            this%cell_neighbours, &
             this%velo, &
             this%absvelo, &
             this%cell_idx2nr, &
@@ -444,7 +413,7 @@ CONTAINS
     FUNCTION mo2ca(grid,moco) RESULT(caco)
        ! generic function for all geometrics
         USE datatype
-        USE var_globalnew
+        USE var_global
         USE math_mod, ONLY : sp2ca, cy2ca
         
         IMPLICIT NONE
@@ -509,7 +478,7 @@ CONTAINS
     FUNCTION get_cell_nr(this,caco) RESULT(get_cell_nr_result)
         ! generic function for all geometrics
         USE datatype
-        USE var_globalnew
+        USE var_global
         
         IMPLICIT NONE
         !------------------------------------------------------------------------!
@@ -542,7 +511,7 @@ CONTAINS
     
     FUNCTION get_cell_nr_cy(this,caco) RESULT(get_cell_nr_result)
         USE datatype
-        USE var_globalnew
+        USE var_global
         USE math_mod, ONLY : atan3, binary_search
         
         IMPLICIT NONE
