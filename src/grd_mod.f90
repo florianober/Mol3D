@@ -103,13 +103,6 @@ CONTAINS
             end do
         end do
 
-        
-        print *, grid%cell_neighbours(5, 1)
-        print *, grid%cell_neighbours(6, 1)
-        print *, grid%cell_neighbours(5, 2)
-        print *, grid%cell_neighbours(6, 2)
-        print *, grid%cell_neighbours(5, 101)
-        print *, grid%cell_neighbours(6, 101)
         grid%cell_minA(0) = model%r_in**2*PI
 !~         print *, minval(grid%cell_minA), grid%cell_minA(0)
 !    ! fill grid with disk properties,e.g. temp, density, velocity...
@@ -386,53 +379,52 @@ CONTAINS
                                 ((grid%co_mx_c(i_ph) - grid%co_mx_c(i_ph-1))/(2.0_r2*PI)) &
                                 ) * model%ref_unit**3
         ! set cell neighbours
-!~         IF (grid%n(1) == 1) THEN
-!~             grid%cell_neighbours(3, i_cell) = i_cell 
-!~             grid%cell_neighbours(4, i_cell) = i_cell
-!~         ELSE
-!~         IF ( i_th == 1 ) THEN
-!~                 grid%cell_neighbours(3, i_cell) = i_cell + grid%n(3) - 1
-!~                 grid%cell_neighbours(4, i_cell) = i_cell + 1
-!~             ELSEIF ( i_ph == grid%n(3) ) THEN
-!~                 grid%cell_neighbours(3, i_cell) = i_cell - 1
-!~                 grid%cell_neighbours(4, i_cell) = i_cell - grid%n(3) + 1
-!~             ELSE
-!~                 grid%cell_neighbours(3, i_cell) = i_cell - 1 
-!~                 grid%cell_neighbours(4, i_cell) = i_cell + 1
-!~             END IF
-!~         END IF
-!~ 
-!~         
-!~         IF (grid%n(2) == 1) THEN
-!~             grid%cell_neighbours(3, i_cell) = i_cell 
-!~             grid%cell_neighbours(4, i_cell) = i_cell
-!~         ELSE
-!~         IF ( i_th == 1 ) THEN
-!~                 grid%cell_neighbours(3, i_cell) = i_cell + grid%n(3) - 1
-!~                 grid%cell_neighbours(4, i_cell) = i_cell + 1
-!~             ELSEIF ( i_ph == grid%n(3) ) THEN
-!~                 grid%cell_neighbours(3, i_cell) = i_cell - 1
-!~                 grid%cell_neighbours(4, i_cell) = i_cell - grid%n(3) + 1
-!~             ELSE
-!~                 grid%cell_neighbours(3, i_cell) = i_cell - 1 
-!~                 grid%cell_neighbours(4, i_cell) = i_cell + 1
-!~             END IF
-!~         END IF
-!~         IF (grid%n(3) == 1) THEN
-!~             grid%cell_neighbours(5, i_cell) = i_cell 
-!~             grid%cell_neighbours(6, i_cell) = i_cell
-!~         ELSE
-!~             IF ( i_ph == 1 ) THEN
-!~                 grid%cell_neighbours(5, i_cell) = i_cell + grid%n(3) - 1
-!~                 grid%cell_neighbours(6, i_cell) = i_cell + 1
-!~             ELSEIF ( i_ph == grid%n(3) ) THEN
-!~                 grid%cell_neighbours(5, i_cell) = i_cell - 1
-!~                 grid%cell_neighbours(6, i_cell) = i_cell - grid%n(3) + 1
-!~             ELSE
-!~                 grid%cell_neighbours(5, i_cell) = i_cell - 1 
-!~                 grid%cell_neighbours(6, i_cell) = i_cell + 1
-!~             END IF
-!~         END IF
+        IF (grid%n(1) == 1) THEN
+            grid%cell_neighbours(1, i_cell) = 0
+            grid%cell_neighbours(2, i_cell) = i_cell
+        ELSE
+        IF ( i_r == 1 ) THEN
+                grid%cell_neighbours(1, i_cell) = 0
+                grid%cell_neighbours(2, i_cell) = i_cell + grid%n(3) * grid%n(2)
+            ELSEIF ( i_r == grid%n(1) ) THEN
+                grid%cell_neighbours(1, i_cell) = i_cell - grid%n(3) * grid%n(2)
+                grid%cell_neighbours(2, i_cell) = i_cell
+            ELSE
+                grid%cell_neighbours(1, i_cell) = i_cell - grid%n(3) * grid%n(2)
+                grid%cell_neighbours(2, i_cell) = i_cell + grid%n(3) * grid%n(2)
+            END IF
+        END IF
+
+        IF (grid%n(2) == 1) THEN
+            grid%cell_neighbours(3, i_cell) = i_cell 
+            grid%cell_neighbours(4, i_cell) = i_cell
+        ELSE
+            IF ( i_th == 1 ) THEN
+                grid%cell_neighbours(3, i_cell) = i_cell - grid%n(3)
+                grid%cell_neighbours(4, i_cell) = i_cell + grid%n(3)
+            ELSEIF ( i_th == grid%n(3) ) THEN
+                grid%cell_neighbours(3, i_cell) = i_cell - grid%n(3)
+                grid%cell_neighbours(4, i_cell) = i_cell + grid%n(3)
+            ELSE
+                grid%cell_neighbours(3, i_cell) = i_cell - grid%n(3)
+                grid%cell_neighbours(4, i_cell) = i_cell + grid%n(3)
+            END IF
+        END IF
+        IF (grid%n(3) == 1) THEN
+            grid%cell_neighbours(5, i_cell) = i_cell 
+            grid%cell_neighbours(6, i_cell) = i_cell
+        ELSE
+            IF ( i_ph == 1 ) THEN
+                grid%cell_neighbours(5, i_cell) = i_cell + grid%n(3) - 1
+                grid%cell_neighbours(6, i_cell) = i_cell + 1
+            ELSEIF ( i_ph == grid%n(3) ) THEN
+                grid%cell_neighbours(5, i_cell) = i_cell - 1
+                grid%cell_neighbours(6, i_cell) = i_cell - grid%n(3) + 1
+            ELSE
+                grid%cell_neighbours(5, i_cell) = i_cell - 1 
+                grid%cell_neighbours(6, i_cell) = i_cell + 1
+            END IF
+        END IF
     END SUBROUTINE calc_cell_properties_sp
     
     

@@ -54,12 +54,10 @@ CONTAINS
     
     REAL(kind=r2)                 :: hd_stepwidth, dz_min, hd_rmax
          
-    REAL(KIND=r2)                 :: rho_size_i, rho_size_j ! [AU]
     REAL(KIND=r2)                 :: pix_res_i, pix_res_j   ! pixelsize [arcsec]
     REAL(KIND=r2)                 :: unit_value             ! unit conversion 
     
     real(kind=r2), dimension(1:2)                :: coor_map
-    real(kind=r2), dimension(1:3)                :: ex, ey
     REAL(kind=r2), dimension(:,:), allocatable   :: calc_px
     REAL(kind=r2), dimension(:,:,:), allocatable :: inten_px
     REAL(kind=r2), dimension(:,:), allocatable   :: continuum_px

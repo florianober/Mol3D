@@ -242,9 +242,7 @@ CONTAINS
                          dust%d_lam(i_lam)*1.0e26_r2/(model%distance*con_pc)**2
             fluxes%continuum_map_temp(:,:,i_lam) = fluxes%continuum_map_temp(:,:,i_lam)* unit_value
         END DO
-        
         CALL save_continuum_map(model, basics, dust, fluxes, 1)
-        
         print *, '| | | photon transfer finished                '
         ! prepare & save final results
         DO i_dust=1,dust%n_dust

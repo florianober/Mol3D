@@ -588,8 +588,9 @@ CONTAINS
         INTEGER, INTENT(IN)                          :: mode
         INTEGER                                      :: i_lam, sta, u
         CHARACTER(len=100)                           :: outname
-        REAL(kind=r2), DIMENSION(0:2*model%n_bin_map,0:2*model%n_bin_map,1:dust%n_lam)              :: map_out
+        REAL(kind=r2),DIMENSION(:,:,:), ALLOCATABLE  :: map_out
         !--------------------------------------------------------------------------!
+        ALLOCATE(map_out(0:2*model%n_bin_map,0:2*model%n_bin_map,1:dust%n_lam))
         IF (mode .eq. 1) THEN
             outname = '_temp'
             map_out = fluxes%continuum_map_temp
@@ -598,6 +599,8 @@ CONTAINS
             map_out = fluxes%continuum_map
         ELSE
             PRINT *, 'ERROR, wrong mode to write continuum map'
+            
+            DEALLOCATE(map_out)
             RETURN
         END IF
         sta = 0
@@ -624,11 +627,10 @@ CONTAINS
         WRITE(unit=2,fmt=*) ''
         DO i_lam =1, dust%n_lam
             WRITE (unit=2,fmt='(2(ES15.6E3))') dust%lam(i_lam), sum(map_out(:,:,i_lam))
-
         END DO
             
         CLOSE(unit=2)
-
+        DEALLOCATE(map_out)
     END SUBROUTINE save_continuum_map
     
     

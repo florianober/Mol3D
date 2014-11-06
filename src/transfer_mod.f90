@@ -697,33 +697,16 @@ contains
         pos_xyz_new(:) = p0_vec(:)  +  d_l * d_vec(:)
         ! 
         ! 4. new cell number
-        ! a) use the generic routine
+        ! a) use the generic routine (extensively tested)
 !~         nr_cell_new = get_cell_nr( grid,pos_xyz_new )
         
         ! b) use the cell id's (should be much faster)
-        IF (hi1 == 1 ) THEN
-            nr_cell_new2 = nr_cell - grid%n(2)*grid%n(3)
-            IF (nr_cell_new2 <= 0 ) THEN
-                nr_cell_new2 = 0
-            END IF
-        ELSEIF (hi1 == 2 ) THEN
-            nr_cell_new2 = nr_cell + grid%n(2)*grid%n(3)
-            IF (nr_cell_new2 > grid%n_cell ) THEN
-                nr_cell_new2 = nr_cell
-            END IF
-        ELSEIF (hi1 == 3 ) THEN
-            nr_cell_new2 = nr_cell - grid%n(3)
-        ELSEIF (hi1 == 4 ) THEN
-            nr_cell_new2 = nr_cell + grid%n(3)
-        ELSEIF (hi1 == 5 ) THEN
-            nr_cell_new2 = nr_cell - 1
-        ELSEIF (hi1 == 6 ) THEN
-            nr_cell_new2 = nr_cell + 1
-        END IF
-        nr_cell_new = nr_cell_new2
+        nr_cell_new = grid%cell_neighbours(hi1, nr_cell)
+
+!~         nr_cell_new = nr_cell_new2
 !~         IF (show_error) THEN
-!~             IF (nr_cell_new2 /= nr_cell_new) THEN
-!~                 print *, nr_cell_new2, nr_cell_new, nr_cell
+!~             IF (grid%cell_neighbours(hi1, nr_cell) /= nr_cell_new) THEN
+!~                 print *, nr_cell_new, nr_cell, grid%cell_neighbours(hi1, nr_cell)
 !~                 print *,hi1
 !~                 stop
 !~             END IF
