@@ -318,21 +318,22 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
     WRITE(unit=3,fmt='(A)') ''
     
     
-    al_map(1)   = 5.0
+    al_map(1)   = 1.0
     
-    CALL InitModel(model,1, ref_u_str, ref_u, r_in, r_ou, mass_dust, t_eff, R_star, M_star, n_map, distance, &
+    CALL InitModel(model,1, ref_u_str, ref_u, r_in, r_ou, mass_dust, t_eff,    &
+                   R_star, M_star, n_map, distance, &
                    no_photon,th_map,ph_map,zoom_map,al_map,n_bin_map)
                     
-    DEALLOCATE( th_map, &
-                ph_map, &
+    DEALLOCATE( th_map,   &
+                ph_map,   &
                 zoom_map, &
                 al_map)
     
     !--------------------------------------------------------------------------!
     
     
-    n_tr = 1                 !Number of transitions, please do not change this value. Only calculate
-                             ! one transition at one time
+    n_tr = 1    ! Number of transitions, please do not change this value.
+                ! Only calculate one transition at once, for the moment
     ALLOCATE( tr_cat(1:n_tr) )
     
     CALL parse('molratio',molratio,new_input_file)
@@ -377,17 +378,19 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
     WRITE(unit=3,fmt='(A)') 'vel_max = {'//TRIM(help)//&
     '}                  max velocity in spectrum (in m/s)'
     
-    CALL InitGas(gas, mode, gas_cat_name, molratio, abundance, n_tr, tr_cat, i_vel_chan, vel_max)
+    CALL InitGas(gas, mode, gas_cat_name, molratio, abundance, n_tr, tr_cat,   &
+                 i_vel_chan, vel_max)
     
     DEALLOCATE( tr_cat )
     
-    !--------------------------------------------------------------------------! 
+    !--------------------------------------------------------------------------!
     
-    n_dust = 1                 !Number of dust species"
+    n_dust = 1                 ! Number of dust species"
     ALLOCATE( dens_dust(1:n_dust) )
     
-    dens_dust(1) = 2.5         !Density [g/cm^3] of dust grain species 1"
-    sizexp = 0.0_r2            !Exponent of the dust grain size distribution  mrn  [-3.5]
+    dens_dust(1) = 2.5         ! Density [g/cm^3] of dust grain species 1"
+    sizexp = 0.0_r2            ! Exponent of the dust grain size distribution
+                               ! mrn  [-3.5]
     
     aniso  = 1                 !Scattering 1) Anisotropic 2) Isotropic
     ALLOCATE(dust_cat(1:n_dust))
@@ -396,12 +399,9 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
     WRITE(unit=3,fmt='(A)') 'dust_cat_name = {'//TRIM(dust_cat(1))// &
     '}           dust catalog name (in input/dust) (in mc3d style)'
     WRITE(unit=3,fmt='(A)') ''
-    !call get_n_den_par()
-    !if (n_den_par>0) then
-    !    allocate(den_par(1:n_den_par)) !"Number of free parameters in the current model: ", n_den_par
-    !    den_par(1) = 2.34
-    !end if
-    CALL InitDust(dust, basics, gas, model, 1, 'mrn', n_dust, dens_dust, sizexp, aniso, dust_cat,n_scatt_th, nrndpt)
+
+    CALL InitDust(dust, basics, gas, model, 1, 'mrn', n_dust, dens_dust,       &
+                  sizexp, aniso, dust_cat,n_scatt_th, nrndpt)
     DEALLOCATE( dens_dust, &
                 dust_cat)
 
@@ -420,10 +420,11 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
         model%r_ou = sf*model%r_ou
     ELSE
         ! this is the normal way, read the grid properties from the input file
-        CALL parse('grid_name',grid_name,input_file)  
-          ! possible values: spherical (mostly mc3d style)
-          !                  cylindrical (in progress, working but there are some bugs, test for yourself)
-          !                  cartesian   (planed)
+        CALL parse('grid_name', grid_name, input_file)  
+          ! possible values: spherical (well tested)
+          !                  cylindrical (working but there might
+          !                  be some bugs, test for yourself)
+          !                  cartesian (partly implemented)
           !
           ! EXAMPLE:
           ! 
@@ -478,48 +479,50 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
     ! 1 == analytical version (prefered)
     ! 2 == user input version, under construction
     !
+    !
+    !   Some examples here:
+    ! SELECT CASE(grid_type)
+    !
+    ! CASE('cylindrical')
+    !    grid_type = 1
+    !    n_a  = 100
+    !    sf   = 1.00001
+    !    n_b  = 70          
+    !    n_c  = 101   
+    !
+    !CASE('spherical')
+    !    grid_type = 1
+    !    n_a  = 300
+    !    sf   = 1.01
+    !    n_b  = 257
+    !    n_c  = 1
     
-!   Some examples here:
-!~     SELECT CASE(grid_type)
-    
-!~     CASE('cylindrical')
-!~         grid_type = 1
-!~         n_a  = 100
-!~         sf   = 1.00001
-!~         n_b  = 70          
-!~         n_c  = 101   
-!~         
-!~     CASE('spherical')
-!~         grid_type = 1
-!~         n_a  = 300
-!~         sf   = 1.01
-!~         n_b  = 257
-!~         n_c  = 1
-    
-!~     END SELECT
+    END SELECT
     CALL InitGrid(grid,grid_type,grid_name, n_a, sf, n_b, n_c,dust%n_dust, & 
                   gas%egy_lvl)
-    !--------------------------------------------------------------------------! 
+    !--------------------------------------------------------------------------!
     
     CALL InitSources(sources_in,1,'sources',dust)
     ! -------------------------------------
     ! Mode 1: give R_star and T_star
-    !   CALL AddSources(sources_in,1,(/0.0_r2,0.0_r2,0.0_r2/), R_star=model%r_star, T_star=model%t_star)
+    !   CALL AddSources(sources_in,1,(/0.0_r2,0.0_r2,0.0_r2/),                 &
+    !                   R_star=model%r_star, T_star=model%t_star)
     ! Mode 2: give T_star and Luminosity
-    !   CALL AddSources(sources_in,2,(/0.0_r2,0.0_r2,0.0_r2/), T_star=model%T_star, L_star=REAL(L_sun*1.907343,kind=r1))
+    !   CALL AddSources(sources_in,2,(/0.0_r2,0.0_r2,0.0_r2/),                 &
+    !                   T_star=model%T_star, L_star=REAL(L_sun*1.9,kind=r1))
     ! -------------------------------------
     
     ! 1 source (used as the primary source, defined in the input file)
-    CALL AddSources(sources_in,1,(/0.0_r2,0.0_r2,0.0_r2/), R_star=model%r_star, T_star=model%t_star)
+    CALL AddSources(sources_in,1,(/0.0_r2,0.0_r2,0.0_r2/), R_star=model%r_star,&
+                    T_star=model%t_star)
     ! 2 source (added by hand, could be a embedded planet or whatever)
-!~     CALL AddSources(sources_in,2,(/sf*4.95_r2,-sf*0.72_r2,0.0_r2/), T_star=1000.0, L_star=REAL(1e-4*L_sun,kind=r1))
-!~     print *, sources_in%L_total
-!~     print *, sources_in%L_total/(4*PI)
-    ! .. source..
+    ! CALL AddSources(sources_in,2,(/sf*4.95_r2,-sf*0.72_r2,0.0_r2/),          &
+    !                 T_star=1000.0, L_star=REAL(1e-4*L_sun,kind=r1))
     
     print '(A,I3)', " Sources found: ", sources_in%n_sources
-    print '(A,F5.2,A)'," Total Luminosity included: ", sources_in%L_total/L_sun, " L_sun"
-    !--------------------------------------------------------------------------! 
+    print '(A,F5.2,A)'," Total Luminosity included: ", sources_in%L_total /    &
+                        L_sun, " L_sun"
+    !--------------------------------------------------------------------------!
     ! Stokes vector: Unpolarized radiation (assumed initial state)
     n_dust_emi = 0
     CALL parse('flux_unit',flux_unit,new_input_file)
@@ -530,7 +533,7 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
                     model%n_bin_map,gas%n_tr, gas%i_vel_chan,dust%n_lam)
     
     
-    !--------------------------------------------------------------------------! 
+    !--------------------------------------------------------------------------!
     !  Save input file to project results
     ! 
 

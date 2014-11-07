@@ -9,12 +9,12 @@
 #                                                                                   #
 # author: Florian Ober                                                              #
 # email : fober@astrophysik.uni-kiel.de                                             #
-# date  : Sep 2014                                                                  #
+# date  : Nov 2014                                                                  #
 #####################################################################################
 
                                           (+) working, (-) not working
 
-proname = {example_observe}                       project name
+proname = {example}                       project name
 r_path = {results/}                       define results path, it is recommend to change this path 
 
 num_core    = {002}                       number of cores to use in parallel mode
@@ -35,9 +35,9 @@ R_star = {2}                              radius of star
 M_star = {0.7}                            stellar mass
 
 distance  = {140.0}                       object distance [pc]
-n_bin_map = {200}                         half number of pixel, total pixel = 2 * n_bin_map1 + 1
-no_photon = {20000000}                     total number of photons (min ~10 * No of cells)
-th_map = {0.0}                           inclination to observer
+n_bin_map = {200}                         half number of pixel, total pixel = 2 * n_bin_map + 1
+no_photon = {100000}                      total number of photons (min ~10 * No of cells)
+th_map = {0.0}                            inclination to observer
 ph_map = {0.0}
 zoom_map = {1.0}
 

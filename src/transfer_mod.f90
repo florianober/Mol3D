@@ -700,7 +700,7 @@ contains
         ! a) use the generic routine (extensively tested)
 !~         nr_cell_new = get_cell_nr( grid,pos_xyz_new )
         
-        ! b) use the cell id's (should be much faster)
+        ! b) use the cell_neighbours id (about 2 times faster)
         nr_cell_new = grid%cell_neighbours(hi1, nr_cell)
 
 !~         nr_cell_new = nr_cell_new2

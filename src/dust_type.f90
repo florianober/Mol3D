@@ -223,6 +223,9 @@ CONTAINS
         end do
 
         ! 2. read individual files
+        !    NOTE: this routine is a mainly unmodified version from MC3D.
+        !          it is working for 1 dust grain, more are feasible in
+        !          princible, but is not tested.
         do i_dust=1, this%n_dust
             if (this%n_dust>1) then
                 print *,"   > type of dust [=f(chemistry,size)] :", i_dust, " / ", this%n_dust
