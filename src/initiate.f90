@@ -490,14 +490,14 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
     !    n_b  = 70          
     !    n_c  = 101   
     !
-    !CASE('spherical')
+    ! CASE('spherical')
     !    grid_type = 1
     !    n_a  = 300
     !    sf   = 1.01
     !    n_b  = 257
     !    n_c  = 1
-    
-    END SELECT
+    !
+    ! END SELECT
     CALL InitGrid(grid,grid_type,grid_name, n_a, sf, n_b, n_c,dust%n_dust, & 
                   gas%egy_lvl)
     !--------------------------------------------------------------------------!
