@@ -559,12 +559,19 @@ CONTAINS
 
         ! 1.3 get i_z
         ! --
-
-        IF ( abs(caco(3)) >=  this%co_mx_c(this%n(3)) ) THEN
+        IF ( caco(3) >=  this%co_mx_c(this%n(3)) ) THEN
             i_z = this%n(3)
+        ELSEIF ( caco(3) <=  this%co_mx_c( 0 ) ) THEN
+            i_z = 1
         ELSE
             i_z = binary_search(caco(3),this%co_mx_c )
         END IF
+
+!~         IF ( abs(caco(3)) >=  this%co_mx_c(this%n(3)) ) THEN
+!~             i_z = this%n(3)
+!~         ELSE
+!~             i_z = binary_search(caco(3),this%co_mx_c )
+!~         END IF
 
         
         get_cell_nr_result = this%cell_idx2nr(i_r,i_ph,i_z)

@@ -25,7 +25,7 @@ MODULE observe_mod
     !--------------------------------------------------------------------------!
 CONTAINS
 
-    FUNCTION get_line_intensity_in_px(basics, grid, model, dust, gas,                  &
+    FUNCTION get_line_intensity_in_px(basics, grid, model, dust, gas,          &
                               coor_map1, coor_map2, i_map)                     &
                               RESULT(px_intensity)
         
@@ -182,7 +182,9 @@ CONTAINS
                                     IF (velo_type == 1 ) THEN
                                     ! use the analytical velocity distribution
                                         velo_dir_xyz   =  dot_product(Set_velo(pos_xyz_cell+ &
-                                                      cell_d_l*model%dir_xyz(:,i_map)*RK_c(k),model%kep_const),model%dir_xyz(:,i_map)) 
+                                                      cell_d_l*model%dir_xyz(:,i_map) *      &
+                                                      RK_c(k),model%kep_const),              &
+                                                      model%dir_xyz(:,i_map)) 
 
                                     ELSEIF (velo_type == 2 ) THEN
                                     ! linear interpolation of the velocity 
@@ -402,7 +404,7 @@ CONTAINS
 !~                                     print *, RK_k
 !~                                     stop
 !~                                 END IF
-                                epsi= abs(intensity_new2-intensity_new)/&
+                                epsi= abs(intensity_new2-intensity_new) /      &
                                          ( rel_err*abs(intensity_new) + abs_err)
                                          
                                 dz_new = 0.9*dz*epsi**(-0.2)
@@ -465,7 +467,7 @@ CONTAINS
         REAL(KIND=r2)                                    :: dz_sum
         
         REAL(KIND=r2)                                    :: d_l
-        REAL(KIND=r2)                                    :: ray_minA
+        REAL(KIND=r1)                                    :: ray_minA
 
         REAL(KIND=r2), DIMENSION(3)                      :: pos_xyz
         REAL(KIND=r2), DIMENSION(3)                      :: pos_xyz_new

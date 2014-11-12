@@ -50,7 +50,7 @@ CONTAINS
     TYPE(Gas_TYP),INTENT(INOUT)                      :: gas
     TYPE(Fluxes_TYP) ,INTENT(INOUT)                  :: fluxes
     TYPE(SOURCES),INTENT(IN)                         :: sources_in
-    !--------------------------------------------------------------------------!  
+    !--------------------------------------------------------------------------!
     REAL(kind=r2), DIMENSION(1:3)                    :: caco
     REAL(kind=r2), DIMENSION(1:3)                    :: moco
     
@@ -59,7 +59,7 @@ CONTAINS
     INTEGER                                          :: i_b
     INTEGER                                          :: i_c
     
-    !--------------------------------------------------------------------------! 
+    !--------------------------------------------------------------------------!
     IF (.not. basics%old_model) THEN
         IF ( basics%calc_tmp) THEN
             IF (.not. SourcesInitialized(sources_in)) THEN
@@ -129,12 +129,12 @@ CONTAINS
   
     PURE FUNCTION Get_temp(caco) RESULT(temps)
         IMPLICIT NONE
-        !------------------------------------------------------------------------!
-        REAL(kind=r2), DIMENSION(1:3),INTENT(IN)                  :: caco
-        REAL(kind=r2)                                             :: temps
-        REAL(kind=r2)                                             :: konst, P_xy, P_h
+        !----------------------------------------------------------------------!
+        REAL(kind=r2), DIMENSION(1:3),INTENT(IN)         :: caco
+        REAL(kind=r2)                                    :: temps
+        REAL(kind=r2)                                    :: konst, P_xy, P_h
         
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
 
             !define your temperature distribution here!
             !print *, 'using an analytical temperature distribution, isotherm in z direction'
@@ -153,7 +153,7 @@ CONTAINS
 
         IMPLICIT NONE
         
-        !--------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         TYPE(Basic_TYP),INTENT(IN)                       :: basics
         TYPE(Fluxes_TYP),INTENT(INOUT)                   :: fluxes
         TYPE(Grid_TYP),INTENT(INOUT)                     :: grid
@@ -163,7 +163,7 @@ CONTAINS
     
         TYPE(Randgen_TYP)                                :: rand_nr
         
-        !--------------------------------------------------------------------------!  
+        !----------------------------------------------------------------------!
         INTEGER                                          :: i_dust, i_lam, i_map
         INTEGER                                          :: seed
         INTEGER(8)                                       :: i_phot, k_phot
@@ -172,7 +172,7 @@ CONTAINS
                 
         TYPE(PHOTON_TYP)                                 :: photon
         
-        !--------------------------------------------------------------------------! 
+        !----------------------------------------------------------------------!
         ! ---
         ! some preprations
 
@@ -180,7 +180,7 @@ CONTAINS
         ! photon transfer
         print *,'| | calculate temperature with Monte Carlo method'
         print *,'| | | starting photon transfer ... [this may take a while]'
-        !--------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         grid%t_dust(:,:)  = basics%t_dust_min
         grid%t_dust(0,:)  = 0.0_r2
         k_phot = model%no_photon/100
@@ -191,11 +191,12 @@ CONTAINS
         !$ seed = (omp_get_thread_num()+1)*(-1)
 !~         !$ print *,seed
         CALL InitRandgen(rand_nr,seed,'RAN2')
-        !--------------------------------------------------------------------------! 
+        !----------------------------------------------------------------------!
 !~         DO lucy = 1,5 ! TbD, in future we will use lucy iterations again, 
                          !      -> parallelisation should be more efficient
         !$omp do schedule(dynamic) PRIVATE(i_phot) FIRSTPRIVATE(photon)
         DO i_phot=1,model%no_photon
+        
             ! show progress
             IF (modulo(i_phot, k_phot) == 0 .or. i_phot==model%no_photon) THEN
                     write (*,'(A,I3,A)') " | | | - progress : ", &

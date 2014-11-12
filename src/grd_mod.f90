@@ -336,13 +336,58 @@ CONTAINS
                                     ( dth * grid%co_mx_a(i_r-1) * dz), &
                                     ( (grid%co_mx_a(i_r)-grid%co_mx_a(i_r-1))*dz))
                                     
-!~         grid%cell_minA(i_cell) = grid%cell_minA(i_cell)*1.0e3
         ! volume of individual cells [m^3]
         
         grid%cell_vol(i_cell) = 0.5_r2 * dz * dth * &
                                (grid%co_mx_a(i_r)**2-grid%co_mx_a(i_r-1)**2) * &
                                 model%ref_unit**3
-!~         print *,grid%cell_vol(i_cell)
+        ! set cell neighbours
+        IF (grid%n(1) == 1) THEN
+            grid%cell_neighbours(1, i_cell) = 0
+            grid%cell_neighbours(2, i_cell) = i_cell
+        ELSE
+            IF ( i_r == 1 ) THEN
+                grid%cell_neighbours(1, i_cell) = 0
+                grid%cell_neighbours(2, i_cell) = i_cell + grid%n(3) * grid%n(2)
+            ELSEIF ( i_r == grid%n(1) ) THEN
+                grid%cell_neighbours(1, i_cell) = i_cell - grid%n(3) * grid%n(2)
+                grid%cell_neighbours(2, i_cell) = i_cell
+            ELSE
+                grid%cell_neighbours(1, i_cell) = i_cell - grid%n(3) * grid%n(2)
+                grid%cell_neighbours(2, i_cell) = i_cell + grid%n(3) * grid%n(2)
+            END IF
+        END IF
+        IF (grid%n(2) == 1) THEN
+            grid%cell_neighbours(3, i_cell) = i_cell 
+            grid%cell_neighbours(4, i_cell) = i_cell
+        ELSE
+            IF ( i_ph == 1 ) THEN
+                grid%cell_neighbours(3, i_cell) = i_cell + grid%n(3)*(grid%n(2)-1)
+                grid%cell_neighbours(4, i_cell) = i_cell + grid%n(3)
+            ELSEIF ( i_ph == grid%n(2) ) THEN
+                grid%cell_neighbours(3, i_cell) = i_cell - grid%n(3)
+                grid%cell_neighbours(4, i_cell) = i_cell - grid%n(3)*(grid%n(2)-1)
+            ELSE
+                grid%cell_neighbours(3, i_cell) = i_cell - grid%n(3)
+                grid%cell_neighbours(4, i_cell) = i_cell + grid%n(3)
+            END IF
+        END IF
+        IF (grid%n(3) == 1) THEN
+            grid%cell_neighbours(5, i_cell) = i_cell 
+            grid%cell_neighbours(6, i_cell) = i_cell
+        ELSE
+            IF ( i_z == 1 ) THEN
+                grid%cell_neighbours(5, i_cell) = i_cell
+                grid%cell_neighbours(6, i_cell) = i_cell + 1
+            ELSEIF ( i_z == grid%n(3) ) THEN
+                grid%cell_neighbours(5, i_cell) = i_cell - 1
+                grid%cell_neighbours(6, i_cell) = i_cell 
+            ELSE
+                grid%cell_neighbours(5, i_cell) = i_cell - 1 
+                grid%cell_neighbours(6, i_cell) = i_cell + 1
+            END IF
+        END IF
+        
     END SUBROUTINE calc_cell_properties_cy
     
     
@@ -383,7 +428,7 @@ CONTAINS
             grid%cell_neighbours(1, i_cell) = 0
             grid%cell_neighbours(2, i_cell) = i_cell
         ELSE
-        IF ( i_r == 1 ) THEN
+            IF ( i_r == 1 ) THEN
                 grid%cell_neighbours(1, i_cell) = 0
                 grid%cell_neighbours(2, i_cell) = i_cell + grid%n(3) * grid%n(2)
             ELSEIF ( i_r == grid%n(1) ) THEN
