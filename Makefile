@@ -207,7 +207,7 @@ endif
 # How to build an object file from an f90 source file
 #
 $(addprefix $(BUILD_DIR),%.o): $(addprefix $(SRC_DIR),%.f90) Makefile
-ifeq ($(CO),paradebug) 
+ifeq ($(CO),perf) 
 		@scalasca -instrument $(FC) $(CFLAGS) $(DEPFLAGS) $(OFLAGS) -c $< -o $@ 
 else 
 		@$(FC) $(CFLAGS) $(DEPFLAGS) $(OFLAGS) -c $< -o $@

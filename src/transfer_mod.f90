@@ -85,7 +85,9 @@ contains
                 ! but however it should work this way
                 photon%pos_xyz_new(1)   = model%r_ou * 1.01_r2
                 photon%pos_xyz_new(2:3) = 0.0_r2
-              
+                photon%inside = .False.
+                EXIT
+                
             ELSE
                 ! 2.3. determine corresponding optical path length        (d_tau)
                 d_tau = (d_l * model%ref_unit) * sum(dust%C_ext(:,photon%nr_lam) *&

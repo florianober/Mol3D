@@ -206,7 +206,7 @@ CONTAINS
 
 
             ! initiate photon
-            CALL InitPhoton(photon, 1, 'Photon', dust%n_dust, .True.)
+            CALL InitPhoton(photon, 1, 'Photon', .True.)
 
             ! 1. start photon (from primary source only)
             CALL start_photon(basics,grid, model, rand_nr, fluxes, dust, photon, sources_in)
