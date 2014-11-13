@@ -124,7 +124,24 @@ def write_image2fits(image, header='', file_name='example.fits', quiet=True):
     else:
         hdulist.writeto(file_name, clobber=True)
         print(('fits file succesfully written: %s' %file_name))
+def beam2pixel_header(header):
+    """
+    returns the beam2pixel conversion unit using a fits header
+    """
+    return beam2pixel(header['BMAJ'],header['BMIN'],
+                      header['CDELT1'],header['CDELT2'] )
 
+def beam2pixel(bmaj, bmin, delt1, delt2):
+    """
+    returns the beam2pixel conversion value
+    note this is an approximation for an ellipsoide beam
+    """
+
+    pixel_size = deg2as(abs(delt1))*deg2as(abs(delt2))
+    beam_size = deg2as(abs(bmaj))*deg2as(abs(bmin))*np.pi/4.0/np.log(2)
+    beam2px = beam_size/pixel_size
+    
+    return beam2px
 def create_CASA_fits(map_in, out_name='standard.fits',
                      position='4h33m16.50s 22d53m20.40s',
                      object_name='unknown', resolution=1.0e-7,

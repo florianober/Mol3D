@@ -786,20 +786,28 @@ contains
             ! buggy, it can happen
             IF (show_error) print *, "WARNING, no boundary in forward direction found"
             d_l = grid%d_l_min+epsilon(d_l)
+            ! -
+            ! 3.new position
+            pos_xyz_new(:) = p0_vec(:)  +  d_l * d_vec(:)
+            ! 
+            ! 4. new cell number, still inside this cell
+            nr_cell_new = nr_cell
         ELSE
             d_l = d_lx(hi1) +1.0e6_r2*epsilon(d_l)
+
+            ! -
+            ! 3.new position
+            pos_xyz_new(:) = p0_vec(:)  +  d_l * d_vec(:)
+            ! 
+            ! 4. new cell number
+            ! a) use the generic routine (extensively tested)
+!~             nr_cell_new = get_cell_nr( grid,pos_xyz_new )
+        
+            ! b) use the cell_neighbours id (about 2 times faster)
+            nr_cell_new = grid%cell_neighbours(hi1, nr_cell)
         END IF
 
-        ! -
-        ! 3.new position
-        pos_xyz_new(:) = p0_vec(:)  +  d_l * d_vec(:)
-        ! 
-        ! 4. new cell number
-        ! a) use the generic routine (extensively tested)
-!~         nr_cell_new = get_cell_nr( grid,pos_xyz_new )
-        
-        ! b) use the cell_neighbours id (about 2 times faster)
-        nr_cell_new = grid%cell_neighbours(hi1, nr_cell)
+
 
 !~         nr_cell_new = nr_cell_new2
 !~         IF (show_error) THEN

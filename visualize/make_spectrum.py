@@ -19,6 +19,8 @@ import mol3d_routines as l
 from mpl_toolkits.axes_grid1 import AxesGrid
 import matplotlib as mpl
 import mpl_toolkits.axes_grid1 as axes_grid1
+from astropy.io import fits as pf
+import helper as hlp
 
 if len(sys.argv) > 1:
     P_NAME = sys.argv[1]
@@ -105,7 +107,7 @@ def make_velo_ch_plot(data, vch, N1=3, N2=5, snr='', cmap=plt.cm.nipy_spectral,
         sensitivity = 1
     else:
         sensitivity = snr
-
+        #~ vmin = snr
     vmax = np.max(data[int(len(vch)/2.), :, :]/sensitivity*1000)
 
     text_pos = [-0.9*extent[1], -0.8*extent[1]]
@@ -179,6 +181,61 @@ def make_spectra(path_results, pname):
                             vch[mid-(incr*offset): mid + (incr*offset+1): incr],
                             N1, N2, extent=extent, interpol='spline36')
     fig.savefig(pname + '_velo_ch_map.pdf',bbox_inches='tight')
+
+def make_spectra_fits(fits_file):
+    fits = pf.open(fits_file)
+    size = fits[0].data.shape
+    if len(size) == 4: 
+        map_in = fits[0].data[0, :, :, :]
+        
+    header =  fits[0].header
+    fits.close()
+    mid = (map_in.shape[0]-1)/2
+    d_v = header['CDELT3']*hlp.c/header['CRVAL3']
+    if 'ALTRVAL' in header:
+        v_offset = header['ALTRVAL']
+    else:
+        v_offset = 0.0
+    
+    print (d_v)
+    vch = np.linspace(v_offset, v_offset-d_v*map_in.shape[0], map_in.shape[0])
+    arcs_x = hlp.deg2as(header['CDELT1']*((map_in.shape[1]-1)/2))
+    arcs_y = header['CDELT2']*((map_in.shape[1]-1)/2)*3600
+    extent = [-arcs_y, arcs_y, -arcs_x, arcs_x]
+    incr = 2
+    N1 = 5
+    N2 = 5
+    label = 'flux density ['+header['BUNIT']+']'
+    offset = int((N1*N2-1)/2.)
+    fig = make_velo_ch_plot(map_in[mid-(incr*offset): mid + (incr*offset+1): incr],
+                            vch[mid-(incr*offset): mid + (incr*offset+1): incr],
+                            N1, N2, extent=extent, interpol='spline36', label=label)
+    # make line spectrum
+    if 'BMAJ' in header:
+        beam2px = hlp.beam2pixel_header(header)
+    else:
+        beam2px = 1
+
+    #~ print (beam2px)
+    plt.figure('line spectrum')
+    y_arr = map_in.sum(axis=1).sum(axis=1)/beam2px
+    plt.plot(vch/1000, y_arr)
+    plt.ylim(0, 1.1*np.max(y_arr))
+    plt.xlim(np.min(vch/1000), np.max(vch/1000))
+    plt.xlabel('velocity [km/s]')
+    plt.ylabel('intensity [Jy]')
+    label = 'flux density ['+header['BUNIT']+' m/s]'
+    # make intensity map
+    fig = make_velo_int_plot(map_in, d_v, extent=extent, label=label)
+    #~ fig.savefig(pname +'_intensity_map.pdf',bbox_inches='tight')
+    print (y_arr.sum(axis=0) * d_v/1000 - np.median(y_arr) * d_v/1000*len(vch))
+    #~ print (y_arr[0] * d_v/1000)
+    
 if __name__ == "__main__":
-    make_spectra(PATH_RESULTS, P_NAME)
+    #~ pass
+    if '.fits' in P_NAME:
+        make_spectra_fits('/home/fober/test.fits')
+    else:
+        make_spectra(PATH_RESULTS, P_NAME)
     plt.show()
+
