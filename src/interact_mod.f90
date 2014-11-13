@@ -91,20 +91,21 @@ contains
     TYPE(Dust_TYP),INTENT(IN)                        :: dust
     TYPE(Fluxes_TYP),INTENT(IN)                      :: fluxes
     
-    TYPE(PHOTON_TYP),INTENT(INOUT)                     :: photon
+    TYPE(PHOTON_TYP),INTENT(INOUT)                   :: photon
     !--------------------------------------------------------------------------!
         
-    integer                                           :: i_dust
-    REAL(kind=r2)                                     :: rndx
+    integer                                          :: i_dust
+    REAL(kind=r2)                                    :: rndx
     
     !--------------------------------------------------------------------------!
     ! ---
     ! 1. select dust species for interaction
-    CALL dust_select( grid,dust,rand_nr,photon,i_dust)      
+    i_dust = dust_select( grid, dust, rand_nr, photon)      
     
     ! 2. select type of interaction
     CALL RAN2(rand_nr, rndx)
-    IF ( rndx < photon%current_albedo(i_dust) ) then               
+!~     IF ( rndx < photon%current_albedo(i_dust) ) then
+    IF ( rndx < dust%albedo(i_dust, photon%nr_lam) ) THEN
 
        ! 2.1 scattering
         CALL scatter( basics, rand_nr, dust, photon, i_dust )
@@ -124,7 +125,7 @@ contains
   ! ################################################################################################
   ! select dust species in current cell
   ! ---
-  SUBROUTINE dust_select(grid,dust,rand_nr,photon,i_dust_action)
+  FUNCTION dust_select(grid, dust, rand_nr, photon) RESULT(i_dust_action)
 
     IMPLICIT NONE
     !--------------------------------------------------------------------------!
@@ -132,9 +133,10 @@ contains
     TYPE(Grid_TYP),INTENT(IN)                        :: grid
     TYPE(Dust_TYP),INTENT(IN)                        :: dust
     
-    TYPE(PHOTON_TYP),INTENT(INOUT)                    :: photon
+    TYPE(PHOTON_TYP),INTENT(IN)                      :: photon
     !--------------------------------------------------------------------------!
-    integer,INTENT(OUT)                              :: i_dust_action 
+    INTEGER                                          :: i_dust_action
+    REAL(kind=r2),DIMENSION(1:dust%n_dust)           :: prob_action
     REAL(kind=r2)                                    :: rndx
     real(kind=r2) :: hd1, hd2
     !--------------------------------------------------------------------------!
@@ -148,23 +150,23 @@ contains
        !           is in direct proportion to the
        !           a) the number density of these dust grains in the cell
        !      and  b) the extinction cross section of that species
-       photon%prob_action(:) = grid%grd_dust_density(photon%nr_cell,:) * dust%C_ext(:,photon%nr_lam)
+       prob_action(:) = grid%grd_dust_density(photon%nr_cell,:) * dust%C_ext(:,photon%nr_lam)
        
-       CALL RAN2(rand_nr,rndx)    
-       hd1 = rndx * sum( photon%prob_action(:) )
+       CALL RAN2(rand_nr, rndx)    
+       hd1 = rndx * sum( prob_action(:) )
 
        i_dust_action = 1
-       hd2           = photon%prob_action(i_dust_action)  +  hd1 * epsilon(1.0_r2)
+       hd2           = prob_action(i_dust_action)  +  hd1 * epsilon(1.0_r2)
        DO
           IF (hd2 >= hd1 ) THEN
              EXIT
           ELSE
              i_dust_action = i_dust_action + 1
-             hd2           = hd2           + photon%prob_action(i_dust_action)
+             hd2           = hd2           + prob_action(i_dust_action)
           END IF
        END DO
     END IF
 
-  END SUBROUTINE dust_select
+  END FUNCTION dust_select
 
 end module interact_mod

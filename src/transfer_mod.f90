@@ -74,8 +74,8 @@ contains
             !                 - new entry point in neighbouring cell
             !                 - new cell number
             CALL path( grid, photon%pos_xyz, photon%pos_xyz_new, photon%nr_cell, &
-                        photon%nr_cell_new, d_l, kill_photon, photon%dir_xyz)
-            IF (kill_photon) THEN
+                        photon%nr_cell_new, d_l, photon%kill, photon%dir_xyz)
+            IF (photon%kill) THEN
                 ! stop transfer of this photon package
                 d_l = 0.0_r2
                 ! set condition for leaving the loop
@@ -540,6 +540,7 @@ contains
         
         ! b) use the cell_neighbours id
         !    (about 2 times faster, not well tested, but no errors yet)
+        ! tbd. here, a critical if case should be added if hi1< 1 or hi1 > 6 
         nr_cell_new = grid%cell_neighbours(hi1, nr_cell)
 
     END SUBROUTINE path_cy
@@ -563,7 +564,7 @@ contains
         integer,                     intent(out)          :: nr_cell_new
         integer                                           :: nr_cell_new2
 
-        logical,                     intent(out)          :: kill_photon
+        logical,                     intent(inout)        :: kill_photon
         !----------------------------------------------------------------------!
         integer                                           :: hi1
         integer, dimension(1)                             :: hi_arr1
@@ -577,8 +578,6 @@ contains
         !$ INTEGER omp_get_thread_num 
         !----------------------------------------------------------------------!
         ! ---
-        ! default:
-        kill_photon = .false.
 
         ! starting point: pos_xyz (grid type variable)
         ! direction     : dir_xyz (grid type variable)
@@ -784,10 +783,7 @@ contains
             ! we procced with a minimum step 
             ! This case should not be raised, but in fact, if some routine is
             ! buggy, it can happen
-            IF (show_error) THEN
-                print *, "WARNING, no boundary in forward direction found"
-                !$print *,omp_get_thread_num()
-            END IF
+            
             d_l = grid%d_l_min+epsilon(d_l)
             ! -
             ! 3.new position
@@ -795,6 +791,10 @@ contains
             ! 
             ! 4. new cell number, still inside this cell
             nr_cell_new = nr_cell
+            kill_photon = .True.
+            IF (show_error) THEN
+                print *, "WARNING, no boundary in forward direction found"
+            END IF
         ELSE
             d_l = d_lx(hi1) +1.0e6_r2*epsilon(d_l)
 

@@ -147,7 +147,7 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
     t_dust_max        = 2000.0
     n_interact_max    = 100000
     
-    show_error = .False.                             ! show some minor warnings
+    show_error = .True.                             ! show some minor warnings
     velo_type  = 1                                   ! analytical velocity distribution
 !~     velo_type  = 2                                ! lin. interpolated velocity distribution
 

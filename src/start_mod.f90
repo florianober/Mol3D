@@ -87,7 +87,7 @@ contains
     photon%stokes(:) = fluxes%stokes_ini(:)                    !starting with unpolarized photon
         
     photon%nr_lam         = i_lam                              ! initial wavelength of photon    
-    photon%current_albedo = dust%albedo(:,i_lam)
+!~     photon%current_albedo = dust%albedo(:,i_lam)
     
 !~     photon%energy         = dust%c_in_star(i_lam)
 !~     photon%energy         = sources_in%source(i_source)%Luminosity/&

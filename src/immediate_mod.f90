@@ -55,7 +55,7 @@ contains
     ! ----------------------------------------------------------------------------------------------
     ! 3. update photons proberties
     photon%nr_lam         = i_lam
-    photon%current_albedo = dust%albedo(:,i_lam)
+!~     photon%current_albedo = dust%albedo(:,i_lam)
   end subroutine immediate
 
   

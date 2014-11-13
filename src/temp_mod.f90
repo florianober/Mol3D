@@ -167,6 +167,7 @@ CONTAINS
         INTEGER                                          :: i_dust, i_lam, i_map
         INTEGER                                          :: seed
         INTEGER(8)                                       :: i_phot, k_phot
+        INTEGER(8)                                       :: kill_photon_count
         REAL(kind=r2)                                    :: unit_value
         !$ INTEGER omp_get_thread_num 
                 
@@ -184,7 +185,7 @@ CONTAINS
         grid%t_dust(:,:)  = basics%t_dust_min
         grid%t_dust(0,:)  = 0.0_r2
         k_phot = model%no_photon/100
-
+        kill_photon_count = 0
         ! initialize random number generator
         seed = -1
         !$omp parallel num_threads(basics%num_core) PRIVATE(rand_nr) FIRSTPRIVATE(seed)
@@ -199,7 +200,7 @@ CONTAINS
         
             ! show progress
             IF (modulo(i_phot, k_phot) == 0 .or. i_phot==model%no_photon) THEN
-                    write (*,'(A,I3,A)') " | | | - progress : ", &
+                    write (*,'(A,I3,A)') " | | | | - progress : ", &
                     int(i_phot/real(model%no_photon)*100.0), ' % done...'//char(27)//'[A'
             END IF
 
@@ -227,8 +228,14 @@ CONTAINS
                     cycle
                 ELSE 
                     IF (.not. photon%inside .and. photon%observe) THEN
-                        ! observe photon  
-                        CALL observe_MC_photon(fluxes, model, photon)
+                        IF ( .not. photon%kill) THEN
+                            ! observe photon  
+                            CALL observe_MC_photon(fluxes, model, photon)
+                        ELSE
+!~                             print *, "lost photon"
+                            !$omp atomic
+                            kill_photon_count = kill_photon_count + 1
+                        END IF
                     END IF
                     EXIT
                 END IF
@@ -237,6 +244,7 @@ CONTAINS
         END DO
         !$omp end do nowait
         !$omp end parallel
+        
         i_map = 1
         DO i_lam = 1, dust%n_lam
             unit_value = dust%lam(i_lam)**2/con_c/((1.0_r2-model%al_map(i_map))*(PI*2.0_r2))/ &
@@ -244,6 +252,9 @@ CONTAINS
             fluxes%continuum_map_temp(:,:,i_lam) = fluxes%continuum_map_temp(:,:,i_lam)* unit_value
         END DO
         CALL save_continuum_map(model, basics, dust, fluxes, 1)
+        IF (show_error) PRINT '(A,F5.2,A)', ' | | | | ',                       &
+                               REAL(kill_photon_count)/model%no_photon*100_r2, &
+                               ' % photons killed               '
         print *, '| | | photon transfer finished                '
         ! prepare & save final results
         DO i_dust=1,dust%n_dust
@@ -256,4 +267,3 @@ CONTAINS
     END SUBROUTINE primary_temp
       
 END MODULE temp_mod
-

@@ -22,6 +22,7 @@ MODULE photon_type
         LOGICAL                                         :: inside
         LOGICAL                                         :: peel_off
         LOGICAL                                         :: observe
+        LOGICAL                                         :: kill
         
         INTEGER                                         :: n_interact
         INTEGER                                         :: nr_cell
@@ -39,9 +40,7 @@ MODULE photon_type
         REAL(kind=r2)                                   :: SINTHE, COSTHE
         
         REAL(kind=r2)                                   :: energy
-        REAL(kind=r2), DIMENSION(:),ALLOCATABLE         :: prob_action
-        REAL(kind=r2), DIMENSION(:),ALLOCATABLE         :: current_albedo
-        
+
 
     END TYPE PHOTON_TYP
     SAVE
@@ -79,6 +78,7 @@ CONTAINS
         this%inside      = .True.
         this%observe     =  observe
         this%peel_off    = .False.
+        this%kill        = .False.
 
         this%n_interact  = 0
         this%nr_cell     = 0
@@ -101,10 +101,6 @@ CONTAINS
         this%COS2PH      = 0.0_r2
         
         this%energy    = 0.0_r2
-        ALLOCATE ( this%prob_action( 1:n_dust), &
-                   this%current_albedo( 1:n_dust))
-        this%prob_action(:)   = 0.0_r2
-        this%current_albedo   = 0.0_r2
 
     END SUBROUTINE InitPhoton
 
@@ -115,8 +111,6 @@ CONTAINS
         TYPE(PHOTON_TYP), INTENT(INOUT) :: this
         !----------------------------------------------------------------------!
         CALL CloseCommon(this%mtype)
-        
-        DEALLOCATE(this%prob_action,this%current_albedo)
         
     END SUBROUTINE ClosePhoton
 
