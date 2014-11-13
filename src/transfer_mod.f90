@@ -574,7 +574,7 @@ contains
         real(kind=r2)                                     :: l1, l2
         real(kind=r2), dimension(1:6)                     :: d_lx
         real(kind=r2), dimension(1:2)                     :: hd_arr1
-        
+        !$ INTEGER omp_get_thread_num 
         !----------------------------------------------------------------------!
         ! ---
         ! default:
@@ -784,7 +784,10 @@ contains
             ! we procced with a minimum step 
             ! This case should not be raised, but in fact, if some routine is
             ! buggy, it can happen
-            IF (show_error) print *, "WARNING, no boundary in forward direction found"
+            IF (show_error) THEN
+                print *, "WARNING, no boundary in forward direction found"
+                !$print *,omp_get_thread_num()
+            END IF
             d_l = grid%d_l_min+epsilon(d_l)
             ! -
             ! 3.new position
