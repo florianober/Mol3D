@@ -51,7 +51,7 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
     CHARACTER(len=256)                               :: flux_unit
     CHARACTER(len=4)                                 :: ref_u_str
     CHARACTER(len=32)                                :: grid_name
-    CHARACTER(len=32)                                :: in_arg
+    CHARACTER(len=256)                                :: in_arg
     CHARACTER(len=8), ALLOCATABLE, DIMENSION(:)      :: dust_cat
     REAL(kind=r2)                                    :: ref_u
     REAL(kind=r2)                                    :: r_in
@@ -361,7 +361,7 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
     
     !tr_cat(1) = 4            !transition (tr) in molecular cat   !tbd
     CALL parse('line',tr_cat(1),new_input_file)
-    WRITE(help,fmt='(I1)') tr_cat(1)
+    WRITE(help,fmt='(I2)') tr_cat(1)
     WRITE(unit=3,fmt='(A)') 'line = {'//TRIM(help)// &
     '}                           line transition no (see gas_input file)  '
     WRITE(unit=3,fmt='(A)') ''
