@@ -14,6 +14,7 @@ import numpy as np
 from astropy.io import fits as pf
 from astropy.coordinates import SkyCoord
 from numpy.linalg import norm
+from os.path import dirname
 
 from datetime import datetime, timedelta
 
@@ -42,6 +43,45 @@ C18O_lines_freq = np.array([109.7821734, 219.5603541, 329.3305525, 439.0887658,
                            548.8310055, 658.5532782, 768.2515933, 877.9219553,
                            987.5603822, 1097.1628753, 1206.7254487, 1316.2441143,
                            1425.7148854])*1e9
+CS_lines_freq = np.array([48.9909549, 97.9809533, 146.9690287, 195.9542109,
+                          244.9355565, 293.9120865, 342.8828503, 391.8468898,
+                          440.8032320, 489.7509210, 538.6889972, 587.6164850,
+                          636.5324600, 685.4359238, 734.3259290, 783.2015140,
+                          832.0617177])*1e9
+
+HNC_lines_freq = np.array([90.66356800, 181.32475800, 271.98114200, 362.6303030,
+                           453.2699220, 543.8975540, 634.5108260, 725.1073410,
+                           815.6846760, 906.2404590, 996.7723280, 1087.27785800,
+                           1177.75467250, 1268.20038490])*1e9
+
+HCN_lines_freq = np.array([88.6316023, 177.2611115, 265.8864343, 354.5054779,
+                           443.1161493, 531.7163479, 620.3040022, 708.8770051,
+                           797.4332623, 885.9706949, 974.4871998, 1062.9806890,
+                           1151.4490880])*1e9
+
+def get_sensitivity_from_table(mol, instrument='ALMA'):
+    """
+    get the sensitivity from for a given mol(ecule) and transition
+    identifier
+    """
+    sensitivity = 0
+    
+    # read all stored sensitivities from file
+    if instrument == 'ALMA':
+        file_in = open(dirname(__file__)+'/sensitivities_ALMA.dat','r')
+    else:
+        print('Sensitivities for this (%s) instrument not found' %(instrument))
+        return sensitivity
+
+    sensi = file_in.readlines()
+    file_in.close
+
+    for entry in sensi:
+        if mol == entry.rsplit()[0]:
+            sensitivity = float(entry.rsplit()[1])
+            break
+    return sensitivity
+
 def ca2sp(p_vec):
     """ convert cartesian to spherical coordinates """
     r = np.zeros(3)

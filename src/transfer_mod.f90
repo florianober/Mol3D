@@ -654,6 +654,10 @@ contains
            
             disc = c1**2 - c2 * c0
             IF (disc > 0.0_r2) THEN
+                ! TbD: If c1 == +- sqrt(disc) this can lead to numerical errors
+                !      and should be corrected. The photon is numerically
+                !      ON the boundary, however, this is a rare event and we
+                !      just kill the photon at the moment
                 
                 l1 = (-c1 + sqrt(disc))/c2
                 l2 = (-c1 - sqrt(disc))/c2
@@ -710,7 +714,10 @@ contains
            
             disc = c1**2 - c2 * c0
             IF (disc > 0.0_r2) THEN
-                
+                ! TbD: If c1 == +- sqrt(disc) this can lead to numerical errors
+                !      and should be corrected. The photon is numerically
+                !      ON the boundary, however, this is a rare event and we
+                !      just kill the photon at the moment
                 l1 = (-c1 + sqrt(disc))/c2
                 l2 = (-c1 - sqrt(disc))/c2
               
@@ -784,9 +791,9 @@ contains
             ! no min gt. 0 in d_lx
             ! we procced with a minimum step 
             ! This case should not be raised, but in fact, if some routine is
-            ! buggy, it can happen
+            ! buggy or due to some numerics (see above), it can happen
             
-            d_l = grid%d_l_min+epsilon(d_l)
+            d_l = grid%d_l_min+1.0e6_r2*epsilon(d_l)
             ! -
             ! 3.new position
             pos_xyz_new(:) = p0_vec(:)  +  d_l * d_vec(:)
@@ -794,6 +801,7 @@ contains
             ! 4. new cell number, still inside this cell
             nr_cell_new = nr_cell
             kill_photon = .True.
+            
             IF (show_error) THEN
                 print *, "WARNING, no boundary in forward direction found"
             END IF

@@ -80,8 +80,8 @@ def make_velo_int_plot(data, dvelo=1, cmap=plt.cm.nipy_spectral,
     return fig
     
 def make_velo_ch_plot(data, vch, N1=3, N2=5, snr='', cmap=plt.cm.nipy_spectral,
-                      interpol='None', extent=[-1, 1, -1, 1],
-                      label='flux [mJy/px]'):
+                      interpol='None', extent=[-1, 1, -1, 1], unit='["]',
+                      label='flux density [mJy/px]', fig_label=''):
     """
     create velocity channel overview map
     """
@@ -90,7 +90,10 @@ def make_velo_ch_plot(data, vch, N1=3, N2=5, snr='', cmap=plt.cm.nipy_spectral,
         print(len(vch), data.shape[0], N1*N2)
         print("ERROR, data and velocity array do not have the same shape")
         return
-    fig = plt.figure()
+    if fig_label != '':
+        fig = plt.figure(fig_label)
+    else:
+        fig = plt.figure()
     grid = AxesGrid(fig, 111, # similar to subplot(132)
                     nrows_ncols=(N1, N2),
                     axes_pad=0.0,
@@ -135,8 +138,8 @@ def make_velo_ch_plot(data, vch, N1=3, N2=5, snr='', cmap=plt.cm.nipy_spectral,
 
     grid[0].cax.toggle_label(True)
     if extent != [-1, 1, -1, 1]:
-        grid.axes_llc.set_ylabel('["]')
-        grid.axes_llc.set_xlabel('["]')
+        grid.axes_llc.set_ylabel(unit)
+        grid.axes_llc.set_xlabel(unit)
     else:
         grid.axes_llc.set_ylabel('distance')
         grid.axes_llc.set_xlabel('distance')
@@ -197,7 +200,6 @@ def make_spectra_fits(fits_file):
     else:
         v_offset = 0.0
     
-    print (d_v)
     vch = np.linspace(v_offset, v_offset-d_v*map_in.shape[0], map_in.shape[0])
     arcs_x = hlp.deg2as(header['CDELT1']*((map_in.shape[1]-1)/2))
     arcs_y = header['CDELT2']*((map_in.shape[1]-1)/2)*3600
