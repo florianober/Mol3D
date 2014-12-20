@@ -814,10 +814,11 @@ contains
             ! 
             ! 4. new cell number
             ! a) use the generic routine (extensively tested)
-!~             nr_cell_new = get_cell_nr( grid,pos_xyz_new )
+            nr_cell_new = get_cell_nr( grid,pos_xyz_new )
         
-            ! b) use the cell_neighbours id (about 2 times faster)
-            nr_cell_new = grid%cell_neighbours(hi1, nr_cell)
+            ! b) use the cell_neighbours id (about 2 times faster, still buggy
+            !                                in some rare cases, tbd)
+!~             nr_cell_new = grid%cell_neighbours(hi1, nr_cell)
         END IF
 
 

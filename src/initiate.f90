@@ -230,8 +230,8 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
     
 !~     pluto_data = .True.
     pluto_data = .False.
-    do_continuum_map = .False.
-    do_velo_ch_map   = .False.
+    do_continuum_map = .True.
+    do_velo_ch_map   = .True.
     IF (do_continuum_map .or. do_velo_ch_map) THEN
         do_raytr = .True.
     ELSE
