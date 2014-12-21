@@ -439,7 +439,6 @@ contains
         real(kind=r2) :: d_r, p_r, d_ph, a, p, q, sq
         integer       :: i_r, i_ph, i_z, i
         integer       :: hi1
-        integer, dimension(1)                             :: hi_arr1
         !----------------------------------------------------------------------!
         ! ---
         ! default:
@@ -521,8 +520,7 @@ contains
 !~                 d_l = d_l_selc(i)
 !~             END IF
 !~         END DO
-        hi_arr1 = minloc(d_l_selc, MASK = d_l_selc .GT. 0.0_r2)
-        hi1     = hi_arr1(1)
+        hi1     =  MINLOC(d_l_selc, 1, MASK = d_l_selc .GT. 0.0_r2)
         d_l = d_l_selc(hi1)
 
         
@@ -569,7 +567,6 @@ contains
         logical,                     intent(inout)        :: kill_photon
         !----------------------------------------------------------------------!
         integer                                           :: hi1
-        integer, dimension(1)                             :: hi_arr1
         real(kind=r2)                                     :: hd1, hd2, hd3
         real(kind=r2)                                     :: hd_r1, hd_th1, hd_ph1
         real(kind=r2)                                     :: c2,c1,c0
@@ -785,8 +782,7 @@ contains
 
         ! determine d_l
         
-        hi_arr1 = minloc(d_lx, MASK = d_lx .GT. 0.0_r2)
-        hi1     = hi_arr1(1)
+        hi1 = minloc(d_lx, 1, MASK = d_lx .GT. 0.0_r2)
         IF (hi1 .gt. 6 .or. hi1 .lt. 1) THEN
             ! no min gt. 0 in d_lx
             ! we procced with a minimum step 
