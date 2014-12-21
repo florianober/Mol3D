@@ -130,7 +130,7 @@ CONTAINS
     REAL(kind=r2),DIMENSION(1:gas%col_trans,1:2)                   :: final_col_para
     INTEGER                                                        :: i_cell, i, k
     !--------------------------------------------------------------------------!        
-    new_pop = 0.0_r2
+    new_pop = 0.0
     DO i=1, gas%trans_lvl
 !~             J_ext(i) = 1e-14_r2*planckhz(1000.0_r2,gas%trans_freq(i)) + &
 !~                         planckhz(2.72_r2,gas%trans_freq(i))
@@ -196,12 +196,14 @@ CONTAINS
     REAL(kind=r2)                                              :: R_mid, L
     REAL(kind=r2),DIMENSION(1:gas%col_trans,1:2)               :: final_col_para
     
-    INTEGER                                       :: i_cell, i, max_iteration, k
+    INTEGER                                       :: i_cell, max_iteration
+    INTEGER                                       :: i, j, k
+    
     !--------------------------------------------------------------------------!
 
-    new_pop(:) = 0.0_r2
-    old_pop(:) = 0.0_r2
-    max_iteration = 200
+    new_pop(:) = 0.0
+    old_pop(:) = 0.0
+    max_iteration = 100
     !calculate external radiation field
 
     J_ext(:) = planckhz(2.75,gas%trans_freq(:))
@@ -261,15 +263,19 @@ CONTAINS
                 print *, J_mid
                 stop
             END IF
-            IF ( MAXVAL(abs(new_pop-old_pop)/(old_pop+EPSILON(old_pop))) .lt. 1.0e-2) THEN
+            j = MAXLOC(new_pop, 1)
+            IF ( abs(new_pop(j)-old_pop(j)) / (old_pop(j)+EPSILON(old_pop(j))) .lt. 1.0e-2 .and. i > 1) THEN
                 EXIT
             END IF
         END DO
         IF (i == max_iteration +1 .and. show_error) THEN
             print *, 'Warning: maximum iteration needed in cell:', i_cell
-            print *,MAXVAL(abs(new_pop-old_pop)/old_pop)
-            print '(ES15.6E3)', new_pop
-            print '(ES15.6E3)', old_pop
+            print *, i_cell, i
+            print *, ''
+            print *, abs(new_pop(MAXLOC(new_pop, 1))-old_pop(MAXLOC(new_pop, 1)))/ &
+                        (old_pop(MAXLOC(new_pop, 1))+EPSILON(old_pop))
+            print *, ''
+            
         END IF
         grid%lvl_pop(:,i_cell) = new_pop
     END DO
