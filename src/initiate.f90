@@ -51,7 +51,8 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
     CHARACTER(len=256)                               :: flux_unit
     CHARACTER(len=4)                                 :: ref_u_str
     CHARACTER(len=32)                                :: grid_name
-    CHARACTER(len=256)                                :: in_arg
+    CHARACTER(len=256)                               :: file_a, file_b, file_c
+    CHARACTER(len=256)                               :: in_arg
     CHARACTER(len=8), ALLOCATABLE, DIMENSION(:)      :: dust_cat
     REAL(kind=r2)                                    :: ref_u
     REAL(kind=r2)                                    :: r_in
@@ -182,7 +183,7 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
     WRITE(unit=3,fmt='(A)')  '##################################################################################'
     WRITE(unit=3,fmt='(A)')  '#                            mol3d input file                                    #'
     WRITE(unit=3,fmt='(A)')  '#                                                                                #'
-    WRITE(unit=3,fmt='(A)')  '# All parameters that can be changed without recompiling mol3d are listed here.  #'
+    WRITE(unit=3,fmt='(A)')  '# All parameters that can be changed without recompiling Mol3D are listed here.  #'
     WRITE(unit=3,fmt='(A)')  '# Please be aware that some parameters not intendet to be changeable yet.        #'
     WRITE(unit=3,fmt='(A)')  '# Therefore, they are note listed here, but accessable via the                   #'
     WRITE(unit=3,fmt='(A)')  '# "src/initiate.f90" source file.                                                    #'
@@ -230,7 +231,7 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
     
 !~     pluto_data = .True.
     pluto_data = .False.
-    do_continuum_map = .True.
+    do_continuum_map = .False.
     do_velo_ch_map   = .True.
     IF (do_continuum_map .or. do_velo_ch_map) THEN
         do_raytr = .True.
@@ -318,7 +319,7 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
     WRITE(unit=3,fmt='(A)') ''
     
     
-    al_map(1)   = 1.0
+    al_map(1)   = 5.0
     
     CALL InitModel(model,1, ref_u_str, ref_u, r_in, r_ou, mass_dust, t_eff,    &
                    R_star, M_star, n_map, distance, &
@@ -436,19 +437,59 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
           ! n(3) = n_ph : number of point in oh direction, must be 1 or even
           ! sf   = step factor for logarithmic r scale
           ! ..
-        CALL parse('grid_type',grid_type,input_file)
-        CALL parse('n_a',n_a,input_file)
-        CALL parse('n_b',n_b,input_file) 
-        CALL parse('n_c',n_c,input_file)
-        CALL parse('sf',sf,input_file) 
-        
+        CALL parse('grid_type', grid_type, input_file)
+
+        IF (grid_type == 9) THEN
+            ! 
+            ! read no of cells from file
+            ! we do some consistency checks later
+
+            IF (old_model) THEN
+                ! read from old model
+                file_a = TRIM(basics%path_results)//TRIM(basics%pronam_old)//'_a_boundaries.dat'
+                file_b = TRIM(basics%path_results)//TRIM(basics%pronam_old)//'_b_boundaries.dat'
+                file_c = TRIM(basics%path_results)//TRIM(basics%pronam_old)//'_c_boundaries.dat'
+            ELSE
+                ! Note, the files included here, should be no real
+                ! files but sym links. Tbd. generalize, this aporach
+                ! should work for all coordinate systems
+                file_a = "input/grid/spherical_r.dat"
+                file_b = "input/grid/spherical_theta.dat"
+                file_c = "input/grid/spherical_phi.dat"
+            END IF
+
+            open(unit=1, file=file_a, &
+                action="read", status="unknown", form="formatted")
+
+            read(unit=1, fmt=*) n_a
+            close(unit=1)
+            ! step factor is not used in this case, we just set it to 1
+            sf = 1.000 
+
+            open(unit=1, file=file_b, &
+                action="read", status="unknown", form="formatted")
+
+            read(unit=1, fmt=*) n_b
+            close(unit=1)
+
+            open(unit=1, file=file_c, &
+                action="read", status="unknown", form="formatted")
+
+            read(unit=1, fmt=*) n_c
+            close(unit=1)
+
+        ELSE
+            CALL parse('n_a', n_a, input_file)
+            CALL parse('n_b', n_b, input_file) 
+            CALL parse('n_c', n_c, input_file)
+            CALL parse('sf', sf, input_file)
+        END IF
         IF (pluto_data) THEN
             model%r_in = sf*model%r_in
             model%r_ou = sf*model%r_ou
         END IF
-
     END IF
-    
+
     ! write informations about the grid in the log/input file
     
     WRITE(unit=3,fmt='(A)') 'grid_name = {'//TRIM(grid_name)// &
@@ -477,7 +518,7 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
     
     ! give the type of the specified grid 
     ! 1 == analytical version (prefered)
-    ! 2 == user input version, under construction
+    ! 9 == user input version
     !
     !
     !   Some examples here:

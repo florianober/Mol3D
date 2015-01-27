@@ -144,7 +144,7 @@ CONTAINS
             
             SELECT CASE(GetGridType(this))
             
-            CASE(1,2,3)
+            CASE(1,2,3,9)
                 ! case 1 logarithm r spaced grid
                 ! case 2 linear r spaced grid
                 !  thus we can use the same definitions
@@ -221,33 +221,6 @@ CONTAINS
                 close(unit=1)
                 this%sf     = 1.0
 
-            CASE(9)
-                ! 
-                ! read no of cells from file
-                ! we do some consistency checks later 
-                ! Note, the files included here, should be no real files but sym links!
- 
-                open(unit=1, file="input/grid/spherical_r.dat", &
-                    action="read", status="unknown", form="formatted")
- 
-                read(unit=1, fmt=*) this%n(1)
-                close(unit=1)
-
-                this%sf     = 1.000
-
-                open(unit=1, file="input/grid/spherical_theta.dat", &
-                    action="read", status="unknown", form="formatted")
-
-                read(unit=1, fmt=*) this%n(2)
-                close(unit=1)
- 
-                open(unit=1, file="input/grid/spherical_phi.dat", &
-                    action="read", status="unknown", form="formatted")
-
-                read(unit=1, fmt=*) this%n(3)
-                close(unit=1)
-
-                
             CASE DEFAULT
                 print *, 'selected coordinate type not found. try grid_type = [1,2,3,4,9]'
                 stop
@@ -262,7 +235,7 @@ CONTAINS
                 this%n(2)   = n_b
                 this%n(3)   = n_c
             CASE(2)
-                !here we fix grid values for torbias self similar results
+                ! here we fix grid values for torbias self similar results
                 this%n(1)   = 84
                 this%sf     = sf
                 this%n(2)   = 1

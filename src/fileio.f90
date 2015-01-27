@@ -8,27 +8,25 @@ MODULE fileio
     USE model_type
     USE fluxes_type
     USE gas_type
-!~     USE math_mod
-    
     
     IMPLICIT NONE
     !--------------------------------------------------------------------------!
     PRIVATE
     !--------------------------------------------------------------------------!
-    PUBLIC :: vis_plane, save_ch_map, sv_temp, load_temp_dist, save_input, save_model, &
-              save_boundaries, read_boundaries, save_continuum_map
+    PUBLIC :: vis_plane, save_ch_map, sv_temp, load_temp_dist, save_input,     &
+              save_model, save_boundaries, read_boundaries, save_continuum_map 
     !--------------------------------------------------------------------------!
 CONTAINS    
     
-    SUBROUTINE read_boundaries(grid,file_a,file_b,file_c)
-        !--------------------------------------------------------------------------!
+    SUBROUTINE read_boundaries(grid, file_a, file_b, file_c)
+        !----------------------------------------------------------------------!
         TYPE(Grid_TYP), INTENT(INOUT)                   :: grid
-        !--------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         INTEGER                                         :: i, i_abc
         CHARACTER(len=*),INTENT(IN)                     :: file_a,file_b,file_c
         CHARACTER(len=252)                              :: fmt_kind
         REAL(kind=r2)                                   :: value_in
-        !--------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         
         ! 1 r
         open(unit=1, file=file_a, &
@@ -36,7 +34,7 @@ CONTAINS
 
         ! read header lines
         read(unit=1,fmt=*) i_abc ! number of r cells
-        IF ( i_abc /= grid%n(1)  ) STOP("ERROR: No of r_cells are not consistent")           
+        IF ( i_abc /= grid%n(1)  ) STOP("ERROR: No of r_cells are not consistent")
 
         read(unit=1,fmt=*) fmt_kind
         DO i = 0, grid%n(1)

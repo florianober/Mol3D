@@ -487,12 +487,12 @@ CONTAINS
         CHARACTER(len=252)                          :: file_a,file_b,file_c
         !----------------------------------------------------------------------!
         IF (basics%old_model) THEN
-            ! if we use an old model, we simply read the boundaries from the input files
+            ! if we use an old model, we simply read the boundaries
+            ! from that model
             file_a = TRIM(basics%path_results)//TRIM(basics%pronam_old)//'_a_boundaries.dat'
             file_b = TRIM(basics%path_results)//TRIM(basics%pronam_old)//'_b_boundaries.dat'
             file_c = TRIM(basics%path_results)//TRIM(basics%pronam_old)//'_c_boundaries.dat'
-            CALL read_boundaries(grid,file_a,file_b,file_c)
-        
+            CALL read_boundaries(grid, file_a, file_b, file_c)
         ELSE
             SELECT CASE(GetGridName(grid))
             
@@ -738,7 +738,9 @@ CONTAINS
             ! this is motivated by a given density distribution from the pluto code
             ! to save endless memory, the grid is equally spaced, but only between 
             ! in theta direction, r and ph are unchanged
-            !
+            ! this piece of code was implemented to use the density distribution
+            ! Ruge et al. 2013, which is based in Uribe et al. 2011.
+            ! It should be replaced with the more general version CASE(9)
             ! ---
             ! 1.1. rho
             ! co_mx_a( 0 ): r_in
