@@ -3,7 +3,7 @@ MODULE error_mod
     USE datatype
 
     IMPLICIT NONE
-    
+
     !--------------------------------------------------------------------------!
     PRIVATE
     !--------------------------------------------------------------------------!
@@ -11,30 +11,30 @@ MODULE error_mod
 
 CONTAINS
 
-    SUBROUTINE criticals(deep, msg)
+    SUBROUTINE criticals(depth, msg)
 
         IMPLICIT NONE
     
         !----------------------------------------------------------------------!
-        INTEGER            :: deep
-        CHARACTER(len=*)  :: msg
+        INTEGER            :: depth
+        CHARACTER(len=*)   :: msg
         !----------------------------------------------------------------------!
 
-        IF ( deep == 1) THEN
-        
-        ELSE IF (deep == 2) THEN
+        IF ( depth == 1) THEN
+
+        ELSE IF (depth == 2) THEN
              print '(2A)', 'WARNING: ', msg       
         
-        ELSE IF (deep == 3) THEN
+        ELSE IF (depth == 3) THEN
             print '(2A)', 'CRITICAL ERROR: ', msg
-            print '(A)', 'stoping mol3d!'
+            print '(A)', 'stoping Mol3D!'
             stop
         ELSE
-            print *, 'wrong input in subroutine crititals (var: deep), -> stoping mol3d!'
+            print *, 'wrong input in subroutine crititals (var: depth), ->     &
+                      & stoping Mol3D!'
             stop
         END IF
 
     END SUBROUTINE criticals
-
 
 END MODULE error_mod

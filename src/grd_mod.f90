@@ -6,11 +6,13 @@ MODULE grd_mod
     
     USE datatype
     USE var_global
+
     USE basic_type
     USE dust_type
     USE grid_type
     USE gas_type
     USE model_type
+
     USE math_mod
     USE fileio
     IMPLICIT NONE
@@ -22,11 +24,8 @@ MODULE grd_mod
                 Set_velo, &
                 Get_velo
     !--------------------------------------------------------------------------!
-    
+
 CONTAINS
-
-
-
 
   ! ############################################################################
   ! make grid
@@ -57,21 +56,19 @@ CONTAINS
 
         REAL(kind=r2), DIMENSION(:), ALLOCATABLE    :: hd_arr1
         REAL(kind=r2), DIMENSION(1:3)               :: moco
-        
-        LOGICAL                                     :: mass_dens
         !----------------------------------------------------------------------!
-        
+
         ! ---
         ! 1. set boundaries of each cell for the selected coordinate system
-        
+
         Call set_boundaries(grid, model,basics)
-        
+
         ! ---
         ! 2. - set cell numbering
         !    - calculate cell volumes
         !    - estimate number of grain / cell
         print *, "preparing grid [this may take a while]"
-   
+
         ! dust-free region around center (r < r_in):
         i_cell      = 0
     
@@ -80,41 +77,42 @@ CONTAINS
             do i_b=1, grid%n(2)
                 do i_c=1, grid%n(3)
                     i_cell = i_cell + 1
-             
+
                     ! r/th/ph index => cell number
                     grid%cell_idx2nr(i_a,i_b,i_c) = i_cell 
-             
+
                     ! cell number => r/th/ph index
                     grid%cell_nr2idx(1,i_cell) = i_a
                     grid%cell_nr2idx(2,i_cell) = i_b
                     grid%cell_nr2idx(3,i_cell) = i_c
-                    
-                    ! find cell volume and min A cell-Wall and cell, neighbours
+
+                    ! find cell volume and min A cell-Wall
                     CALL calc_cell_properties(grid,model,i_a,i_b,i_c)
                     ! calculate midpoint coordinate
                     moco(1) = ( grid%co_mx_a( i_a ) + grid%co_mx_a( i_a  -1) ) / 2.0_r2
                     moco(2) = ( grid%co_mx_b(i_b) + grid%co_mx_b(i_b -1) ) / 2.0_r2
                     moco(3) = ( grid%co_mx_c(i_c) + grid%co_mx_c(i_c -1) ) / 2.0_r2
-                        
+
                     ! get cartesian coordinate from moco
                     grid%cellmidcaco(i_cell,:) = mo2ca(grid, moco)
-                    
                 end do
             end do
         end do
-
+        !TbD volume and area of zero cell
         grid%cell_minA(0) = model%r_in**2*PI
-!~         print *, minval(grid%cell_minA), grid%cell_minA(0)
-!    ! fill grid with disk properties,e.g. temp, density, velocity...
-        CALL set_grid_properties(basics,grid,gas,model)   
-    ! verification: maximum cell number (i.e., total number of cells) = total number of cells
+
+        ! fill grid with disk properties,e.g. temp, density, velocity...
+        CALL set_grid_properties(basics, grid, dust, gas, model)
+
+
+        ! verification: maximum cell number (i.e., total number of cells) = total number of cells
         if ( i_cell /= grid%n_cell ) then
             print *,"subroutine mk_grd(): wrong number of ESCs: ", i_cell
             print *,"should be                                : ", grid%n_cell 
             stop
         end if
-       
-!   ! verification
+
+        ! verification
         hd1 = sum(grid%cell_vol(:) / model%ref_unit**3)
         SELECT CASE(GetGridName(grid))
         
@@ -123,13 +121,12 @@ CONTAINS
         CASE('cylindrical')
             hd2 = 2.0_r2 * model%r_ou * PI *(model%r_ou**2 - model%r_in**2)
         CASE('cartesian')
-            print *, 'TbD,..verification of volume space'
-            stop
+            hd2 = (2.0_r2 * model%r_ou)**3
         CASE DEFAULT
             print *, 'selected coordinate system not found, verification of volume space'
             stop
         END SELECT
-!~         print *, abs(hd1-hd2)/hd1
+
         if ( abs(hd1-hd2)/hd1 > 0.01_r2 ) then
             print *,"!!! Warning:in subroutine make_grid() "
             print *,"    Difference between the VOLUME OF THE MODEL SPACE"
@@ -140,42 +137,25 @@ CONTAINS
             print *,"mc3d stopped."
             stop
         end if
-        
-        print *, '                                                               '
-        !------------------------------------------------------------------------!
+
+        print *, '                                                             '
+        !----------------------------------------------------------------------!
         !    ! estimate mass
         !  scale to given mass, or to given density (at some point here 100 AU)
-        mass_dens = .True.
-!~         mass_dens = .False.
-        IF (.not. basics%old_model) THEN
-            IF (mass_dens) THEN
-                hd_totalmass = 0.0_r2
-                do i_dust=1, dust%n_dust
-!~                     stop
-                    hd_totalmass =  hd_totalmass + sum(grid%Nv(:,i_dust)) * 4.0_r2*PI/3.0_r2 * &
-                                    dust%r_dust(i_dust)**3 * dust%den_dust(i_dust)*1.0e+3_r2 / M_sun
-                end do
-                ! rescale mass to user-defined value
-                grid%grd_dust_density(:,:) = grid%grd_dust_density(:,:) * model%mass/hd_totalmass
-                grid%Nv(:,:)               = grid%Nv(:,:)               * model%mass/hd_totalmass
-            ELSE
-                i_cell = get_cell_nr(grid,(/100.0_r2,0.0_r2,0.0_r2/))
-                hd_totalmass = 22895.6132878962_r2/grid%grd_dust_density(i_cell,1)
-                grid%Nv(:,:)               = grid%Nv(:,:) * hd_totalmass
-                grid%grd_dust_density(:,:) = grid%grd_dust_density(:,:) * hd_totalmass
 
-            END IF
+        IF (.not. basics%old_model) THEN
+
+            hd_totalmass = 0.0_r2
+            DO i_dust=1, dust%n_dust
+                
+                hd_totalmass =  hd_totalmass + sum(grid%Nv(:,i_dust)) * 4.0_r2*PI/3.0_r2 * &
+                                dust%r_dust(i_dust)**3 * dust%den_dust(i_dust)*1.0e+3_r2 / M_sun
+            END DO
+            ! rescale mass to user-defined value
+            grid%grd_dust_density(:,:) = grid%grd_dust_density(:,:) * model%mass/hd_totalmass
+            grid%Nv(:,:)               = grid%Nv(:,:)               * model%mass/hd_totalmass
+
         END IF
-        ! for immediate_temp
-!~         DO i_dust = 1, dust%n_dust
-!~             grid%Nv_r(:,i_dust) = grid%Nv(:,i_dust) * dust%r_dust(i_dust)**2 * basics%PI2x4
-!~             DO i_cell = 1, grid%n_cell
-!~                 IF (grid%Nv_r(i_cell,i_dust) <= 1.0_r2 ) THEN
-!~                     grid%t_dust(i_cell,i_dust)      = basics%t_dust_min
-!~                 END IF
-!~             END DO
-!~         END DO
-        
 
         ! dust mass verification
         hd_totalmass = 0.0_r2
@@ -199,7 +179,6 @@ CONTAINS
         
         grid%Nv_col(:,1) = grid%grd_col_density(:,1) * REAL(grid%cell_vol(:),kind=r2)
 
-        
         !---- H2 para
 
         grid%Nv_col(:,2) =  0.25*grid%Nv_col(:,1) 
@@ -209,7 +188,7 @@ CONTAINS
         !---- H2 ortho
 
         grid%Nv_col(:,3) =  0.75*grid%Nv_col(:,1) 
-                            
+
         grid%grd_col_density(:,3) = grid%Nv_col(:,3)/grid%cell_vol(:)
         
 
@@ -223,98 +202,109 @@ CONTAINS
         grid%grd_col_density(:,4:6)   = 0.0_r2
         grid%grd_col_density(0,:)     = 0.0_r2
         
+        hd_totalmass = 0.0_r2
+        hd_dusttotalmass = 0.0_r2
         ! calculate total mass
-        hd_totalmass =  &
-                        ! dust mass
-                        sum(grid%Nv(:,1)) * 4.0_r2*PI/3.0_r2 * &
-                            dust%r_dust(1)**3 * dust%den_dust(1)*1.0e+3_r2 / M_sun + &
-                        ! H mass
-                        sum(grid%Nv_col(:,1)) *col_p_weight(1)/con_Na*1.0e-3_r2/ M_sun + &
-                        ! selected molecule mass
-                        sum(grid%Nv_mol(:))     *gas%mol_weight/con_Na*1.0e-3_r2/ M_sun
-        
-!~         print *, grid%Nv_col(46,1)
-        print '(A,ES11.4,A)',' dust mass           : '&
-               ,sum(grid%Nv(:,1)) * 4.0_r2*PI/3.0_r2 * &
-                            dust%r_dust(1)**3 * dust%den_dust(1)*1.0e+3_r2 / M_sun, ' M_sun'
 
-        print '(A,ES11.4,A)',' H2 ortho mass       : '&
+        ! dust mass
+        DO i_dust=1, dust%n_dust
+            hd_dusttotalmass =  hd_dusttotalmass +                             &
+                sum(grid%Nv(:,i_dust)) * 4.0_r2*PI/3.0_r2 *                    &
+                dust%r_dust(i_dust)**3 *                                       &
+                dust%den_dust(i_dust)*1.0e+3_r2 / M_sun
+        END DO
+
+        print '(A,ES11.4,A)',' dust mass           : '                         &
+               ,hd_dusttotalmass, ' M_sun'
+        IF (dust%n_dust > 1) THEN
+            DO i_dust=1, dust%n_dust
+            print '(A,I2,A,ES11.4,A)','          species ', i_dust, ' : ',     &
+                sum(grid%Nv(:,i_dust)) * 4.0_r2*PI/3.0_r2 *                    &
+                dust%r_dust(i_dust)**3 *                                       &
+                dust%den_dust(i_dust)*1.0e+3_r2 / M_sun, ' M_sun'
+            END DO
+        END IF
+
+        hd_totalmass = hd_dusttotalmass +                                      &
+            ! H mass
+            sum(grid%Nv_col(:,1)) *col_p_weight(1)/con_Na*1.0e-3_r2/ M_sun +   &
+            ! selected molecule mass
+            sum(grid%Nv_mol(:))     *gas%mol_weight/con_Na*1.0e-3_r2/ M_sun
+        print *, ''
+        print '(A,ES11.4,A)',' H2 mass             : '                               &
+              ,sum(grid%Nv_col(:,1)) *col_p_weight(1)/con_Na*1.0e-3_r2/ M_sun, ' M_sun'
+        print '(A,ES11.4,A)','          orthogonal : '&
               ,sum(grid%Nv_col(:,3)) *col_p_weight(1)/con_Na*1.0e-3_r2/ M_sun, ' M_sun'
               
-        print '(A,ES11.4,A)',' H2 para mass        : '&
+        print '(A,ES11.4,A)','            parallel : '&
               ,sum(grid%Nv_col(:,2)) *col_p_weight(1)/con_Na*1.0e-3_r2/ M_sun, ' M_sun'
               
-        print '(A,ES11.4,A)',' H2 total mass       : '&
-              ,sum(grid%Nv_col(:,1)) *col_p_weight(1)/con_Na*1.0e-3_r2/ M_sun, ' M_sun'
-                         
-        print '(A,ES11.4,A)',' sel molecule mass   : '&
-              ,sum(grid%Nv_mol(:)) *gas%mol_weight/con_Na*1.0e-3_r2/ M_sun, ' M_sun'  
-        
+        print *, ''
+        print '(A,ES11.4,A)',' molecule mass       : '&
+              ,sum(grid%Nv_mol(:)) *gas%mol_weight/con_Na*1.0e-3_r2/ M_sun, ' M_sun'
+
         print '(A)', ' ---------------------------------------'
-        print '(A,ES11.4,A)',' total disk mass     : ',hd_totalmass, ' M_sun'
+        print '(A,ES11.4,A)', ' total disk mass     : ', hd_totalmass, ' M_sun'
         print *,''
         !----------------------------------------------------------------------!
         ! ---
         ! set smallest step width for photon transfer
-        ! - goal: avoid step widths smaller than the amount that will change a r2 type floating point
+        ! - goal: avoid step widths smaller than the amount that will change
+        !         a r2 type floating point
         !         variable (in addition operation)
         ! - factor: 10.0_r2: margin (for safety)
         grid%d_l_min = model%r_ou * epsilon(1.0_r2) * 10.0_r2
-    
+
         ! check if d_l_min is significantly larger (factor 10) than smallest grid cell
         allocate( hd_arr1(1:grid%n(1)) )
         do i_a=1, grid%n(1)
             hd_arr1(i_a) = grid%co_mx_a(i_a) - grid%co_mx_a(i_a-1)
         end do
-        
+
         if (grid%d_l_min > 10.0_r2*minval(hd_arr1(:))) then
             print *, "error   : mk_grd: radial extent of smallest cell is too small."
             print *, "solution: (a) decrease step width factor [sf] and/or"
             print *, "          (b) reduce number of grid cells"
         else
-            print '(A,ES11.4,A,A)'," smallest step width : ", grid%d_l_min,' ', GetModelName(model)
+            print '(A,ES11.4,A,A)'," smallest step width : ", grid%d_l_min,    &
+                  ' ', GetModelName(model)
         end if
 
         deallocate( hd_arr1 )
-        
-        
+
     END SUBROUTINE make_grid
-    
-    !  ! #######################################################################
-    
-    SUBROUTINE calc_cell_properties(grid,model,i_a,i_b,i_c)
+
+    ! #########################################################################
+
+    SUBROUTINE calc_cell_properties(grid, model, i_a, i_b, i_c)
         !generic routine
         IMPLICIT NONE
         !----------------------------------------------------------------------!
         
-        TYPE(Grid_TYP), INTENT(INOUT)               :: grid
-        TYPE(Model_TYP), INTENT(IN)                 :: model
+        TYPE(Grid_TYP), INTENT(INOUT)              :: grid
+        TYPE(Model_TYP), INTENT(IN)                :: model
         !----------------------------------------------------------------------!
-        INTEGER,INTENT(IN)                         :: i_a,i_b,i_c
+        INTEGER,INTENT(IN)                         :: i_a, i_b, i_c
         !----------------------------------------------------------------------!
         SELECT CASE(GetGridName(grid))
         CASE('spherical')
-            CALL calc_cell_properties_sp(grid,model,i_a,i_b,i_c)
-            
+            CALL calc_cell_properties_sp(grid, model, i_a, i_b, i_c)
+
         CASE('cylindrical')
-            CALL calc_cell_properties_cy(grid,model,i_a,i_b,i_c)
-            !print *, 'TbD,..calc_cell_properties'
-            !stop
-            
+            CALL calc_cell_properties_cy(grid, model, i_a, i_b, i_c)
+
         CASE('cartesian')
-            print *, 'TbD,..calc_cell_properties'
-            stop      
-             
+            CALL calc_cell_properties_ca(grid, model, i_a, i_b, i_c)
+
         CASE DEFAULT
             print *, 'selected coordinate system not found, calc_cell_properties'
             stop
         END SELECT
-        
-        
+
+
     END SUBROUTINE calc_cell_properties
-    
-    
-    SUBROUTINE calc_cell_properties_cy(grid,model,i_r,i_ph,i_z)
+
+    SUBROUTINE calc_cell_properties_ca(grid, model, i_x, i_y, i_z)
 
         IMPLICIT NONE
         !----------------------------------------------------------------------!
@@ -322,7 +312,36 @@ CONTAINS
         TYPE(Grid_TYP), INTENT(INOUT)              :: grid
         TYPE(Model_TYP), INTENT(IN)                :: model
         !----------------------------------------------------------------------!
-        INTEGER,INTENT(IN)                         :: i_r,i_ph,i_z
+        INTEGER,INTENT(IN)                         :: i_x, i_y, i_z
+        INTEGER                                    :: i_cell
+        REAL(kind=r2)                              :: dx
+        REAL(kind=r2)                              :: dy
+        REAL(kind=r2)                              :: dz
+        !----------------------------------------------------------------------!
+        
+        i_cell = grid%cell_idx2nr(i_x, i_y, i_z)
+        dx = abs(grid%co_mx_a(i_x-1) - grid%co_mx_a(i_x))
+        dy = abs(grid%co_mx_b(i_y-1) - grid%co_mx_b(i_y))
+        dz = abs(grid%co_mx_c(i_z-1) - grid%co_mx_c(i_z))
+
+        grid%cell_minA(i_cell) = MIN( dx * dy, dx * dz, dz * dy)
+
+        ! volume of individual cells [m^3]
+        
+        grid%cell_vol(i_cell) = dx * dy * dz * model%ref_unit**3
+
+    END SUBROUTINE calc_cell_properties_ca
+    
+    
+    SUBROUTINE calc_cell_properties_cy(grid, model, i_r, i_ph, i_z)
+
+        IMPLICIT NONE
+        !----------------------------------------------------------------------!
+        
+        TYPE(Grid_TYP), INTENT(INOUT)              :: grid
+        TYPE(Model_TYP), INTENT(IN)                :: model
+        !----------------------------------------------------------------------!
+        INTEGER,INTENT(IN)                         :: i_r, i_ph, i_z
         INTEGER                                    :: i_cell
         REAL(kind=r2)                              :: dth
         REAL(kind=r2)                              :: dz
@@ -341,56 +360,9 @@ CONTAINS
         grid%cell_vol(i_cell) = 0.5_r2 * dz * dth * &
                                (grid%co_mx_a(i_r)**2-grid%co_mx_a(i_r-1)**2) * &
                                 model%ref_unit**3
-        ! set cell neighbours
-        IF (grid%n(1) == 1) THEN
-            grid%cell_neighbours(1, i_cell) = 0
-            grid%cell_neighbours(2, i_cell) = i_cell
-        ELSE
-            IF ( i_r == 1 ) THEN
-                grid%cell_neighbours(1, i_cell) = 0
-                grid%cell_neighbours(2, i_cell) = i_cell + grid%n(3) * grid%n(2)
-            ELSEIF ( i_r == grid%n(1) ) THEN
-                grid%cell_neighbours(1, i_cell) = i_cell - grid%n(3) * grid%n(2)
-                grid%cell_neighbours(2, i_cell) = i_cell
-            ELSE
-                grid%cell_neighbours(1, i_cell) = i_cell - grid%n(3) * grid%n(2)
-                grid%cell_neighbours(2, i_cell) = i_cell + grid%n(3) * grid%n(2)
-            END IF
-        END IF
-        IF (grid%n(2) == 1) THEN
-            grid%cell_neighbours(3, i_cell) = i_cell 
-            grid%cell_neighbours(4, i_cell) = i_cell
-        ELSE
-            IF ( i_ph == 1 ) THEN
-                grid%cell_neighbours(3, i_cell) = i_cell + grid%n(3)*(grid%n(2)-1)
-                grid%cell_neighbours(4, i_cell) = i_cell + grid%n(3)
-            ELSEIF ( i_ph == grid%n(2) ) THEN
-                grid%cell_neighbours(3, i_cell) = i_cell - grid%n(3)
-                grid%cell_neighbours(4, i_cell) = i_cell - grid%n(3)*(grid%n(2)-1)
-            ELSE
-                grid%cell_neighbours(3, i_cell) = i_cell - grid%n(3)
-                grid%cell_neighbours(4, i_cell) = i_cell + grid%n(3)
-            END IF
-        END IF
-        IF (grid%n(3) == 1) THEN
-            grid%cell_neighbours(5, i_cell) = i_cell 
-            grid%cell_neighbours(6, i_cell) = i_cell
-        ELSE
-            IF ( i_z == 1 ) THEN
-                grid%cell_neighbours(5, i_cell) = i_cell
-                grid%cell_neighbours(6, i_cell) = i_cell + 1
-            ELSEIF ( i_z == grid%n(3) ) THEN
-                grid%cell_neighbours(5, i_cell) = i_cell - 1
-                grid%cell_neighbours(6, i_cell) = i_cell 
-            ELSE
-                grid%cell_neighbours(5, i_cell) = i_cell - 1 
-                grid%cell_neighbours(6, i_cell) = i_cell + 1
-            END IF
-        END IF
-        
+
     END SUBROUTINE calc_cell_properties_cy
-    
-    
+
     SUBROUTINE calc_cell_properties_sp(grid,model, i_r, i_th, i_ph)
 
         IMPLICIT NONE
@@ -423,58 +395,10 @@ CONTAINS
                                 (sin(grid%co_mx_b(i_th)) - sin(grid%co_mx_b(i_th-1))) * &
                                 ((grid%co_mx_c(i_ph) - grid%co_mx_c(i_ph-1))/(2.0_r2*PI)) &
                                 ) * model%ref_unit**3
-        ! set cell neighbours
-        IF (grid%n(1) == 1) THEN
-            grid%cell_neighbours(1, i_cell) = 0
-            grid%cell_neighbours(2, i_cell) = i_cell
-        ELSE
-            IF ( i_r == 1 ) THEN
-                grid%cell_neighbours(1, i_cell) = 0
-                grid%cell_neighbours(2, i_cell) = i_cell + grid%n(3) * grid%n(2)
-            ELSEIF ( i_r == grid%n(1) ) THEN
-                grid%cell_neighbours(1, i_cell) = i_cell - grid%n(3) * grid%n(2)
-                grid%cell_neighbours(2, i_cell) = i_cell
-            ELSE
-                grid%cell_neighbours(1, i_cell) = i_cell - grid%n(3) * grid%n(2)
-                grid%cell_neighbours(2, i_cell) = i_cell + grid%n(3) * grid%n(2)
-            END IF
-        END IF
 
-        IF (grid%n(2) == 1) THEN
-            grid%cell_neighbours(3, i_cell) = i_cell 
-            grid%cell_neighbours(4, i_cell) = i_cell
-        ELSE
-            IF ( i_th == 1 ) THEN
-                grid%cell_neighbours(3, i_cell) = i_cell - grid%n(3)
-                grid%cell_neighbours(4, i_cell) = i_cell + grid%n(3)
-            ELSEIF ( i_th == grid%n(3) ) THEN
-                grid%cell_neighbours(3, i_cell) = i_cell - grid%n(3)
-                grid%cell_neighbours(4, i_cell) = i_cell + grid%n(3)
-            ELSE
-                grid%cell_neighbours(3, i_cell) = i_cell - grid%n(3)
-                grid%cell_neighbours(4, i_cell) = i_cell + grid%n(3)
-            END IF
-        END IF
-        IF (grid%n(3) == 1) THEN
-            grid%cell_neighbours(5, i_cell) = i_cell 
-            grid%cell_neighbours(6, i_cell) = i_cell
-        ELSE
-            IF ( i_ph == 1 ) THEN
-                grid%cell_neighbours(5, i_cell) = i_cell + grid%n(3) - 1
-                grid%cell_neighbours(6, i_cell) = i_cell + 1
-            ELSEIF ( i_ph == grid%n(3) ) THEN
-                grid%cell_neighbours(5, i_cell) = i_cell - 1
-                grid%cell_neighbours(6, i_cell) = i_cell - grid%n(3) + 1
-            ELSE
-                grid%cell_neighbours(5, i_cell) = i_cell - 1 
-                grid%cell_neighbours(6, i_cell) = i_cell + 1
-            END IF
-        END IF
     END SUBROUTINE calc_cell_properties_sp
-    
-    
-    
-    
+
+
     !  ! #######################################################################
     SUBROUTINE set_boundaries(grid,model,basics)
         !generic routine
@@ -484,27 +408,27 @@ CONTAINS
         TYPE(Grid_TYP), INTENT(INOUT)               :: grid
         TYPE(Model_TYP), INTENT(INOUT)              :: model
         TYPE(Basic_TYP), INTENT(IN)                 :: basics
-        CHARACTER(len=252)                          :: file_a,file_b,file_c
+        CHARACTER(len=252)                          :: file_a, file_b, file_c
         !----------------------------------------------------------------------!
         IF (basics%old_model) THEN
             ! if we use an old model, we simply read the boundaries from the input files
             file_a = TRIM(basics%path_results)//TRIM(basics%pronam_old)//'_a_boundaries.dat'
             file_b = TRIM(basics%path_results)//TRIM(basics%pronam_old)//'_b_boundaries.dat'
             file_c = TRIM(basics%path_results)//TRIM(basics%pronam_old)//'_c_boundaries.dat'
-            CALL read_boundaries(grid,file_a,file_b,file_c)
+            CALL read_boundaries(grid, file_a, file_b, file_c)
         
         ELSE
             SELECT CASE(GetGridName(grid))
             
             CASE('spherical')
-                CALL set_boundaries_sp(grid,model)
-                
+                CALL set_boundaries_sp(grid, model)
+
             CASE('cylindrical')
-                CALL set_boundaries_cy(grid,model)
-                
+                CALL set_boundaries_cy(grid, model)
+
             CASE('cartesian')
-                print *, 'TbD,..set_boundaries'
-                stop
+                CALL set_boundaries_ca(grid, model)
+
             CASE DEFAULT
                 print *, 'selected coordinate system not found, set_boundaries'
                 stop
@@ -583,8 +507,7 @@ CONTAINS
             end do
             grid%co_mx_c(int((grid%n(3)-1)*0.5)) = -1.0_r2/3.0_r2 * dz 
             grid%co_mx_c(int((grid%n(3)-1)*0.5+1)) = 1.0_r2/3.0_r2 * dz 
-            
-            
+
         CASE(2)
             !grid based on Tobias self similar disk simulations
             ! ---
@@ -594,8 +517,6 @@ CONTAINS
             DO i_r = 1,grid%n(1)
                 grid%co_mx_a(i_r) = model%r_in*(model%r_ou/model%r_in)**(float(i_r)/grid%n(1))
             END DO
-            
-            
             ! ---
             ! 1.2 theta
             ! co_mx_b(  0 ) = 0    (  0°)
@@ -618,20 +539,209 @@ CONTAINS
                 grid%co_mx_c(i_th+1) = 520.0*sinh(5.0*(2.0*(float(i_th)/(grid%n(3)-2))-1))/sinh(5.0)
             END DO
             grid%co_mx_c(grid%n(3)) = model%r_ou
+
+        CASE(9)
+           ! ---
+            ! This case is for a very general input of a spherical grid,
+            ! coordinates defined in external files
+            ! The style of the input file has to be consistent
             
+            CALL read_boundaries(grid)
+
+            ! ---
+            ! 1 r
+            ! test for consistency
+            ! co_mx_a(  0 ) = r_in
+            ! co_mx_a(n(1)) = r_ou
             
+            IF ( abs(model%r_in - grid%co_mx_a(0)) .gt. 1.0e3_r2*epsilon(model%r_in) ) THEN
+                PRINT *, "ERROR: Inner rim given in input file is not consistent with the grid"
+                PRINT *, "r_in               : ", model%r_in
+                PRINT *, "innerst cell bound : ", grid%co_mx_a(0)
+                STOP
+            ELSEIF ( abs(model%r_ou - grid%co_mx_a(grid%n(1))) .gt. 1.0e3_r2*epsilon(model%r_ou) ) THEN
+                PRINT *, "ERROR: Outer rim given in input file is not consistent with the grid"
+                PRINT *, "r_ou             : ", model%r_in
+                PRINT *, "outer cell bound : ", grid%co_mx_a(grid%n(1))
+                STOP
+            END IF
+
+            ! ---
+            ! 2 phi
+            ! test for consistency
+            ! co_mx_b(  0 ) = 0         (   0°)
+            ! co_mx_b(n(2)) = 2 * PI    ( 360°)
+
+            IF ( abs(grid%co_mx_b(0)) .gt. 1.0e3_r2*epsilon(PI) ) THEN
+                PRINT *, "ERROR: lower phi coordinate is not 0.0"
+                PRINT *, "lowest cell boundary : ", grid%co_mx_b(0)
+                STOP
+            ELSEIF ( abs(2.0 * PI - grid%co_mx_b(grid%n(2))) .gt. 1.0e4_r2*epsilon(PI) ) THEN
+                PRINT *, "ERROR: upper phi coordinate is not 2 * PI"
+                PRINT *, "upper cell boundary : ", grid%co_mx_b(grid%n(2))
+                STOP
+            END IF
+
+            ! ---
+            ! 3 z
+            ! test for consistency
+            ! co_mx_c(  0 ) = -r_ou
+            ! co_mx_c(n(3)) = r_ou
+
+            IF ( abs(model%r_ou + grid%co_mx_c(0)) .gt. 1.0e3_r2*epsilon(model%r_ou)) THEN
+                PRINT *, "ERROR: lower z coordinate is not r_ou"
+                PRINT *, "upper cell boundary : ", grid%co_mx_c(0)
+                STOP
+            ELSEIF ( abs(model%r_ou - grid%co_mx_c(grid%n(3))) .gt. 1.0e3_r2*epsilon(model%r_ou)) THEN
+                PRINT *, "ERROR: upper z coordinate is not r_ou"
+                PRINT *, "upper cell boundary : ", grid%co_mx_c(grid%n(3))
+                STOP
+            END IF
         END SELECT
 
     END SUBROUTINE set_boundaries_cy
     
+    SUBROUTINE set_boundaries_ca(grid, model)
+    
+        IMPLICIT NONE
+        !----------------------------------------------------------------------!
+        
+        TYPE(Grid_TYP), INTENT(INOUT)               :: grid
+        TYPE(Model_TYP), INTENT(IN)                 :: model
+        !----------------------------------------------------------------------!
+        INTEGER                                     :: i_x
+        INTEGER                                     :: i_y
+        INTEGER                                     :: i_z
+        
+        REAL(kind=r2)                               :: dx
+        REAL(kind=r2)                               :: dy
+        REAL(kind=r2)                               :: dz
+        REAL(kind=r2)                               :: sf
+        !----------------------------------------------------------------------!
+        
+        SELECT CASE(GetGridType(grid)) 
+        CASE(1)
+            ! normal grid (TbD, use a sinh spacing)
+            
+            ! ---
+            ! 1.1. x
+            ! co_mx_a( 0 )  =- r_out
+            ! co_mx_a(n(1)) =  r_out
+            ! dz should not be constant, because we want to have small cells in
+            !        the inner region 
+            !     -> we use sf too, but not the user given value but a fixed one
+
+            sf = grid%sf+0.01
+            dx = model%r_ou * (sf-1.0_r2)/ (sf**((grid%n(1)-1)*0.5) - 1.0_r2)
+            do i_x=1, int(grid%n(1)*0.5)
+                grid%co_mx_a(int((grid%n(1)-1)*0.5+i_z+1)) =            dx * (sf**i_z - 1.0_r2) / (sf-1.0_r2)
+                grid%co_mx_a(int((grid%n(1)-1)*0.5-i_z)) =  -1.0_r2 * dx * (sf**i_z - 1.0_r2) / (sf-1.0_r2)
+            end do
+            grid%co_mx_a(int((grid%n(1)-1)*0.5)) = -1.0_r2/3.0_r2 * dx 
+            grid%co_mx_a(int((grid%n(1)-1)*0.5+1)) = 1.0_r2/3.0_r2 * dx
+            
+            ! ---
+            ! 1.2 y
+            ! co_mx_b( 0 )  =- r_out
+            ! co_mx_b(n(2)) =  r_out
+            ! dz should not be constant, because we want to have small cells in
+            !        the inner region (TbD, use a sinh spacing)
+            !     -> we use sf too, but not the user given value but a fixed one
+
+            sf = grid%sf+0.01
+            dy = model%r_ou * (sf-1.0_r2)/ (sf**((grid%n(2)-1)*0.5) - 1.0_r2)
+            do i_y=1, int(grid%n(2)*0.5)
+                grid%co_mx_b(int((grid%n(2)-1)*0.5+i_z+1)) =            dy * (sf**i_z - 1.0_r2) / (sf-1.0_r2)
+                grid%co_mx_b(int((grid%n(2)-1)*0.5-i_z)) =  -1.0_r2 * dy * (sf**i_z - 1.0_r2) / (sf-1.0_r2)
+            end do
+            grid%co_mx_b(int((grid%n(2)-1)*0.5)) = -1.0_r2/3.0_r2 * dy 
+            grid%co_mx_b(int((grid%n(2)-1)*0.5+1)) = 1.0_r2/3.0_r2 * dy 
+
+
+            ! ---
+            ! 1.3. z
+            ! co_mx_c( 0 )  =- r_out
+            ! co_mx_c(n(3)) =  r_out
+            ! dz should not be constant, because we want to have small cells in
+            !        the inner region (TbD, use a sinh spacing)
+            !     -> we use sf too, but not the user given value but a fixed one
+
+            sf = grid%sf+0.01
+            dz = model%r_ou * (sf-1.0_r2)/ (sf**((grid%n(3)-1)*0.5) - 1.0_r2)
+            do i_z=1, int(grid%n(3)*0.5)
+                grid%co_mx_c(int((grid%n(3)-1)*0.5+i_z+1)) =            dz * (sf**i_z - 1.0_r2) / (sf-1.0_r2)
+                grid%co_mx_c(int((grid%n(3)-1)*0.5-i_z)) =  -1.0_r2 * dz * (sf**i_z - 1.0_r2) / (sf-1.0_r2)
+            end do
+            grid%co_mx_c(int((grid%n(3)-1)*0.5)) = -1.0_r2/3.0_r2 * dz 
+            grid%co_mx_c(int((grid%n(3)-1)*0.5+1)) = 1.0_r2/3.0_r2 * dz 
+
+        CASE(9)
+           ! ---
+            ! This case is for a very general input of a spherical grid,
+            ! coordinates defined in external files
+            ! The style of the input file has to be consistent
+            
+            CALL read_boundaries(grid)
+
+            ! ---
+            ! 1 x
+            ! test for consistency
+            ! co_mx_a(  0 ) = -r_ou
+            ! co_mx_a(n(1)) = r_ou
+
+            IF ( abs(model%r_ou + grid%co_mx_a(0)) .gt. 1.0e3_r2*epsilon(model%r_ou)) THEN
+                PRINT *, "ERROR: lower x coordinate is not r_ou"
+                PRINT *, "upper cell boundary : ", grid%co_mx_a(0)
+                STOP
+            ELSEIF ( abs(model%r_ou - grid%co_mx_a(grid%n(1))) .gt. 1.0e3_r2*epsilon(model%r_ou)) THEN
+                PRINT *, "ERROR: upper x coordinate is not r_ou"
+                PRINT *, "upper cell boundary : ", grid%co_mx_a(grid%n(1))
+                STOP
+            END IF
+
+            ! ---
+            ! 2 y
+            ! test for consistency
+            ! co_mx_b(  0 ) = -r_ou
+            ! co_mx_b(n(2)) = r_ou
+            
+            IF ( abs(model%r_ou + grid%co_mx_b(0)) .gt. 1.0e3_r2*epsilon(model%r_ou)) THEN
+                PRINT *, "ERROR: lower y coordinate is not r_ou"
+                PRINT *, "upper cell boundary : ", grid%co_mx_b(0)
+                STOP
+            ELSEIF ( abs(model%r_ou - grid%co_mx_b(grid%n(2))) .gt. 1.0e3_r2*epsilon(model%r_ou)) THEN
+                PRINT *, "ERROR: upper y coordinate is not r_ou"
+                PRINT *, "upper cell boundary : ", grid%co_mx_c(grid%n(2))
+                STOP
+            END IF
+
+            ! ---
+            ! 3 z
+            ! test for consistency
+            ! co_mx_c(  0 ) = -r_ou
+            ! co_mx_c(n(3)) = r_ou
+
+            IF ( abs(model%r_ou + grid%co_mx_c(0)) .gt. 1.0e3_r2*epsilon(model%r_ou)) THEN
+                PRINT *, "ERROR: lower z coordinate is not r_ou"
+                PRINT *, "upper cell boundary : ", grid%co_mx_c(0)
+                STOP
+            ELSEIF ( abs(model%r_ou - grid%co_mx_c(grid%n(3))) .gt. 1.0e3_r2*epsilon(model%r_ou)) THEN
+                PRINT *, "ERROR: upper z coordinate is not r_ou"
+                PRINT *, "upper cell boundary : ", grid%co_mx_c(grid%n(3))
+                STOP
+            END IF
+        END SELECT
+
+    END SUBROUTINE set_boundaries_ca
+
     SUBROUTINE set_boundaries_sp(grid,model)
     
         IMPLICIT NONE
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         
         TYPE(Grid_TYP), INTENT(INOUT)               :: grid
         TYPE(Model_TYP), INTENT(INOUT)              :: model
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         INTEGER                                     :: i_r
         INTEGER                                     :: i_th
         INTEGER                                     :: i_ph
@@ -645,7 +755,7 @@ CONTAINS
         REAL(kind=r2)                               :: value_in
         
         Character(256)                              :: waste
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         SELECT CASE(GetGridType(grid))
         
         CASE(1)
@@ -655,13 +765,15 @@ CONTAINS
             grid%co_mx_a(0) = model%r_in
 
             ! dr1: radial extension of first cell
-            dr1 = (model%r_ou - model%r_in) * (grid%sf-1.0_r2)/ (grid%sf**grid%n(1) - 1.0_r2)
+            dr1 = (model%r_ou - model%r_in) * (grid%sf-1.0_r2)/                &
+                  (grid%sf**grid%n(1) - 1.0_r2)
 
             ! set outer ring radii:
             ! co_mx_a( 1 ): r_in + dr1
             ! co_mx_a(n(1)): r_ou
             do i_r=1, grid%n(1)
-                grid%co_mx_a(i_r) = grid%co_mx_a(0) + dr1 * (grid%sf**i_r - 1.0_r2) / (grid%sf-1.0_r2)
+                grid%co_mx_a(i_r) = grid%co_mx_a(0) + dr1 *                    &
+                                    (grid%sf**i_r - 1.0_r2) / (grid%sf-1.0_r2)
             end do
 
             ! ---
@@ -674,10 +786,13 @@ CONTAINS
             do i_th=1, grid%n(2)
                 grid%co_mx_b(i_th) = grid%co_mx_b(0) +  dth * real(i_th, kind=r2)
             end do
-            ! this line prevents to create a cone with an open angle with exact 90 deg, which in fact
-            ! is no cone anymore, maybe we ca find a better solution, but it is working
-            IF (MOD(grid%n(2),2) == 0 ) grid%co_mx_b(grid%n(2)/2) = grid%co_mx_b(grid%n(2)/2+1) * 1.0e-5_r2
-        
+            
+            ! this line prevents to create a cone with an open angle with exact
+            ! 90 deg, which in fact is no cone anymore,
+            ! maybe we ca find a better solution, but it is working
+            IF (MOD(grid%n(2),2) == 0 ) THEN
+                grid%co_mx_b(grid%n(2)/2) = grid%co_mx_b(grid%n(2)/2+1) * 1.0e-5_r2
+            END IF
             ! ---
             ! 1.3 phi
             ! co_mx_c(  0 ) = 0    (  0°)
@@ -716,11 +831,14 @@ CONTAINS
 
             dth = PI / real(grid%n(2), kind=r2)
             do i_th=1, grid%n(2)
-                grid%co_mx_b(i_th) = grid%co_mx_b(0) +  dth * real(i_th, kind=r2)
+                grid%co_mx_b(i_th) = grid%co_mx_b(0) + dth * real(i_th, kind=r2)
             end do
-            ! this line prevents to create a cone with an open angle with exact 90 deg, which in fact
-            ! is no cone anymore, maybe we ca find a better solution, but it is working
-            IF (MOD(grid%n(2),2) == 0 ) grid%co_mx_b(grid%n(2)/2) = grid%co_mx_b(grid%n(2)/2+1) * 1.0e-5_r2
+            ! this line prevents to create a cone with an open angle with exact
+            ! 90 deg, which in fact is no cone anymore,
+            ! maybe we ca find a better solution, but it is working
+            IF (MOD(grid%n(2),2) == 0 ) THEN
+                grid%co_mx_b(grid%n(2)/2) = grid%co_mx_b(grid%n(2)/2+1) * 1.0e-5_r2
+            END IF
             ! ---
             ! 1.3 phi
             ! co_mx_c(  0 ) = 0    (  0°)
@@ -729,7 +847,7 @@ CONTAINS
         
             dph = 2.0_r2*PI / real(grid%n(3), kind=r2)
             do i_ph=1, grid%n(3)
-                grid%co_mx_c(i_ph) =  grid%co_mx_c(0) + dph * real(i_ph, kind=r2)
+                grid%co_mx_c(i_ph) = grid%co_mx_c(0) + dph * real(i_ph, kind=r2)
             end do
             
         CASE(3)
@@ -814,13 +932,12 @@ CONTAINS
         
             dph = 2.0_r2*PI / real(grid%n(3), kind=r2)
             do i_ph=1, grid%n(3)
-                grid%co_mx_c(i_ph) =  grid%co_mx_c(0) + dph * real(i_ph, kind=r2)
+                grid%co_mx_c(i_ph) = grid%co_mx_c(0) + dph * real(i_ph, kind=r2)
             end do
-        
-        
+
         CASE(5)
-            ! This is an old and very rubbish implemented version. it should work, but...;)
-            !
+            ! This is an old and very rubbish implemented version. 
+            ! it should work, but...;)
             ! user given spherical grid, here interface to PLUTO code
             ! read grid from file, as ph and th are linear spaced, the no of cells are
             ! allready calculated und we have just du space them evenly
@@ -841,15 +958,16 @@ CONTAINS
             ! transform cm to AU
             grid%co_mx_a(:) = grid%co_mx_a(:)/con_au/100.0_r2
             
-            ! we assume an exponential increasing r coordinate, therefore we can calculate 
-            ! the effective outer boundary == r_ou
+            ! we assume an exponential increasing r coordinate, therefore we can
+            ! calculate the effective outer boundary == r_ou
             ! 
-            grid%co_mx_a(grid%n(1)) = exp((log(grid%co_mx_a(1))-log(grid%co_mx_a(0)))*(grid%n(1)+1)+ &
-                                       log(grid%co_mx_a(0)))
+            grid%co_mx_a(grid%n(1)) = exp((log(grid%co_mx_a(1)) -              &
+                                           log(grid%co_mx_a(0))) *             &
+                                           (grid%n(1)+1) + log(grid%co_mx_a(0)))
             
             ! now adjust the innercoordinate to the user given inner rim
-            ! please be aware, that this includes the assumption, that the given PLUTO disk 
-            ! model is somehow scalable (self similar)
+            ! please be aware, that this includes the assumption, that the  
+            ! given PLUTO disk model is somehow scalable (self similar)
             grid%co_mx_a = grid%co_mx_a * model%r_in/grid%co_mx_a(0)
             
             ! now adjust the outer radius the given one
@@ -874,11 +992,11 @@ CONTAINS
 
         CASE(9)
             ! ---
-            ! This case is for a very general input of a spherical grid, coordinates defined in external files
+            ! This case is for a very general input of a spherical grid,
+            ! coordinates defined in external files
             ! The style of the input file has to be consistent
             
-            CALL read_boundaries(grid, "input/grid/spherical_r.dat", &
-                                 "input/grid/spherical_theta.dat","input/grid/spherical_phi.dat")
+            CALL read_boundaries(grid)
 
             ! ---
             ! 1 r
@@ -937,29 +1055,29 @@ CONTAINS
     END SUBROUTINE set_boundaries_sp
     
 
-    !  ! ################################################################################################
+    !  ! #######################################################################
 
 
-    SUBROUTINE set_grid_properties(basics,grid,gas,model)
+    SUBROUTINE set_grid_properties(basics, grid, dust, gas, model)
     ! set grid density and temperature! (and velocity) 
     ! prepared for gerneral coordinates
     
         USE model_mod
         USE parser_mod
         IMPLICIT NONE
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         TYPE(Grid_TYP), INTENT(INOUT)               :: grid
+        TYPE(Dust_TYP), INTENT(IN)                  :: dust
         TYPE(GAS_TYP), INTENT(INOUT)                :: gas
         TYPE(Model_TYP), INTENT(IN)                 :: model
         TYPE(Basic_TYP), INTENT(IN)                 :: basics
         TYPE(Vector3d)                              :: p_vec
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         
         INTEGER                                     :: i_cell, i_cell_in, i, k
         INTEGER                                     :: i_in, i_r, i_th, i_ph
         INTEGER                                     :: io
-        INTEGER                                     :: sta, u, bs,rw,nfound
-        INTEGER,DIMENSION(2)                        :: naxes
+
         INTEGER,DIMENSION(1:3)                      :: pluto_n
         
         
@@ -967,73 +1085,20 @@ CONTAINS
         REAL(kind=r2),DIMENSION(:),ALLOCATABLE      :: pluto_ph
         REAL(kind=r2),DIMENSION(:),ALLOCATABLE      :: pluto_th
         
-        REAL(kind=r2), DIMENSION(13)                :: line
         REAL(kind=r2), DIMENSION(3)                 :: moco, velo_hlp
         REAL(kind=r2), DIMENSION(3,3)               :: S
-        REAL(kind=r2)                               :: R_gap_in, R_gap_ou
         REAL(kind=r2)                               :: value_in
         REAL(kind=r1)                               :: P_xy, P_z
-        CHARACTER(len=256)                          :: filename
         CHARACTER(len=256)                          :: waste
-        LOGICAL                                     :: anyf
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         ! ---
 
-        CALL parse('R_gap_in',R_gap_in,'input/additional.dat')
-        CALL parse('R_gap_ou',R_gap_ou,'input/additional.dat')
+        !CALL parse('R_gap_in', R_gap_in,'input/additional.dat')
+        !CALL parse('R_gap_ou', R_gap_ou,'input/additional.dat')
             
         IF (basics%old_model) THEN
-        
             print '(2A)', ' | loading model parameter from: ', TRIM(basics%pronam_old)
-            sta = 0
-            
-            ! get a new u(nit) number
-            call ftgiou(u,sta)
-            ! init fits file
-            filename = TRIM(basics%path_results)//TRIM(basics%pronam_old)//'_model.fits'
-            call ftopen(u,TRIM(filename),0,bs,sta)
-            ! check axis
-            call ftgknj(u,'NAXIS',1,2,naxes,nfound,sta)
-            IF (nfound /= 2) THEN
-                print *, "ERROR, NAXIS keyword not found in model fits file"
-                STOP
-            ELSEIF (naxes(1) /= 13) THEN
-                print *, "ERROR, more or less than 13 values found in model fits file"
-                STOP
-            ELSEIF (naxes(2) /= grid%n_cell) THEN 
-                print *, "ERROR, the number of grid cells in model fits file is not correct"
-                STOP
-            END IF
-            k = grid%n_cell/100
-            DO i_cell = 1,grid%n_cell
-                IF (modulo(i_cell,k) == 0 .or. i_cell == grid%n_cell) THEN
-                    WRITE (*,'(A,I3,A)') ' | | ',int(i_cell/real(grid%n_cell)*100.0),' % done'//char(27)//'[A'
-                END IF
-            
-                call ftgpvd(u,1,(i_cell-1)*13 + 1,13,1e-200_r2,line,anyf,sta)
-                ! set dust density and H2, the observed molecules can be set by the model module
-                IF (sta /= 0) THEN
-                    print *,'ERROR'
-                    print *,line
-                    print *,i_cell
-                    stop
-                END IF
-                grid%grd_dust_density(i_cell,1) = line(4)
-                
-                grid%grd_col_density(i_cell,1:3) = line(6:8)
-                
-                ! set temperature
-                grid%t_dust(i_cell,1) = line(9)
-                grid%t_gas(i_cell)    = line(10)
-                
-                ! set velocity
-                
-                grid%velo(i_cell,:) = line(11:13)
-            END DO
-            ! close the fits file
-            call ftclos(u, sta)
-            ! free the (u)nit number
-            call ftfiou(u, sta)
+            CALL read_model(basics, grid)
 
             PRINT *, "| done!                        "
             CLOSE(unit=1)
@@ -1050,7 +1115,8 @@ CONTAINS
             READ(unit=1,fmt=*,iostat=io) pluto_n(2)
             READ(unit=1,fmt=*,iostat=io) pluto_n(3)
             
-            ALLOCATE( pluto_r(1:pluto_n(1)), pluto_th(1:pluto_n(2)),pluto_ph(1:pluto_n(3)))
+            ALLOCATE( pluto_r(1:pluto_n(1)), pluto_th(1:pluto_n(2)),           &
+                      pluto_ph(1:pluto_n(3)))
             
             
             DO i = 1,3
@@ -1120,12 +1186,11 @@ CONTAINS
                 grid%grd_col_density(i_cell,:)  = 10.0**(value_in)
             END DO
             CLOSE(unit=1)
-        ELSE IF (GetGridType(grid) == 9 .and. GetGridName(grid) == 'spherical' ) THEN
-        
-            ! note: this routine has to be replaced by a more general (grid type 9) one
-            !       this is just the code to read in Marios disk 
+        ELSE IF (GetGridType(grid) == 6 .and. GetGridName(grid) == 'spherical' ) THEN
+            ! note: 
+            !       this one is just to read in Marios disk
             print *,'  read model from text_file'
-            OPEN(unit=1, file="input/grid/model.dat", &
+            OPEN(unit=1, file="input/grid/HRFIX_410.dat", &
                          action="read", status="old", form="formatted")
             DO i = 1,4
             !read header
@@ -1138,8 +1203,9 @@ CONTAINS
                     DO i_ph = 1, grid%n(3)
                         i_cell  = grid%cell_idx2nr(i_r,i_th,i_ph)
                         IF (i_cell >= int(k*grid%n_cell*0.01)) THEN
-                            WRITE (*,'(A,I3,A)') ' | | | ',int(i_cell/real(grid%n_cell)*100.0),' &
-                                                    &% done'//char(27)//'[A'
+                            WRITE (*,'(A,I3,A)') ' | | | ',                    &
+                                    int(i_cell/real(grid%n_cell)*100.0),       &
+                                    '% done'//char(27)//'[A'
                             k = k +1
                         END IF
                         p_vec%comp = ca2sp(grid%cellmidcaco(i_cell,:))
@@ -1152,71 +1218,112 @@ CONTAINS
                     END DO
                 END DO
             END DO
-        
             CLOSE(unit=1)
-        
-        
-        ELSE 
+        ELSE IF (GetGridType(grid) == 9) THEN
+            ! this is the most general way to read the density (and velocity?)
+            ! distribution. It reads the "input/grid/model.dat" file that should
+            ! be a symbolic link to the actual model file. Please note,
+            ! the model MUST correspond to the to the grid, defined
+            !
+            ! header:
+            ! No of cells
+            ! Sorting:
+            ! cell number & density & (TbD)
+            PRINT *, "Read model from file"
+            OPEN(unit=1, file="input/grid/model.dat", &
+                        action="read", status="old", form="formatted")
+            !read header
+            READ(unit=1, fmt=*, iostat=io) i_cell_in
+            IF (i_cell_in /= grid%n_cell) THEN
+                PRINT *, "ERROR, number of cells /= number of cells in file"
+                STOP
+            END iF
+            DO i_cell = 1, grid%n_cell
+                READ(unit=1, fmt=*, iostat=io) i_cell_in, value_in
+                IF (i_cell_in == i_cell) THEN
+                    grid%grd_dust_density(i_cell,:) = value_in
+                    grid%grd_col_density(i_cell,:) = value_in
+                ELSE
+                    PRINT *, "ERROR, model file is inconsistent"
+                    PRINT *, "i_cell:", i_cell
+                    PRINT *, "i_cell in file:", i_cell_in
+                    STOP
+                END IF
+            END DO
+        ELSE
+            ! analytical density distribution, defined in the model_mod.f90 file
             DO i_cell = 1, grid%n_cell
                 ! number of particles / cell / species;
-                ! assumption:  density in each cell is constant and equal to the value in the cell center
-                
-                P_xy = sqrt(grid%cellmidcaco(i_cell,1)**2+grid%cellmidcaco(i_cell,2)**2)
-                P_z  = abs(grid%cellmidcaco(i_cell,3))
+                ! assumption:  density in each cell is constant and equal to the
+                !              value at the cell center
+                P_xy = sqrt(grid%cellmidcaco(i_cell, 1)**2 +                   &
+                            grid%cellmidcaco(i_cell, 2)**2)
+                P_z  = abs(grid%cellmidcaco(i_cell, 3))
+
                 ! density at midpoint coordinate (number of particles / m^3)
                 ! here, we set the density distribution for dust and H2 
-                ! tbd: This is the same distribution for all elements, this should be generalized
-                !      in future
+                ! tbd: This is the same distribution for all elements, this
+                !      should be generalized in future
+                !      
                 !
                 ! set the density for the dust component
-                !###########################################################################
+                !###############################################################
                 ! add your custom density distribution here
                 !
-                IF (P_xy .lt. R_gap_in .or. P_xy .gt. R_gap_ou) THEN
+                !IF (P_xy .lt. R_gap_in .or. P_xy .gt. R_gap_ou) THEN
 !~                 IF (abs(atan(P_z/P_xy)) < 0.30 ) THEN
-                    grid%grd_dust_density(i_cell,:)    = get_den(model,grid%cellmidcaco(i_cell,:))
+                    grid%grd_dust_density(i_cell,:) = get_den(model,           &
+                                    grid%cellmidcaco(i_cell, :)) * dust%sidi(:)
                     
                     ! set the density for all other elements (H, He,...)
-                    grid%grd_col_density(i_cell,:)     = get_den(model,grid%cellmidcaco(i_cell,:))
-                ELSE
-                    grid%grd_dust_density(i_cell,:)    = 0.0_r2
-                    grid%grd_col_density(i_cell,:)     = 0.0_r2
+                    grid%grd_col_density(i_cell,:)  = get_den(model,           &
+                                                    grid%cellmidcaco(i_cell, :))
+                !ELSE
+!~                     grid%grd_dust_density(i_cell,:) = 0.0_r2
+!~                     grid%grd_col_density(i_cell,:)  = 0.0_r2
 !~                 END IF
                 
-                END IF
-                !###########################################################################
+                !END IF
+                !###############################################################
             END DO
         END IF
 
-        
         ! now do loop over all cells and calculate remaining things
-        ! here we set the molecule density with respect to the input dust density 
+        ! here we set the molecule density with respect to the dust density 
         DO i_cell = 1, grid%n_cell
 
             ! number of particles / cell / species;
-            ! assumption:  density in each cell is constant and equal to the value in the cell center
-            P_xy = sqrt(grid%cellmidcaco(i_cell,1)**2+grid%cellmidcaco(i_cell,2)**2)
-            P_z  = abs(grid%cellmidcaco(i_cell,3))
+            ! assumption:  density in each cell is constant and equal to
+            !              the value at the cell center
+            P_xy = sqrt(grid%cellmidcaco(i_cell, 1)**2 +                       &
+                        grid%cellmidcaco(i_cell, 2)**2)
+            P_z  = abs(grid%cellmidcaco(i_cell, 3))
             
             ! set the density for the selected molecule
-            ! don't load this from the old model, so we are able to distribute the molecules
-            ! in the way we want
-!~                     IF (P_z .gt. P_xy**1.8/1000. .and. P_z .lt. P_xy**1.2/5.) THEN
-            grid%grd_mol_density(i_cell)   = grid%grd_col_density(i_cell,1)*gas%mol_abund
-!~                     ELSE
-!~                         grid%grd_mol_density(i_cell)   = 0.0
-!~                     END IF
+            ! don't load this from the old model, so we are able to distribute 
+            ! the molecules in the way we want
+
+!~             IF (P_z .gt. P_xy**1.8/1000. .and. P_z .lt. P_xy**1.2/5.) THEN
+            grid%grd_mol_density(i_cell)   = grid%grd_col_density(i_cell, 1) * &
+                                             gas%mol_abund
+!~             ELSE
+!~                 grid%grd_mol_density(i_cell)   = 0.0
+!~             END IF
 
 
             ! resulting number of particles/molecules
 
-            grid%Nv(i_cell,:)     = grid%grd_dust_density(i_cell,:) * REAL(grid%cell_vol(i_cell),kind=r2)
-            grid%Nv_mol(i_cell)   = grid%grd_mol_density(i_cell)    * REAL(grid%cell_vol(i_cell),kind=r2)
-            grid%Nv_col(i_cell,:) = grid%grd_col_density(i_cell,:)  * REAL(grid%cell_vol(i_cell),kind=r2)
+            grid%Nv(i_cell,:)     = grid%grd_dust_density(i_cell,:) *          &
+                                        REAL(grid%cell_vol(i_cell),kind=r2)
+            grid%Nv_mol(i_cell)   = grid%grd_mol_density(i_cell)    *          &
+                                        REAL(grid%cell_vol(i_cell),kind=r2)
+            grid%Nv_col(i_cell,:) = grid%grd_col_density(i_cell,:)  *          &
+                                        REAL(grid%cell_vol(i_cell),kind=r2)
             ! set velocity, in a future release we should generalize this
             !
-            IF (GetGridType(grid) /= 9 .and. .not. basics%old_model) THEN
-                grid%velo(i_cell,:)  = Set_velo(grid%cellmidcaco(i_cell,:),model%kep_const)
+            IF ( .not. basics%old_model) THEN
+                grid%velo(i_cell,:)  = Set_velo(grid%cellmidcaco(i_cell,:),    &
+                                                model%kep_const)
             END IF
             grid%absvelo(i_cell) = norm(REAL(grid%velo(i_cell,:),kind=r2))
         END DO
@@ -1228,17 +1335,18 @@ CONTAINS
         ! define your velocity distribution here! velo in cartesian coordinates
         !
         IMPLICIT NONE
-        !------------------------------------------------------------------------!
-        REAL(kind=r2), DIMENSION(1:3),INTENT(IN)                 :: caco
-        REAL(kind=r1), DIMENSION(1:3)                            :: velo
-        REAL(kind=r2)                                            :: konst, expp, r
-        REAL(kind=r1),INTENT(IN)                                 :: kep_const
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
+        REAL(kind=r2), DIMENSION(1:3),INTENT(IN)              :: caco
+        REAL(kind=r1), DIMENSION(1:3)                         :: velo
+        REAL(kind=r2)                                         :: konst, expp, r
+        REAL(kind=r1),INTENT(IN)                              :: kep_const
+        !----------------------------------------------------------------------!
         ! we assume pure keplerian rotation, therefore v(r) ~ r**-0.5
 !~         konst = 26000.0_r2 
         konst = kep_const  !
         
-        expp  = -1.5  ! is a result of keplerian rotation and coordinate system conversion
+        expp  = -1.5  ! is a result of keplerian rotation and
+                      ! coordinate system conversion
         r     = (caco(1)**2+caco(2)**2)**(expp*0.5)*konst
         
         velo(1) = (-1.0) * caco(2) * r
@@ -1246,22 +1354,21 @@ CONTAINS
         velo(3) = 0.0
         
     END FUNCTION Set_velo
-    
 
-    ELEMENTAL FUNCTION Get_velo(velo1,velo2,x) RESULT(velo_x)
-    
+
+    ELEMENTAL FUNCTION Get_velo(velo1, velo2, x) RESULT(velo_x)
+
         ! interpolate velocity 
         !
         IMPLICIT NONE
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         REAL(kind=r2),INTENT(IN)                           :: velo1,velo2
         REAL(kind=r2)                                      :: velo_x
         REAL(kind=r2),INTENT(IN)                           :: x
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
 
         velo_x = (velo2-velo1)*x + velo1
-        
-        
+
     END FUNCTION Get_velo
     
 

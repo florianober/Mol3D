@@ -8,112 +8,186 @@ MODULE fileio
     USE model_type
     USE fluxes_type
     USE gas_type
-!~     USE math_mod
-    
     
     IMPLICIT NONE
     !--------------------------------------------------------------------------!
     PRIVATE
+        CHARACTER(len=30), PARAMETER :: file_a  = "input/grid/a_boundaries.dat"
+        CHARACTER(len=30), PARAMETER :: file_b  = "input/grid/b_boundaries.dat"
+        CHARACTER(len=30), PARAMETER :: file_c  = "input/grid/c_boundaries.dat"
     !--------------------------------------------------------------------------!
-    PUBLIC :: vis_plane, save_ch_map, sv_temp, load_temp_dist, save_input, save_model, &
-              save_boundaries, read_boundaries, save_continuum_map
+    PUBLIC :: vis_plane, save_ch_map, sv_temp, save_input,                     &
+              save_model, save_boundaries, read_boundaries, read_no_cells,     &
+              save_continuum_map, read_model
     !--------------------------------------------------------------------------!
-CONTAINS    
-    
-    SUBROUTINE read_boundaries(grid,file_a,file_b,file_c)
-        !--------------------------------------------------------------------------!
-        TYPE(Grid_TYP), INTENT(INOUT)                   :: grid
-        !--------------------------------------------------------------------------!
-        INTEGER                                         :: i, i_abc
-        CHARACTER(len=*),INTENT(IN)                     :: file_a,file_b,file_c
-        CHARACTER(len=252)                              :: fmt_kind
-        REAL(kind=r2)                                   :: value_in
-        !--------------------------------------------------------------------------!
+
+CONTAINS
+
+     SUBROUTINE read_no_cells(n_a, n_b, n_c, b_file_a, b_file_b, b_file_c)
+        !----------------------------------------------------------------------!
+        CHARACTER(len=*), INTENT(IN), OPTIONAL       :: b_file_a
+        CHARACTER(len=*), INTENT(IN), OPTIONAL       :: b_file_b
+        CHARACTER(len=*), INTENT(IN), OPTIONAL       :: b_file_c
         
-        ! 1 r
-        open(unit=1, file=file_a, &
-             action="read", status="unknown", form="formatted")
+        INTEGER, INTENT(OUT)                :: n_a
+        INTEGER, INTENT(OUT)                :: n_b
+        INTEGER, INTENT(OUT)                :: n_c
+        !----------------------------------------------------------------------!
+        
+        IF (PRESENT(b_file_a)) THEN
+            open(unit=1, file=b_file_a, &
+                action="read", status="unknown", form="formatted")
+        ELSE
+            open(unit=1, file=file_a, &
+                action="read", status="unknown", form="formatted")
+        END IF
+
+        read(unit=1, fmt=*) n_a
+        close(unit=1)
+        
+        IF (PRESENT(b_file_b)) THEN
+            open(unit=1, file=b_file_b, &
+                action="read", status="unknown", form="formatted")
+        ELSE
+            open(unit=1, file=file_b, &
+                action="read", status="unknown", form="formatted")
+        END IF
+
+        read(unit=1, fmt=*) n_b
+        close(unit=1)
+
+        IF (PRESENT(b_file_c)) THEN
+            open(unit=1, file=b_file_c, &
+                action="read", status="unknown", form="formatted")
+        ELSE
+            open(unit=1, file=file_c, &
+                action="read", status="unknown", form="formatted")
+        END IF
+
+        read(unit=1, fmt=*) n_c
+        close(unit=1)
+
+    END SUBROUTINE read_no_cells
+
+    SUBROUTINE read_boundaries(grid, b_file_a, b_file_b, b_file_c)
+        !----------------------------------------------------------------------!
+        TYPE(Grid_TYP), INTENT(INOUT)                :: grid
+        !----------------------------------------------------------------------!
+        INTEGER                                      :: i, i_abc
+        CHARACTER(len=*), INTENT(IN), OPTIONAL       :: b_file_a
+        CHARACTER(len=*), INTENT(IN), OPTIONAL       :: b_file_b
+        CHARACTER(len=*), INTENT(IN), OPTIONAL       :: b_file_c
+        CHARACTER(len=252)                           :: fmt_kind
+        REAL(kind=r2)                                :: value_in
+
+        !----------------------------------------------------------------------!
+
+        ! 1 coordinate
+        IF (PRESENT(b_file_a)) THEN
+            open(unit=1, file=b_file_a, &
+                action="read", status="unknown", form="formatted")
+        ELSE
+            open(unit=1, file=file_a, &
+                action="read", status="unknown", form="formatted")
+        END IF
 
         ! read header lines
         read(unit=1,fmt=*) i_abc ! number of r cells
-        IF ( i_abc /= grid%n(1)  ) STOP("ERROR: No of r_cells are not consistent")           
-
+        IF ( i_abc /= grid%n(1)  )  THEN
+            PRINT *, "ERROR: No of 1 coordinate is not consistent"
+            STOP
+        END IF
         read(unit=1,fmt=*) fmt_kind
         DO i = 0, grid%n(1)
             read(unit=1,fmt=*) value_in
             IF ( TRIM(fmt_kind) == 'log10' ) THEN
                 grid%co_mx_a(i) = 10.0**(value_in)
-            ELSEIF (TRIM(fmt_kind) == 'linear' ) THEN
+            ELSEIF (TRIM(fmt_kind) == 'noscale' ) THEN
                 grid%co_mx_a(i) = value_in
             ELSE
-                PRINT *, "ERROR: coordinate r has no known kind"
+                PRINT *, "ERROR: 1 coordinate has no known kind"
                 STOP
             END IF
         END DO
         close(unit=1)
 
         ! ---
-        ! 2 th
-        open(unit=1, file=file_b, &
+        ! 2 coordinate
+
+        IF (PRESENT(b_file_b)) THEN
+            open(unit=1, file=b_file_b, &
                 action="read", status="unknown", form="formatted")
+        ELSE
+            open(unit=1, file=file_b, &
+                action="read", status="unknown", form="formatted")
+        END IF
 
         ! read header lines
         read(unit=1,fmt=*) i_abc ! number of th cells
-        IF ( i_abc /= grid%n(2)  ) STOP("ERROR: No of th_cells are not consistent")
-
+        IF ( i_abc /= grid%n(2)  ) THEN
+            PRINT *, "ERROR: No of 2 coordinate is not consistent"
+            STOP
+        END IF
         read(unit=1,fmt=*) fmt_kind
 
         DO i = 0, grid%n(2)
             read(unit=1,fmt=*) value_in
             IF ( TRIM(fmt_kind) == 'log10' ) THEN
                 grid%co_mx_b(i) = 10.0**(value_in)
-            ELSEIF (TRIM(fmt_kind) == 'linear' ) THEN
+            ELSEIF (TRIM(fmt_kind) == 'noscale' ) THEN
                 grid%co_mx_b(i) = value_in
             ELSE
-                PRINT *, "ERROR: coordinate theta has no known kind"
+                PRINT *, "ERROR: 2 coordinate has no known kind"
                 STOP
             END IF
         END DO
         close(unit=1)
 
-        open(unit=1, file=file_c, &
+        ! ---
+        ! 3 coordinate
+        IF (PRESENT(b_file_c)) THEN
+            open(unit=1, file=b_file_c, &
                 action="read", status="unknown", form="formatted")
-        
+        ELSE
+            open(unit=1, file=file_c, &
+                action="read", status="unknown", form="formatted")
+        END IF
+
         ! read header lines
         read(unit=1,fmt=*) i_abc ! number of th cells
-        IF ( i_abc /= grid%n(3)  ) STOP("ERROR: No of phi_cells are not consistent")
-
+        IF ( i_abc /= grid%n(3)  ) THEN
+            PRINT *, "ERROR: No of 3 coordinate is not consistent"
+            STOP
+        END IF
         read(unit=1,fmt=*) fmt_kind
 
         DO i = 0, grid%n(3)
             read(unit=1,fmt=*) value_in
             IF ( TRIM(fmt_kind) == 'log10' ) THEN
                 grid%co_mx_c(i) = 10.0**(value_in)
-            ELSEIF (TRIM(fmt_kind) == 'linear' ) THEN
+            ELSEIF (TRIM(fmt_kind) == 'noscale' ) THEN
                 grid%co_mx_c(i) = value_in
             ELSE
-                PRINT *, "ERROR: coordinate phi has no known kind"
+                PRINT *, "ERROR: 3 coordinate has no known kind"
                 STOP
             END IF
         END DO
         close(unit=1)
-    
+
     END SUBROUTINE read_boundaries
-    
-    
-    
+
     SUBROUTINE save_boundaries(grid, basics)
         IMPLICIT NONE
-        !--------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         TYPE(Grid_TYP), INTENT(IN)                   :: grid
         TYPE(Basic_TYP), INTENT(IN)                  :: basics
-        !--------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         INTEGER                                      :: i
         CHARACTER(len=252)                           :: filename
         CHARACTER(len=16)                            :: a
         CHARACTER(len=16)                            :: b
         CHARACTER(len=16)                            :: c
-        !--------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         filename = TRIM(basics%path_results)//Getproname(basics)//'_cell_boundaries.dat'
         open(unit=1, file=TRIM(filename), &
             action="write", status="unknown", form="formatted")
@@ -150,11 +224,11 @@ CONTAINS
         write(unit=1,fmt='(A)') ''
         ! for individual files
         write(unit=2,fmt=*) grid%n(1)
-        write(unit=2,fmt='(A)') 'linear'
+        write(unit=2,fmt='(A)') 'noscale'
         write(unit=3,fmt=*) grid%n(2)
-        write(unit=3,fmt='(A)') 'linear'
+        write(unit=3,fmt='(A)') 'noscale'
         write(unit=4,fmt=*) grid%n(3)
-        write(unit=4,fmt='(A)') 'linear'
+        write(unit=4,fmt='(A)') 'noscale'
         
         ! write boundaries
         DO i = 0,maxval(grid%n)
@@ -189,61 +263,151 @@ CONTAINS
         CLOSE(unit=3)
         CLOSE(unit=4)
 
-!~         stop
     END SUBROUTINE  save_boundaries
-        
-    SUBROUTINE save_model(grid, basics)
-    
-        IMPLICIT NONE
-        !--------------------------------------------------------------------------!
-        TYPE(Grid_TYP), INTENT(IN)                   :: grid
-        TYPE(Basic_TYP), INTENT(IN)                  :: basics
-        !--------------------------------------------------------------------------!                                
-        INTEGER                                      :: i_cell
-        INTEGER                                      :: k
-        INTEGER                                      :: sta, u
-        !--------------------------------------------------------------------------!
 
-        
-        k = grid%n_cell/100
+    SUBROUTINE read_model(basics, grid)
+
+        IMPLICIT NONE
+        !----------------------------------------------------------------------!
+        TYPE(Grid_TYP), INTENT(INOUT)                :: grid
+        TYPE(Basic_TYP), INTENT(IN)                  :: basics
+        !----------------------------------------------------------------------!
+        INTEGER                                      :: i_cell
+        INTEGER                                      :: n_dust
+        INTEGER                                      :: k
+        INTEGER                                      :: entries
+        INTEGER                                      :: sta, u, bs, rw, nfound
+        INTEGER,DIMENSION(2)                         :: naxes
+        REAL(kind=r2), DIMENSION(:), ALLOCATABLE     :: line
+        CHARACTER(len=256)                           :: filename
+        CHARACTER(len=256)                           :: comment
+        LOGICAL                                      :: anyf
+        !----------------------------------------------------------------------!
         sta = 0
-        
         ! get a new u(nit) number
         call ftgiou(u,sta)
         ! init fits file
-        call ftinit(u,'!'//TRIM(basics%path_results)//Getproname(basics)//'_model.fits',1,sta)
-        ! write header
-        call ftphpr(u,.true.,-64,2,(/13,grid%n_cell/),0,1,.true.,sta)
-        ! write array to fits file
-        DO i_cell=1,grid%n_cell
-            IF (modulo(i_cell,k) == 0 .or. i_cell == grid%n_cell) THEN
-                WRITE (*,'(A,I3,A)') ' | | ',int(i_cell/real(grid%n_cell)*100.0),' % done'//char(27)//'[A'
-            END IF
-            call ftpprd(u,1,(i_cell-1)*13+ 1,13, (/ grid%cellmidcaco(i_cell,:), &
-                                                    grid%grd_dust_density(i_cell,1), &
-                                                    grid%grd_mol_density(i_cell) , &
-                                                    grid%grd_col_density(i_cell,1:3), &
-                                                    REAL(grid%t_dust(i_cell,1),kind=r2), &
-                                                    REAL(grid%t_gas(i_cell),kind=r2), &
-                                                    REAL(grid%velo(i_cell,:),kind=r2)/)  ,sta)
+        filename = TRIM(basics%path_results)//TRIM(basics%pronam_old)//'_model.fits'
+        call ftopen(u,TRIM(filename),0,bs,sta)
+        ! check axis
+        call ftgknj(u, 'NAXIS', 1, 2, naxes, nfound, sta)
+        IF (nfound /= 2) THEN
+            print *, "ERROR, NAXIS keyword not found in model fits file"
+            STOP
+        END IF
+        ! check number of dust species
+        call ftgkyj(u, 'N_DUST', n_dust, comment, sta)
+
+        IF (sta == 1) THEN
+            print *, "ERROR, N_DUST keyword not found in model fits file"
+            STOP
+        END IF
+        entries = n_dust*2 + 11
         
+        IF (n_dust /= grid%nh_n_dust .or. naxes(1) /= entries) THEN
+            print *, "ERROR, the number of dust species is not consistent in model fits file"
+            STOP
+        END IF
+        ALLOCATE(line(1:entries))
+        IF (naxes(2) /= grid%n_cell) THEN 
+            print *, "ERROR, the number of grid cells in model fits file   &
+                     &is not correct"
+            STOP
+        END IF
+        k = grid%n_cell/100
+        DO i_cell = 1, grid%n_cell
+            IF (modulo(i_cell,k) == 0 .or. i_cell == grid%n_cell) THEN
+                WRITE (*,'(A,I3,A)') ' | | ',int(i_cell/                   &
+                       real(grid%n_cell)*100.0),' % done'//char(27)//'[A'
+            END IF
+        
+            call ftgpvd(u,1,(i_cell-1)*entries + 1,entries,1e-200_r2,line,anyf,sta)
+            ! set dust density and H2, the observed molecules can be set by
+            ! the model module
+            IF (sta /= 0) THEN
+                print *,'ERROR'
+                print *,line
+                print *,i_cell
+                stop
+            END IF
+!~             print *, '1'
+!~             print *, line
+!~             print *,  line(4:3+n_dust)
+            grid%grd_dust_density(i_cell, 1:n_dust) = line(4:3+n_dust)
+!~             print *, '2'
+            grid%grd_col_density(i_cell,1:3) = line(n_dust+5:n_dust+7)
+!~             print *, '3'
+            ! set temperature
+            grid%t_dust(i_cell,:) = line(n_dust+8:2*n_dust+7)
+            grid%t_gas(i_cell)    = line(2*n_dust + 9)
+!~             print *, '4'
+            ! set velocity
+            
+            grid%velo(i_cell,:) = line(2*n_dust+9:2*n_dust+11)
         END DO
         ! close the fits file
         call ftclos(u, sta)
         ! free the (u)nit number
         call ftfiou(u, sta)
-    END SUBROUTINE save_model
-    
-    
+        DEALLOCATE(line)
 
-    SUBROUTINE vis_plane(grid, basics, model, plane, pix) 
+    END SUBROUTINE read_model
+        
+    SUBROUTINE save_model(grid, basics)
     
         IMPLICIT NONE
-        !--------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
+        TYPE(Grid_TYP), INTENT(IN)                   :: grid
+        TYPE(Basic_TYP), INTENT(IN)                  :: basics
+        !----------------------------------------------------------------------!
+        INTEGER                                      :: i_cell
+        INTEGER                                      :: k
+        INTEGER                                      :: entries
+        INTEGER                                      :: sta, u
+        !----------------------------------------------------------------------!
+        ! save the hole model (after temperature calculation)
+        k = grid%n_cell/100
+        sta = 0
+        entries = 11 + 2*grid%nh_n_dust
+
+        ! get a new u(nit) number
+        call ftgiou(u,sta)
+        ! init fits file
+        call ftinit(u,'!'//TRIM(basics%path_results)//Getproname(basics)//'_model.fits',1,sta)
+        ! write header
+        call ftphpr(u,.true.,-64,2,(/entries, grid%n_cell/),0,1,.true.,sta)
+        ! write array to fits file
+        DO i_cell=1,grid%n_cell
+            IF (modulo(i_cell,k) == 0 .or. i_cell == grid%n_cell) THEN
+                WRITE (*,'(A,I3,A)') ' | | ',                                  &
+                         int(i_cell/real(grid%n_cell)*100.0),                  &
+                         ' % done'//char(27)//'[A'
+            END IF
+            call ftpprd(u,1,(i_cell-1)*entries+ 1,entries,                     &
+                        (/ grid%cellmidcaco(i_cell,:),                         &
+                        grid%grd_dust_density(i_cell,:),                       &
+                        grid%grd_mol_density(i_cell) ,                         &
+                        grid%grd_col_density(i_cell,1:3),                      &
+                        REAL(grid%t_dust(i_cell,:),kind=r2),                   &
+                        REAL(grid%t_gas(i_cell),kind=r2),                      &
+                        REAL(grid%velo(i_cell,:),kind=r2)/), sta)
+        END DO
+        ! add keywords
+        call ftpkyj(u,'N_DUST', grid%nh_n_dust, 'Number of dust species', sta)
+        ! close the fits file
+        call ftclos(u, sta)
+        ! free the (u)nit number
+        call ftfiou(u, sta)
+    END SUBROUTINE save_model
+
+    SUBROUTINE vis_plane(grid, basics, model, plane, pix) 
+
+        IMPLICIT NONE
+        !----------------------------------------------------------------------!
         TYPE(Grid_TYP), INTENT(IN)                   :: grid
         TYPE(Basic_TYP), INTENT(IN)                  :: basics
         TYPE(Model_TYP), INTENT(IN)                  :: model
-        !--------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         INTEGER                                      :: plane
         INTEGER                                      :: pix
         
@@ -257,7 +421,7 @@ CONTAINS
         INTEGER                                      :: i_cell
         INTEGER                                      :: i_x, i_y
         
-        !--------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         fileext = '.dat'
 
         IF ( plane ==  1) THEN                                       !view xz-plane
@@ -401,250 +565,241 @@ CONTAINS
         !--------------------------------------------------------------------------!
     
         CALL sv_temp_x(basics, grid)
-!~         Call sv_temp_dist(basics, grid)
+
     END SUBROUTINE sv_temp
-    
-     SUBROUTINE load_temp_dist(basics, grid,tmp_found) !this routine is obsolent at the moment
-        IMPLICIT NONE
-        !--------------------------------------------------------------------------!
-        TYPE(Basic_TYP), INTENT(IN)                  :: basics
-        TYPE(Grid_TYP), INTENT(INOUT)                :: grid
-        !--------------------------------------------------------------------------!
-                
-        CHARACTER(len=252)                           :: filename
-        CHARACTER(len=4)                             :: fileext
-        CHARACTER(len=256)                           :: outname
-        CHARACTER(len=256)                           :: waste, coord
-        
-        INTEGER                                      :: i_cell, i
-        INTEGER                                      :: a,b,c
-        LOGICAL, INTENT(INOUT)                       :: tmp_found
-        !--------------------------------------------------------------------------!
-        
-        
-        print '(2A)', '  loading temperature distribution from: ', TRIM(basics%pronam_old)
-        fileext = '.dat'
-        filename = TRIM(basics%path_results)//TRIM(basics%pronam_old)//'_temp_dist'
-        outname = TRIM(filename)//fileext
-        open(unit=1, file=TRIM(outname), &
-            action="read", status="unknown", form="formatted")
-        
-        READ(unit=1,fmt=*) coord
-        READ(unit=1,fmt=*) a, waste
-        READ(unit=1,fmt=*) b, waste
-        READ(unit=1,fmt=*) c, waste
-        
-        tmp_found = .TRUE.
-        IF (.not. (TRIM(coord) .eq. TRIM(GetGridName(grid)))) THEN
-            tmp_found = .FALSE.
-        ELSE IF ( .not. a .eq. grid%n(1)) THEN
-            tmp_found = .FALSE.
-        ELSE IF ( .not. b .eq. grid%n(2)) THEN
-            tmp_found = .FALSE.
-        ELSE IF ( .not. c .eq. grid%n(3)) THEN
-            tmp_found = .FALSE.
-        END IF
-        
-        IF (tmp_found) THEN
-            DO i_cell=0,grid%n_cell
-                READ(unit=1,fmt=*) i,grid%t_dust(i_cell,1)
-            END DO
-            print * ,'  temperature successfully loaded '
-        END IF
-        CLOSE(unit=1)
-        
-    END SUBROUTINE load_temp_dist
-       
-    SUBROUTINE sv_temp_dist(basics, grid)
-        IMPLICIT NONE
-        !--------------------------------------------------------------------------!
-        TYPE(Basic_TYP), INTENT(IN)                  :: basics
-        TYPE(Grid_TYP), INTENT(IN)                   :: grid
-        !--------------------------------------------------------------------------!
-                
-        CHARACTER(len=252)                           :: filename
-        CHARACTER(len=4)                             :: fileext
-        CHARACTER(len=256)                           :: outname
-        
-        INTEGER                                      :: i_cell
-        !--------------------------------------------------------------------------!
-        
-        fileext = '.dat'
-        filename = TRIM(basics%path_results)//Getproname(basics)//'_temp_dist'
-        outname = TRIM(filename)//fileext
-        open(unit=1, file=TRIM(outname), &
-            action="write", status="unknown", form="formatted")
-        
-        WRITE(unit=1,fmt=*) TRIM(GetGridName(grid))//'   #coordinate system name'
-        WRITE(unit=1,fmt='(I6.4,A)') grid%n(1) ,'    #number of first component '
-        WRITE(unit=1,fmt='(I6.4,A)') grid%n(2) ,'    #number of second component '
-        WRITE(unit=1,fmt='(I6.4,A)') grid%n(3) ,'    #number of third component '
-        WRITE(unit=1,fmt=*) ''
-        
-        
-        DO i_cell=0,grid%n_cell
-            WRITE(unit=1,fmt=*) i_cell,grid%t_dust(i_cell,1)
-        END DO
-        CLOSE(unit=1)
-    END SUBROUTINE sv_temp_dist
-    
     
     SUBROUTINE sv_temp_x(basics, grid)
     
         IMPLICIT NONE
-        !--------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         TYPE(Basic_TYP), INTENT(IN)                  :: basics
         TYPE(Grid_TYP), INTENT(IN)                   :: grid
-        !--------------------------------------------------------------------------!
-        INTEGER                                      ::  i_a, i_b, i_c, i_dust, i_cell
+        !----------------------------------------------------------------------!
+        INTEGER                                      ::  i_a, i_b, i_c
+        INTEGER                                      ::  i_dust, i_cell
         REAL(kind=r2)                                ::  hd_r, hd_tem
         
         CHARACTER(len=252)                           :: filename
         CHARACTER(len=4)                             :: fileext
         CHARACTER(len=256)                           :: outname
-        !--------------------------------------------------------------------------!
+        CHARACTER(len=6)                             :: num2string
+        !----------------------------------------------------------------------!
+
         fileext = '.dat'
-        filename = TRIM(basics%path_results)//Getproname(basics)//'_temp_x'
-        outname = TRIM(filename)//fileext
-        open(unit=1, file=TRIM(outname), &
-            action="write", status="unknown", form="formatted")
-        SELECT CASE(GetGridName(grid))
-            
-            CASE('spherical')
-                !print *, 'sp temp_x'
-                i_b = ceiling(real(grid%n(2))/2.0)
-                i_c = 1
-                
-                ! tbd: for all dust species (here: for first only)
-                i_dust = 1
-                DO i_a = 1, grid%n(1)
-                    hd_r   = (grid%co_mx_a(i_a-1) + grid%co_mx_a(i_a))/2.0_r2
-                    i_cell = grid%cell_idx2nr(i_a,i_b,i_c)
+        DO i_dust = 1, grid%nh_n_dust
+            write(num2string,'(I2.2)') i_dust
+            fileext = '.dat'
+            filename = TRIM(basics%path_results)//Getproname(basics)//'_temp_x_'
+            outname = TRIM(filename)//TRIM(num2string)//fileext
+            open(unit=1, file=TRIM(outname), &
+                action="write", status="unknown", form="formatted")
+            SELECT CASE(GetGridName(grid))
+                CASE('spherical')
 
-                    IF (grid%grd_dust_density(i_cell,i_dust) .eq. 0.0) THEN
-                        hd_tem = 0.0_r2
-                    ELSE
-                        hd_tem = grid%t_dust(i_cell,i_dust)
-                    END IF
-                   write(unit=1,fmt=*) hd_r, hd_tem
-                END DO
-    
-            CASE('cylindrical')
-                !print *, 'cy temp_x'
-                i_b = 1
-                i_c = ceiling(real(grid%n(3))/2.0)
-                
-                ! tbd: for all dust species (here: for first only)
-                i_dust = 1
-                DO i_a = 1, grid%n(1)
-                    hd_r   = (grid%co_mx_a(i_a-1) + grid%co_mx_a(i_a))/2.0_r2
-                    i_cell = grid%cell_idx2nr(i_a,i_b,i_c)
+                    i_b = ceiling(real(grid%n(2))/2.0)
+                    i_c = 1
+                    
+                    DO i_a = 1, grid%n(1)
+                        hd_r   = (grid%co_mx_a(i_a-1) + grid%co_mx_a(i_a))/2.0_r2
+                        i_cell = grid%cell_idx2nr(i_a,i_b,i_c)
 
-                    IF (grid%grd_dust_density(i_cell,i_dust) .eq. 0.0) THEN
-                        hd_tem = 0.0_r2
-                    ELSE
-                        hd_tem = grid%t_dust(i_cell,i_dust)
-                    END IF
-                   write(unit=1,fmt=*) hd_r, hd_tem
-                END DO
+                        IF (grid%grd_dust_density(i_cell,i_dust) .eq. 0.0) THEN
+                            hd_tem = 0.0_r2
+                        ELSE
+                            hd_tem = grid%t_dust(i_cell,i_dust)
+                        END IF
+                       write(unit=1,fmt=*) hd_r, hd_tem
+                    END DO
+                CASE('cylindrical')
+                    !print *, 'cy temp_x'
+                    i_b = 1
+                    i_c = ceiling(real(grid%n(3))/2.0)
+                    
+                    DO i_a = 1, grid%n(1)
+                        hd_r   = (grid%co_mx_a(i_a-1) + grid%co_mx_a(i_a))/2.0_r2
+                        i_cell = grid%cell_idx2nr(i_a,i_b,i_c)
 
-            CASE('cartesian')
-                print *, 'TbD, not finished yet, save temp_x'
+                        IF (grid%grd_dust_density(i_cell,i_dust) .eq. 0.0) THEN
+                            hd_tem = 0.0_r2
+                        ELSE
+                            hd_tem = grid%t_dust(i_cell,i_dust)
+                        END IF
+                       write(unit=1,fmt=*) hd_r, hd_tem
+                    END DO
 
-                
-            CASE DEFAULT
-                print *, 'selected coordinate system not found, save temp_x '
-        END SELECT
-        close(unit=1)
-    
+                CASE('cartesian')
+                    i_b = ceiling(real(grid%n(2))/2.0)
+                    i_c = ceiling(real(grid%n(3))/2.0)
+
+                    DO i_a = ceiling(real(grid%n(1))/2.0), grid%n(1)
+                        hd_r   = (grid%co_mx_a(i_a-1) + grid%co_mx_a(i_a))/2.0_r2
+                        i_cell = grid%cell_idx2nr(i_a, i_b, i_c)
+
+                        IF (grid%grd_dust_density(i_cell, i_dust) .eq. 0.0) THEN
+                            hd_tem = 0.0_r2
+                        ELSE
+                            hd_tem = grid%t_dust(i_cell, i_dust)
+                        END IF
+                       write(unit=1,fmt=*) hd_r, hd_tem
+                    END DO
+
+                CASE DEFAULT
+                    print *, 'selected coordinate system not found, save temp_x'
+            END SELECT
+            close(unit=1)
+        END DO
     
     END SUBROUTINE sv_temp_x
     
     SUBROUTINE save_input(basics,input_file)
     ! not used at the moment
     IMPLICIT NONE
-        !--------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         TYPE(Basic_TYP), INTENT(IN)                  :: basics
         CHARACTER(len=*)                             :: input_file
         CHARACTER(len=256)                           :: command
 
-        !--------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
       
-        command = 'cp '//TRIM(input_file)//' '//TRIM(basics%path_results)//Getproname(basics)//'_input_file.dat'
+        command = 'cp '//TRIM(input_file)//' '//TRIM(basics%path_results)//    &
+                        Getproname(basics)//'_input_file.dat'
         ! I'm not sure if the SYSTEM command is a good choice.
         CALL SYSTEM(command)
         
     END SUBROUTINE save_input
     
-    SUBROUTINE save_continuum_map(model, basics, dust, fluxes, mode)
+    SUBROUTINE save_continuum_map(model, basics, dust, fluxes, mode, peel_off)
         
         IMPLICIT NONE
-        !--------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         TYPE(Model_TYP), INTENT(IN)                  :: model
         TYPE(Basic_TYP), INTENT(IN)                  :: basics
         TYPE(Dust_TYP), INTENT(IN)                   :: dust
         TYPE(Fluxes_TYP), INTENT(IN)                 :: fluxes
-        !--------------------------------------------------------------------------!
-        INTEGER, INTENT(IN)                          :: mode
-        INTEGER                                      :: i_lam, sta, u
-        CHARACTER(len=100)                           :: outname
-        REAL(kind=r2),DIMENSION(:,:,:), ALLOCATABLE  :: map_out
-        !--------------------------------------------------------------------------!
-        ALLOCATE(map_out(0:2*model%n_bin_map,0:2*model%n_bin_map,1:dust%n_lam))
+        !----------------------------------------------------------------------!
+        INTEGER, INTENT(IN)                            :: mode
+        INTEGER                                        :: i_lam, sta, u
+        INTEGER                                        :: i_stokes
+        INTEGER                                        :: i_map
+        REAL(kind=r2)                                  :: unit_value
+        CHARACTER(len=100)                             :: outname
+        REAL(kind=r2),DIMENSION(:,:,:,:), ALLOCATABLE  :: map_out
+        REAL(kind=r2),DIMENSION(1:dust%n_lam, 1:4)     :: sed
+        LOGICAL, INTENT(IN)                            :: peel_off
+        !----------------------------------------------------------------------!
+        sed(:, :) = 0.0_r2
+        ALLOCATE(map_out(0:2*model%n_bin_map,                                  &
+                         0:2*model%n_bin_map, 1:dust%n_lam, 1:4))
+
+        map_out = fluxes%continuum_map
         IF (mode .eq. 1) THEN
-            outname = '_temp'
-            map_out = fluxes%continuum_map_temp
+            ! finite wavelength/frequency bin
+            outname = '_bin'
+
+            DO i_map = 1, model%n_map
+                map_out(:,:,1,:) = 0.0_r2
+                DO i_lam = 1, dust%n_lam
+                    IF (peel_off) THEN
+                        unit_value =                                           &
+                                 1.0_r2/dust%d_nu(i_lam) *                     &
+                                 1.0e26_r2 /                                   &
+                                 (4.0_r2 * PI *(model%distance*con_pc)**2)
+                    ELSE
+                        unit_value =                                           &
+                                 1.0_r2/dust%d_nu(i_lam)/                      &
+                                 ((1.0_r2-model%al_map(i_map))*(PI*2.0_r2)) *  &
+                                 1.0e26_r2 /                                   &
+                                 (model%distance*con_pc)**2
+                    END IF
+                    map_out(:, :, i_lam, :) =                                  &
+                             map_out(:, :, i_lam, :) * unit_value
+                    DO i_stokes = 1, 4
+                        sed(i_lam, i_stokes) = sum(map_out(:,:,i_lam, i_stokes))
+                    END DO
+                END DO
+            END DO
         ELSEIF  (mode .eq. 2) THEN
+            ! monochromatic RT results
+            outname = '_mono'
+
+            DO i_map = 1, model%n_map
+                DO i_lam = 1, dust%n_lam
+                    unit_value =  dust%lam(i_lam)**2/con_c/     &
+                                 (4.0_r2 * PI *(model%distance*con_pc)**2)     &
+                                 *1.0e26_r2
+                    map_out(:, :, i_lam, :) =                                  &
+                             map_out(:, :, i_lam, :) * unit_value
+                    DO i_stokes = 1, 4
+                        sed(i_lam, i_stokes) = sum(map_out(:,:,i_lam, i_stokes))
+                    END DO
+                END DO
+            END DO
+        ELSEIF  (mode .eq. 3) THEN
             outname = '_raytrace'
-            map_out = fluxes%continuum_map
+            DO i_lam = 1, dust%n_lam
+                DO i_stokes = 1, 4
+                    sed(i_lam, i_stokes) = sum(map_out(:, :, i_lam, i_stokes))
+                END DO
+            END DO
+            ! no unit conversion here
         ELSE
             PRINT *, 'ERROR, wrong mode to write continuum map'
             
             DEALLOCATE(map_out)
             RETURN
         END IF
-        sta = 0
-        ! get a new u(nit) number
-        CALL ftgiou(u,sta)
-        ! init fits file
-        CALL ftinit(u,'!'//TRIM(basics%path_results)//Getproname(basics)//'_continuum_map'//TRIM(outname)//'.fits.gz',1,sta)
-        ! write header
-        CALL ftphpr(u,.true.,-32,3,(/2*model%n_bin_map+1,2*model%n_bin_map+1,dust%n_lam/),0,1,.true.,sta)
-        ! write array to fits file
-        CALL ftpprd(u,1,1,(2*model%n_bin_map+1)**2*dust%n_lam, map_out(:,:,:), sta)
-        ! add other header keywords
-        CALL ftpkyj(u,'EXPOSURE',1500,'Total Exposure Time',sta)
-        ! close the fits file
-        CALL ftclos(u, sta)
-        ! free the (u)nit number
-        CALL ftfiou(u, sta)
+        
+        IF (mode /= 1) THEN
+            sta = 0
+            ! get a new u(nit) number
+            CALL ftgiou(u,sta)
+            ! init fits file
+            CALL ftinit(u,'!'//TRIM(basics%path_results)//Getproname(basics)// &
+                        '_continuum_map'//TRIM(outname)//'.fits.gz',1,sta)
+            ! write header
+            CALL ftphpr(u,.true.,-32,4,(/2*model%n_bin_map+1,                  &
+                                        2*model%n_bin_map+1,                   &
+                                        dust%n_lam, 4/),                       &
+                        0,1,.true.,sta)
+            ! write array to fits file
+            CALL ftpprd(u,1,1,(2*model%n_bin_map+1)**2*dust%n_lam*4, map_out(:,:,:,:), sta)
+            ! add other header keywords 
+!~             CALL ftpkyj(u,'EXPOSURE',1500,'Total Exposure Time',sta) ! for example
+            ! close the fits file
+            CALL ftclos(u, sta)
+            ! free the (u)nit number
+            CALL ftfiou(u, sta)
+        END IF
+        DEALLOCATE(map_out)
         
         !write sed in ascii format
-        
-        OPEN(unit=2, file=TRIM(basics%path_results)//Getproname(basics)//'_continuum_sed'//TRIM(outname)//'.dat', &
-            action="write", status="unknown", form="formatted")
-        WRITE(unit=2,fmt='(A)') '#wavelength [m]    flux [Jy]'
-        WRITE(unit=2,fmt=*) ''
-        DO i_lam =1, dust%n_lam
-            WRITE (unit=2,fmt='(2(ES15.6E3))') dust%lam(i_lam), sum(map_out(:,:,i_lam))
+        DO i_stokes = 1, 4
+            OPEN(unit=2, file=TRIM(basics%path_results)// Getproname(basics)// &
+                              '_continuum_sed' // TRIM(outname) // '_' //      &
+                              TRIM(fluxes%stokes_ext(i_stokes)) // '.dat',     &
+                action="write", status="unknown", form="formatted")
+            WRITE(unit=2,fmt='(A)') '#wavelength [m]    flux [Jy]'
+            WRITE(unit=2,fmt=*) ''
+            DO i_lam =1, dust%n_lam
+                WRITE (unit=2,fmt='(2(ES15.6E3))') dust%lam(i_lam),            &
+                                                   sed(i_lam, i_stokes)
+            END DO
+            CLOSE(unit=2)
         END DO
-            
-        CLOSE(unit=2)
-        DEALLOCATE(map_out)
+
     END SUBROUTINE save_continuum_map
-    
-    
+
     SUBROUTINE save_ch_map(model, basics, gas, fluxes)
         
         IMPLICIT NONE
-        !--------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         TYPE(Model_TYP), INTENT(IN)                  :: model
         TYPE(Basic_TYP), INTENT(IN)                  :: basics
         TYPE(Gas_TYP), INTENT(IN)                    :: gas
         TYPE(Fluxes_TYP), INTENT(IN)                 :: fluxes
-        !--------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         INTEGER                                      :: vch, u, sta
-        !--------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         
         ! write velocity channel map to fits file
         sta = 0
@@ -700,69 +855,5 @@ CONTAINS
         CLOSE(unit=2)
         
     END SUBROUTINE save_ch_map
-    
-!~     ! save map (entire stokes vector)
-!~     SUBROUTINE sv_stokes(basics,grid,model,fluxes,dust)
-!~ 
-!~         IMPLICIT NONE
-!~         !--------------------------------------------------------------------------!
-!~         TYPE(Basic_TYP), INTENT(IN)                  :: basics
-!~         TYPE(Grid_TYP), INTENT(IN)                   :: grid
-!~         TYPE(Model_TYP), INTENT(IN)                  :: model
-!~         TYPE(Fluxes_TYP), INTENT(IN)                 :: fluxes
-!~         TYPE(Dust_TYP), INTENT(IN)                   :: dust
-!~         !--------------------------------------------------------------------------!
-!~         INTEGER                                      :: i1
-!~         INTEGER                                      :: i2
-!~         INTEGER                                      :: i_stokes
-!~         INTEGER                                      :: i_map
-!~         INTEGER                                      :: i_lam_map
-!~         !--------------------------------------------------------------------------!
-!~         ! ---
-!~         DO i_stokes=1,1!4
-!~             print *, "saving stokes parameter map(s) to ", &
-!~             TRIM(basics%path_results)//Getproname(basics)//".stokes_map."//fluxes%stokes_ext(i_stokes)
-!~ 
-!~             open(unit=1, file=TRIM(basics%path_results)//Getproname(basics)// &
-!~                 ".stokes_map."//fluxes%stokes_ext(i_stokes), &
-!~                 action="write", status="unknown", form="formatted")
-!~        
-!~                write(unit=1,fmt=*) "# Stokes ", fluxes%stokes_ext(i_stokes)
-!~                write(unit=1,fmt=*) "# --------"
-!~                write(unit=1,fmt=*) model%n_map,     "# n_map"
-!~                write(unit=1,fmt=*) dust%n_lam_map, "# n_lam_map"
-!~                write(unit=1,fmt=*) model%n_bin_map, "# n_bin_map"
-!~                write(unit=1,fmt=*) "# --------"
-!~                write(unit=1,fmt=*) "# flux [Jy], intensity [W/m/sr]"
-!~                write(unit=1,fmt=*) "# --------"
-!~ 
-!~             do i_map=1, model%n_map
-!~                 write(unit=1,fmt=*) rad2grad(model%th_map(i_map)), "# theta (map) [deg]"
-!~                 write(unit=1,fmt=*) rad2grad(model%ph_map(i_map)), "# phi   (map) [deg]"
-!~              sel molecule mass   :  4.4827E-07 M_sun
-
-!~                 do i_lam_map=1, 1 !TBD!~!
-!~                     write(unit=1,fmt=*) "# --------"
-!~                     write(unit=1,fmt=*) dust%lam(dust%num_lam_map(i_lam_map))*1.0e+6_r2, "# wavelength [micron]"
-!~                     write(unit=1,fmt=*) "# --------"
-!~              
-!~                     do i1=-model%n_bin_map, model%n_bin_map
-!~                         do i2=-model%n_bin_map, model%n_bin_map
-!~                             write(unit=1,fmt=*) &
-!~                                 cnv_lum2Jy( fluxes%stokes_map( i_stokes,i_map,i_lam_map,i1,i2 ), &
-!~                                 dust%lam(dust%num_lam_map(i_lam_map)), i_map,model%distance ),&
-!~                                 cnv_Wmsr(   fluxes%stokes_map( i_stokes,i_map,i_lam_map,i1,i2 ), i_map )
-!~                         end do
-!~                     end do
-!~           
-!~                 end do
-!~             end do
-!~ 
-!~             close(unit=1)
-!~         end do
-!~ 
-!~     end subroutine sv_stokes
-  
-    
 
 END MODULE fileio

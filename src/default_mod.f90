@@ -1,13 +1,23 @@
 ! ---
-!
+! Module layout
 ! ---
-module xxx
-  implicit none
-  public :: xxx
-contains
+MODULE xxx
 
-  subroutine xxx()
-  end subroutine xxx
+    USE datatype
+    USE var_global
+
+    
+    IMPLICIT NONE
+    
+    !--------------------------------------------------------------------------!
+    PRIVATE 
+    !--------------------------------------------------------------------------!
+    PUBLIC  :: xxx
+    !--------------------------------------------------------------------------!
+
+    CONTAINS
+        SUBROUTINE xxx()
+        END SUBROUTINE xxx
   
-end module xxx
+END MODULE xxx
 

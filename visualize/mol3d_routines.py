@@ -8,12 +8,9 @@ objects and routines to access Mol3d data (output)
 """
 from numpy import zeros, array
 from numpy import linspace
-#~ from astropy.convolution import convolve_fft
-#~ from astropy.convolution import Gaussian2DKernel
 from astropy.io import fits as pf
 import os.path
 import helper as hlp
-
 
 # some general definitions
 try:
@@ -170,8 +167,17 @@ class mol3d:
             self.__attr['ph_map'] = float(self.get_attr_from_file('ph_map'))
             self.__attr['n_bin_map'] = int(self.get_attr_from_file('n_bin_map'))
 
-            self.__attr['line'] = int(self.get_attr_from_file('line'))
             self.__attr['gas_cat_name'] = self.get_attr_from_file('gas_cat_name')
+            #~ if 'CO10' or 'CS10' in pname:
+                #~ #dirty hack for a (now corrected) in older simulations output
+                #~ self.__attr['line'] = 10
+            #~ elif 'CS13' in pname:
+                #~ self.__attr['line'] = 13
+            #~ elif 'CS14' in pname:
+                #~ self.__attr['line'] = 14
+            #~ else:
+            self.__attr['line'] = int(self.get_attr_from_file('line'))
+            
             self.__attr['i_vel_chan'] = int(self.get_attr_from_file('i_vel_chan'))
             self.__attr['vel_max'] = float(self.get_attr_from_file('vel_max'))
             self.__attr['zoom_map'] = float(self.get_attr_from_file('zoom_map'))
@@ -189,8 +195,17 @@ class mol3d:
             elif self.__attr['gas_cat_name'] == 'hco+@xpol.dat':
                 self.__attr['tr_freq'] = (hlp.HCO_lines_freq[self.__attr['line']-1])
 
+            elif self.__attr['gas_cat_name'] == 'hcn.dat':
+                self.__attr['tr_freq'] = (hlp.HCN_lines_freq[self.__attr['line']-1])
+                
+            elif self.__attr['gas_cat_name'] == 'hnc.dat':
+                self.__attr['tr_freq'] = (hlp.HNC_lines_freq[self.__attr['line']-1])
+
             elif self.__attr['gas_cat_name'] == 'c18o.dat':
                 self.__attr['tr_freq'] = (hlp.C18O_lines_freq[self.__attr['line']-1])
+
+            elif self.__attr['gas_cat_name'] == 'cs@lique.dat':
+                self.__attr['tr_freq'] = (hlp.CS_lines_freq[self.__attr['line']-1])
             else:
                 print("ERROR, gas type unknown")
                 self.__attr['tr_freq'] = 1.0

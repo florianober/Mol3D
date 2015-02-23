@@ -18,6 +18,7 @@ import sys
 from scipy.interpolate import griddata
 import matplotlib.patches as mpatches
 from astropy.io import fits as pf
+import mol3d_routines as m
 
 if len(sys.argv) > 1:
     P_NAME = sys.argv[1]
@@ -123,6 +124,8 @@ def create_plot(x, y, z, name):
 
 def show_maps(path_results, p_name):
     """ search visualisation file for different planes """
+
+    project = m.mol3d(p_name, path_results)
     # show xz-plane
     present_plane(path_results+p_name+'_visual_xz.dat')
 
@@ -173,7 +176,6 @@ def present_plane(file_path):
     plt.title('Gas Temperature, ' + ext)
     plt.xlabel(xlab)
     plt.ylabel(ylab)
-    #~ cont = [10, 20, 25, 30, 35, 40]
     cont = [10, 20, 25, 30, 35, 40] * 2
 
     CS = plt.contour(pic[:, :, 6], cont, linewidths=1,
@@ -181,76 +183,75 @@ def present_plane(file_path):
     plt.clabel(CS, inline=1, fmt='%2.1f', fontsize=10)
     plt.imshow(pic[:, :, 6], extent=m_range, origin='lower',
                interpolation='None', cmap=plt.cm.jet)
-    plt.clim(0, 200)
+    plt.clim(0, 350)
     plt.colorbar().set_label('Temperature [K]')
 
     #-------------------------------------------------
     #  Velocity
+    #~ plt.figure('abs(Velocity), ' + ext)
+    #~ plt.title('abs(Velocity), ' + ext)
+    #~ plt.xlabel(xlab)
+    #~ plt.ylabel(ylab)
+    #~ if pic.shape[2] > 9:
+        #~ data = np.sqrt(pic[:, :, 7]**2 + pic[:, :, 8]**2 + pic[:, :, 9]**2)
+    #~ else:
+        #~ data = pic[:, :, 7]
+    #~ CS = plt.contour(data, linewidths=1, colors='k', extent=m_range)
+    #~ plt.clabel(CS, inline=1, fmt='%2.1f', fontsize=10)
+    #~ plt.imshow(data, extent=m_range, origin='lower',
+               #~ interpolation='None', cmap=plt.cm.jet)
+    #~ plt.colorbar().set_label('Velocity [m/s]')
 
-    plt.figure('abs(Velocity), ' + ext)
-    plt.title('Velocity, ' + ext)
-    plt.xlabel(xlab)
-    plt.ylabel(ylab)
-    if pic.shape[2] > 9:
-        data = np.sqrt(pic[:, :, 7]**2 + pic[:, :, 8]**2 + pic[:, :, 9]**2)
-    else:
-        data = pic[:, :, 7]
-    CS = plt.contour(data, linewidths=1, colors='k', extent=m_range)
-    plt.clabel(CS, inline=1, fmt='%2.1f', fontsize=10)
-    plt.imshow(data, extent=m_range, origin='lower',
-               interpolation='None', cmap=plt.cm.jet)
-    plt.colorbar().set_label('Velocity [m/s]')
+    #~ plt.figure('abs(Velocity) cut, ' + ext)
+    #~ plt.title('abs(Velocity) cut, ' + ext)
+    #~ plt.plot(data[(data.shape[0]-1)/2, :, 7])
 
-    if pic.shape[2] > 9:
-        plt.figure('Velocity V_z, ' + ext)
-        plt.title('Velocity V_z, ' + ext)
-        plt.xlabel(xlab)
-        plt.ylabel(ylab)
-        data = pic[:, :, 9]
-        CS = plt.contour(data, linewidths=1, colors='k', extent=m_range)
-        plt.clabel(CS, inline=1, fmt='%2.1f', fontsize=10)
-        plt.imshow(data, extent=m_range, origin='lower',
-                   interpolation='None', cmap=plt.cm.jet)
-        plt.clim(-400, 400)
-        plt.colorbar().set_label('Velocity [m/s]')
-
-    plt.figure('vel cut, ' + ext)
-    plt.title('vel cut, ' + ext)
-    plt.plot(pic[200, :, 7])
+    #~ if pic.shape[2] > 9:
+        #~ plt.figure('Velocity V_z, ' + ext)
+        #~ plt.title('Velocity V_z, ' + ext)
+        #~ plt.xlabel(xlab)
+        #~ plt.ylabel(ylab)
+        #~ data = pic[:, :, 9]
+        #~ CS = plt.contour(data, linewidths=1, colors='k', extent=m_range)
+        #~ plt.clabel(CS, inline=1, fmt='%2.1f', fontsize=10)
+        #~ plt.imshow(data, extent=m_range, origin='lower',
+                   #~ interpolation='None', cmap=plt.cm.jet)
+        #~ plt.clim(-400, 400)
+        #~ plt.colorbar().set_label('Velocity [m/s]')
 
     #-------------------------------------------------
     #  molecule density
 
-    data = np.log10(pic[:, :, 1] * 1e-6)
-    plt.figure('Molecule number density distribution, ' + ext)
-    plt.title('Molecule number density distribution, ' + ext)
-    plt.xlabel(xlab)
-    plt.ylabel(ylab)
-    cont = np.round(np.linspace(0, 7, 10))
-
-    CS = plt.contour(data, cont, linewidths=1, colors='k', extent=m_range)
-    plt.clabel(CS, inline=1, fmt='%2.1f', fontsize=10)
-    plt.imshow(data, extent=m_range, origin='lower',
-               interpolation='None', cmap=plt.cm.jet)
-    plt.clim(2, 8)
-    plt.colorbar().set_label('molecule density lg [cm^-3]')
+    #~ data = np.log10(pic[:, :, 1] * 1e-6)
+    #~ plt.figure('Molecule number density distribution, ' + ext)
+    #~ plt.title('Molecule number density distribution, ' + ext)
+    #~ plt.xlabel(xlab)
+    #~ plt.ylabel(ylab)
+    #~ cont = np.round(np.linspace(0, 7, 10))
+#~ 
+    #~ CS = plt.contour(data, cont, linewidths=1, colors='k', extent=m_range)
+    #~ plt.clabel(CS, inline=1, fmt='%2.1f', fontsize=10)
+    #~ plt.imshow(data, extent=m_range, origin='lower',
+               #~ interpolation='None', cmap=plt.cm.jet)
+    #~ plt.clim(2, 8)
+    #~ plt.colorbar().set_label('molecule density lg [cm^-3]')
 
     #-------------------------------------------------
     #  dust density
 
-    data = np.log10(pic[:, :, 0] * 1e-6)
-    plt.figure('Dust number density distribution, ' + ext)
-    plt.title('Dust number density distribution, ' + ext)
-    plt.xlabel(xlab)
-    plt.ylabel(ylab)
-    cont = np.round(np.linspace(-5, 0, 10))
+    #~ data = np.log10(pic[:, :, 0] * 1e-6)
+    #~ plt.figure('Dust number density distribution, ' + ext)
+    #~ plt.title('Dust number density distribution, ' + ext)
+    #~ plt.xlabel(xlab)
+    #~ plt.ylabel(ylab)
+    #~ cont = np.round(np.linspace(-5, 0, 10))
 
     #~ CS = plt.contour(data, cont, linewidths=1, colors='k', extent=m_range)
     #~ plt.clabel(CS, inline=1, fmt='%2.1f', fontsize=10)
-    plt.imshow(data, extent=m_range, origin='lower',
-               interpolation='None', cmap=plt.cm.jet)
-    plt.clim(-5, 0)
-    plt.colorbar().set_label('dust density lg [cm^-3]')
+    #~ plt.imshow(data, extent=m_range, origin='lower',
+               #~ interpolation='None', cmap=plt.cm.jet)
+    #~ plt.clim(-5, 0)
+    #~ plt.colorbar().set_label('dust density lg [cm^-3]')
 
     #-------------------------------------------------
     #  H2 density
@@ -282,10 +283,7 @@ def present_plane(file_path):
 
 if __name__ == "__main__":
     """ main routine """
-    # two possibilities
-    # first present the model itself (old)
-    #~ make_model(PATH_RESULTS, P_NAME)
-    # present the xy and xz plane maps
+    
     show_maps(PATH_RESULTS, P_NAME)
 
     plt.show()

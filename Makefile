@@ -174,6 +174,8 @@ MODULE_SRC = 	basic_type.f90 \
 		grd_mod.f90 \
 		fileio.f90 \
 		simulation_mod.f90 \
+		raytrace_mod.f90 \
+		MCRT_mod.f90 \
 		observe_mod.f90 \
 		transfer_mod.f90 \
 		lvlpop_mod.f90 \

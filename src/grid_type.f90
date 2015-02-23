@@ -35,7 +35,7 @@ MODULE Grid_type
     
     TYPE Grid_TYP
         TYPE(Common_TYP) :: grdtype                     ! -----------------    !
-        !-----------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         REAL(kind=r2)                             :: sf
         REAL(kind=r2)                             :: d_l_min
         
@@ -82,7 +82,6 @@ MODULE Grid_type
         REAL(kind=r2), DIMENSION(:),ALLOCATABLE       :: ddust
                 
         INTEGER,DIMENSION(1:3)                    :: n
-        INTEGER,DIMENSION(:,:),ALLOCATABLE        :: cell_neighbours
         INTEGER                                   :: n_cell
         INTEGER                                   :: i_cell
         INTEGER                                   :: nh_n_dust
@@ -112,8 +111,9 @@ MODULE Grid_type
 CONTAINS
 
     SUBROUTINE InitGrid(this,ut,un, n_a, sf, n_b, n_c, n_dust, egy_lvl)
+
         IMPLICIT NONE
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         TYPE(Grid_TYP)        :: this        
         REAL(kind=r2)         :: sf
         REAL(kind=r2)         :: trash
@@ -132,10 +132,10 @@ CONTAINS
         CHARACTER(LEN=*)      :: un
         CHARACTER(LEN=256)    :: waste
         
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         INTENT(IN)            :: ut, un, n_a, sf, n_b, n_c, n_dust, egy_lvl
         INTENT(INOUT)         :: this
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         CALL InitCommon(this%grdtype,ut,un)
         SELECT CASE(GetGridname(this))
         
@@ -144,10 +144,13 @@ CONTAINS
             
             SELECT CASE(GetGridType(this))
             
-            CASE(1,2,3)
+            CASE(1,2,3,9)
                 ! case 1 logarithm r spaced grid
                 ! case 2 linear r spaced grid
-                !  thus we can use the same definitions
+                
+                ! case(9)
+                ! read no of cells from file we do some consistency checks later
+
                 this%n(1)   = n_a
                 this%sf     = sf
                 this%n(2)   = n_b
@@ -221,42 +224,19 @@ CONTAINS
                 close(unit=1)
                 this%sf     = 1.0
 
-            CASE(9)
-                ! 
-                ! read no of cells from file
-                ! we do some consistency checks later 
-                ! Note, the files included here, should be no real files but sym links!
- 
-                open(unit=1, file="input/grid/spherical_r.dat", &
-                    action="read", status="unknown", form="formatted")
- 
-                read(unit=1, fmt=*) this%n(1)
-                close(unit=1)
-
-                this%sf     = 1.000
-
-                open(unit=1, file="input/grid/spherical_theta.dat", &
-                    action="read", status="unknown", form="formatted")
-
-                read(unit=1, fmt=*) this%n(2)
-                close(unit=1)
- 
-                open(unit=1, file="input/grid/spherical_phi.dat", &
-                    action="read", status="unknown", form="formatted")
-
-                read(unit=1, fmt=*) this%n(3)
-                close(unit=1)
-
                 
             CASE DEFAULT
-                print *, 'selected coordinate type not found. try grid_type = [1,2,3,4,9]'
+                print *, 'selected coordinate type not found. try grid_type = [1,2,3,4,5,9]'
                 stop
             END SELECT
-            
+
         CASE('cylindrical')
             print '(A,I1)', ' grid type: cylindrical, type: ', GetGridType(this)
             SELECT CASE(GetGridType(this))
-            CASE(1)
+            CASE(1,9)
+                ! case 1 logarithm r spaced grid
+                ! case(9)
+                ! read no of cells from file we do some consistency checks later
                 this%n(1)   = n_a
                 this%sf     = sf
                 this%n(2)   = n_b
@@ -268,13 +248,25 @@ CONTAINS
                 this%n(2)   = 1
                 this%n(3)   = 103
             CASE DEFAULT
-                print *, 'selected coordinate type not found. try grid_type = [1,2]'
+                print *, 'selected coordinate type not found. try grid_type = [1,2,9]'
                 stop
             END SELECT 
             
         CASE('cartesian')
-            print *, 'TbD,..initiate grid, cartesian grid is not implemented yet'
-            stop
+            print '(A,I1)', ' grid type: cartesian, type: ', GetGridType(this)
+            SELECT CASE(GetGridType(this))
+            CASE(1,9)
+                ! case 1, x,y,z are sinh spaced
+                ! case(9)
+                ! read no of cells from file we do some consistency checks later
+                this%n(1)   = n_a
+                this%sf     = sf !is not needed (old from mc3d)
+                this%n(2)   = n_b
+                this%n(3)   = n_c
+            CASE DEFAULT
+                print *, 'selected coordinate type not found. try grid_type = [1,9]'
+                stop
+            END SELECT 
         CASE DEFAULT
             print *, 'selected coordinate system not found.'
             stop
@@ -308,7 +300,6 @@ CONTAINS
             this%absvelo( 0:this%n_cell), &
             this%cell_idx2nr( 0:this%n(1), 0:this%n(2), 0:this%n(3) ), &
             this%cell_nr2idx( 1:3, 0:this%n_cell ), &
-            this%cell_neighbours( 1:6, 0:this%n_cell ), &
             this%t_dust(  0:this%n_cell, 1:n_dust ), &
             this%t_gas(  0:this%n_cell), &
             this%lvl_pop( 1:egy_lvl,0:this%n_cell ) )
@@ -339,7 +330,6 @@ CONTAINS
         this%cell_energy(:,:)     = 0.0_r2
         this%cell_energy_sum(:,:,:)     = 0.0_r2
         this%lvl_pop(:,:)         = 0.0
-        this%cell_neighbours(:,:)        = 0
         this%counter              = 0
         IF (show_error) PRINT *, 'grid arrays initialized'
     END SUBROUTINE InitGrid
@@ -347,9 +337,9 @@ CONTAINS
     
     SUBROUTINE CloseGrid(this)
         IMPLICIT NONE
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         TYPE(Grid_TYP), INTENT(INOUT) :: this
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         CALL CloseCommon(this%grdtype)
         DEALLOCATE( &
             this%co_mx_a, &
@@ -367,7 +357,6 @@ CONTAINS
             this%grd_col_density, &
             this%grd_mol_density, &
             this%cellmidcaco, &
-            this%cell_neighbours, &
             this%velo, &
             this%absvelo, &
             this%cell_idx2nr, &
@@ -384,29 +373,29 @@ CONTAINS
 
     PURE FUNCTION GetGridType(this) RESULT(ut)
         IMPLICIT NONE
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         TYPE(Grid_TYP), INTENT(IN) :: this
         INTEGER :: ut
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         ut = GetType_common(this%grdtype)
     END FUNCTION GetGridType
 
 
     PURE FUNCTION GetGridName(this) RESULT(un)
         IMPLICIT NONE
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         TYPE(Grid_TYP), INTENT(IN) :: this
         CHARACTER(LEN=32) :: un
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         un = GetName_common(this%grdtype)
     END FUNCTION GetGridName
 
     PURE FUNCTION GridInitialized(this) RESULT(i)
         IMPLICIT NONE
-          !------------------------------------------------------------------------!
+          !--------------------------------------------------------------------!
           TYPE(Grid_TYP), INTENT(IN) :: this
           LOGICAL :: i
-          !------------------------------------------------------------------------!
+          !--------------------------------------------------------------------!
           i = Initialized_common(this%grdtype)
     END FUNCTION GridInitialized
 
@@ -417,13 +406,13 @@ CONTAINS
         USE math_mod, ONLY : sp2ca, cy2ca
         
         IMPLICIT NONE
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         TYPE(Grid_TYP), INTENT(IN)                  :: grid
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         
         REAL(kind=r2), DIMENSION(1:3),INTENT(IN)   :: moco
         REAL(kind=r2), DIMENSION(1:3)               :: caco
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         SELECT CASE(GetGridName(grid))
         
         CASE('spherical')
@@ -441,73 +430,123 @@ CONTAINS
     
     END FUNCTION mo2ca
     
-    ! ################################################################################################
+    ! ##########################################################################
     ! check: is current position of photon stil inside the model space?
     ! ---
     FUNCTION check_inside(caco,this,model) result(check_inside_result)
-    USE math_mod, ONLY : norm
-    
-    IMPLICIT NONE
-    !------------------------------------------------------------------------!
-    TYPE(Grid_TYP), INTENT(IN)                  :: this
-    TYPE(Model_TYP), INTENT(IN)                 :: model
-    
-    REAL(kind=r2), dimension(3), intent(in)     :: caco
-    
-    LOGICAL                                     :: check_inside_result   
-    !------------------------------------------------------------------------!
-    SELECT CASE(GetGridName(this))
+        USE math_mod, ONLY : norm
         
-        CASE('spherical')
-            check_inside_result = (norm(caco) <= model%r_ou)
+        IMPLICIT NONE
+        !----------------------------------------------------------------------!
+        TYPE(Grid_TYP), INTENT(IN)                  :: this
+        TYPE(Model_TYP), INTENT(IN)                 :: model
+        
+        REAL(kind=r2), dimension(3), intent(in)     :: caco
+        
+        LOGICAL                                     :: check_inside_result   
+        !----------------------------------------------------------------------!
+        SELECT CASE(GetGridName(this))
             
-        CASE('cylindrical')
-            check_inside_result = (sqrt( dot_product( caco(1:2), caco(1:2) ) ) <= model%r_ou &
-                                  .and. abs(caco(3)) <= model%r_ou )
-        
-        CASE('cartesian')
-            check_inside_result = (all(abs(caco) <= model%r_ou))
-        CASE DEFAULT
-            print *, 'selected coordinate system not found, set_boundaries'
-            stop
-    END SELECT
-    
+            CASE('spherical')
+                check_inside_result = (norm(caco) <= model%r_ou)
+                
+            CASE('cylindrical')
+                check_inside_result =                                          &
+                                (sqrt( dot_product( caco(1:2), caco(1:2) ) )   &
+                                <= model%r_ou .and. abs(caco(3))               &
+                                <= model%r_ou )
+            
+            CASE('cartesian')
+                check_inside_result = (all(abs(caco) <= model%r_ou))
+            CASE DEFAULT
+                print *, 'selected coordinate system not found, set_boundaries'
+                stop
+        END SELECT
+
     END FUNCTION check_inside
-    
-    
-    FUNCTION get_cell_nr(this,caco) RESULT(get_cell_nr_result)
+
+    FUNCTION get_cell_nr(this, caco) RESULT(get_cell_nr_result)
         ! generic function for all geometrics
         USE datatype
         USE var_global
         
         IMPLICIT NONE
-        !------------------------------------------------------------------------!
-        TYPE(Grid_TYP), INTENT(IN)                  :: this
-        !------------------------------------------------------------------------!
-        
-        INTEGER                                     :: get_cell_nr_result 
-        
+        !----------------------------------------------------------------------!
+        TYPE(Grid_TYP), INTENT(IN)                :: this
+        !----------------------------------------------------------------------!
+        INTEGER                                   :: get_cell_nr_result 
         REAL(kind=r2), DIMENSION(1:3),INTENT(IN)  :: caco
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         
         SELECT CASE(GetGridName(this))
         
         CASE('spherical')
-            get_cell_nr_result = get_cell_nr_sp(this,caco)
-            
+            get_cell_nr_result = get_cell_nr_sp(this, caco)
+
         CASE('cylindrical')
-            get_cell_nr_result = get_cell_nr_cy(this,caco)
+            get_cell_nr_result = get_cell_nr_cy(this, caco)
+
         CASE('cartesian')
-            print *, 'TbD, not finished yet, cell number'
-            stop
-            
+            get_cell_nr_result = get_cell_nr_ca(this, caco)
+
         CASE DEFAULT
             print *, 'selected coordinate system not found'
             stop
         END SELECT
-    
-    
+
     END FUNCTION get_cell_nr
+
+    FUNCTION get_cell_nr_ca(this, caco) RESULT(get_cell_nr_result)
+        USE datatype
+        USE var_global
+        USE math_mod, ONLY : binary_search
+
+        IMPLICIT NONE
+        !----------------------------------------------------------------------!
+        TYPE(Grid_TYP), INTENT(IN)                  :: this
+        !----------------------------------------------------------------------!
+
+        INTEGER                                     :: i_x
+        INTEGER                                     :: i_y
+        INTEGER                                     :: i_z
+        INTEGER                                     :: get_cell_nr_result 
+
+        REAL(kind=r2), DIMENSION(1:3),INTENT(in)    :: caco
+        !----------------------------------------------------------------------!
+
+        ! 1.1 get i_x
+        ! --
+        IF ( caco(1) >=  this%co_mx_a(this%n(1)) ) THEN
+            i_x = this%n(1)
+        ELSEIF ( caco(1) <=  this%co_mx_a( 0 ) ) THEN
+            i_x = 1
+        ELSE
+            i_x = binary_search(caco(1), this%co_mx_a )
+        END IF
+
+        ! 1.2 get i_y
+        ! --
+        IF ( caco(2) >=  this%co_mx_b(this%n(2)) ) THEN
+            i_y = this%n(2)
+        ELSEIF ( caco(2) <=  this%co_mx_b( 0 ) ) THEN
+            i_y = 1
+        ELSE
+            i_y = binary_search(caco(2), this%co_mx_b )
+        END IF
+
+        ! 1.3 get i_z
+        ! --
+
+        IF ( caco(3) >=  this%co_mx_c(this%n(3)) ) THEN
+            i_z = this%n(3)
+        ELSEIF ( caco(3) <=  this%co_mx_c( 0 ) ) THEN
+            i_z = 1
+        ELSE
+            i_z = binary_search(caco(3),this%co_mx_c )
+        END IF
+
+        get_cell_nr_result = this%cell_idx2nr(i_x, i_y, i_z)
+    END FUNCTION get_cell_nr_ca
     
     FUNCTION get_cell_nr_cy(this,caco) RESULT(get_cell_nr_result)
         USE datatype
@@ -515,9 +554,9 @@ CONTAINS
         USE math_mod, ONLY : atan3, binary_search
         
         IMPLICIT NONE
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         TYPE(Grid_TYP), INTENT(IN)                  :: this
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         
         INTEGER                                     :: i_r
         INTEGER                                     :: i_ph
@@ -526,9 +565,7 @@ CONTAINS
         
         REAL(kind=r2), DIMENSION(1:3),INTENT(in)  :: caco
         REAL(kind=r2)  :: h_r, h_ph, d_ph
-        !------------------------------------------------------------------------!
-        
-!~         print *,'starting'
+        !----------------------------------------------------------------------!
         h_r  = sqrt(caco(1)**2+caco(2)**2)
         h_ph = atan3(caco(2),caco(1))
 
@@ -577,16 +614,16 @@ CONTAINS
         get_cell_nr_result = this%cell_idx2nr(i_r,i_ph,i_z)
     END FUNCTION get_cell_nr_cy
     
-  ! ################################################################################################
+  ! ############################################################################
   ! determine cell number from cartesian coordinates. 
   ! ---
     FUNCTION get_cell_nr_sp(this,caco) RESULT(get_cell_nr_result)
         USE math_mod, ONLY : ca2sp, binary_search
         
         IMPLICIT NONE
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         TYPE(Grid_TYP), INTENT(IN)                  :: this
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         
         INTEGER                                     :: i_r
         INTEGER                                     :: i_th
@@ -595,7 +632,7 @@ CONTAINS
         
         REAL(kind=r2), DIMENSION(1:3)               :: spco
         REAL(kind=r2), DIMENSION(1:3),INTENT(in)    :: caco
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         
         spco = ca2sp(caco)
         ! ---

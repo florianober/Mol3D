@@ -11,7 +11,7 @@ MODULE simulation_mod
     USE gas_type
     USE dust_type
     USE source_type
-    
+
     USE grd_mod
     USE math_mod
     USE fileio
@@ -19,19 +19,21 @@ MODULE simulation_mod
     USE lvlpop_mod
     USE temp_mod
     USE linkedlist_mod
-    use observe_mod
-    
+    USE MCRT_mod
+    USE raytrace_mod
+
     IMPLICIT NONE
-    
+
     !--------------------------------------------------------------------------!
     PRIVATE 
     !--------------------------------------------------------------------------!
     PUBLIC  :: run_simu
     !--------------------------------------------------------------------------!
+
 CONTAINS
 
     SUBROUTINE run_simu(basics, fluxes ,grid , model, dust, gas, sources_in)
-    
+
     IMPLICIT NONE
     !--------------------------------------------------------------------------!
     TYPE(Basic_TYP),INTENT(IN)                       :: basics
@@ -41,27 +43,26 @@ CONTAINS
     TYPE(Dust_TYP),INTENT(IN)                        :: dust
     TYPE(Gas_TYP),INTENT(INOUT)                      :: gas
     TYPE(SOURCES),INTENT(IN)                         :: sources_in
-    
+
     TYPE(l_list), POINTER                            :: pixel_list => null()
     TYPE(Pixel_TYP), POINTER                         :: pixel_p => null()
-    
     !--------------------------------------------------------------------------!
-    
+
     INTEGER                       :: i_map, i_r, i, j, no_pixel, k, l
          
-    INTEGER,DIMENSION(0:2*model%n_bin_map,0:2*model%n_bin_map)  :: counter
-    INTEGER,DIMENSION(:,:),ALLOCATABLE                          :: notopx
+    INTEGER,DIMENSION(0:2*model%n_bin_map, 0:2*model%n_bin_map)  :: counter
+    INTEGER,DIMENSION(:,:), ALLOCATABLE                          :: notopx
     
     REAL(kind=r2)                 :: hd_stepwidth, dz_min, hd_rmax
          
     REAL(KIND=r2)                 :: pix_res_i, pix_res_j   ! pixelsize [arcsec]
     REAL(KIND=r2)                 :: unit_value             ! unit conversion 
-    
+
     real(kind=r2), dimension(1:2)                :: coor_map
     REAL(kind=r2), dimension(:,:), allocatable   :: calc_px
     REAL(kind=r2), dimension(:,:,:), allocatable :: inten_px
-    REAL(kind=r2), dimension(:,:), allocatable   :: continuum_px
-    
+    REAL(kind=r2), dimension(:,:,:), allocatable   :: continuum_px
+
     !--------------------------------------------------------------------------!
     print *,''                                                    
     print *,"starting simulation"
@@ -85,6 +86,21 @@ CONTAINS
     CALL vis_plane(grid, basics, model, 3, 401)
     print *, "| done!                 "
     print *, "|"
+
+    ! Now we want to create images/sed's, either with an raytracing algorithm
+    ! (fast and only option for line) or with pure MC RT
+    ! including peel-off method (dust)
+
+    ! MC RT
+    IF (basics%do_continuum_mc) THEN
+        PRINT *, "| Monochromatic Monte-Carlo RT to create images/sed's"
+
+        CALL monochromatic_RT(basics, grid, model,                            &
+                               dust, sources_in, fluxes)
+        PRINT *, "|"
+    END IF
+
+    ! raytrace
     IF (basics%do_raytr) THEN
         ! --- first calculate level populations
         IF (basics%do_velo_ch_map ) THEN
@@ -94,8 +110,7 @@ CONTAINS
             print *, "|"
         END IF
         hd_stepwidth = 0.2_r2
-        
-       
+
         ! define step width = f(radial grid cell index)
         dz_min = grid%co_mx_a(grid%n(1))
         do i_r=1,grid%n(1)
@@ -104,10 +119,10 @@ CONTAINS
             end if
         end do
         dz_min = hd_stepwidth * dz_min
-        
+
         ! maximum radial distance of a pixel to center [in pixel units]
         hd_rmax = real(model%n_bin_map,kind=r2) * sqrt(2.0_r2)
-           
+
         ! ---
         ! raytracing
         print *, "| raytracing"
@@ -123,19 +138,22 @@ CONTAINS
 
                 unit_value = 1.0e26_r2*pix_res_i*pix_res_j
             ELSE IF (GetFluxesName(fluxes) == 'T_mb') THEN
-                unit_value =  (con_c/gas%trans_freq(gas%tr_cat(1)))**2.0_r2/2.0_r2/con_k 
+                unit_value = (con_c / gas%trans_freq(gas%tr_cat(1)))**2.0_r2 / &
+                              2.0_r2/con_k 
             ELSE
                 PRINT *, '  WARNING: requested unit not found'
                 unit_value = 1.0_r2
             END IF
-            
+
             PRINT *,"| | check for pixel"
             k = 1
             l = 0
             DO i = 0, 2*model%n_bin_map
                 DO j = 0,2*model%n_bin_map
                     IF (l == int(k*(2*model%n_bin_map)**2*0.01)) THEN
-                        WRITE (*,'(A,I3,A)') ' | | | ',int(l/real((2*model%n_bin_map)**2)*100),' % done'//char(27)//'[A'
+                        WRITE (*,'(A,I3,A)') ' | | | ',int(l / real((2 *       &
+                                 model%n_bin_map)**2)*100),                    &
+                                 ' % done'//char(27)//'[A'
                         k = k + 1
                     END IF
 
@@ -154,7 +172,7 @@ CONTAINS
                     l = l + 1
                 END DO ! coord(2), y
             END DO ! coord(1), x   
-                        
+
             no_pixel = GetSize(pixel_list)
             counter = 0
             ALLOCATE (calc_px (1:no_pixel,1:4))
@@ -164,22 +182,26 @@ CONTAINS
             DO i = 1, no_pixel
                 CALL GetLast(pixel_list,pixel_p)
                 notopx(i,:) = pixel_p%pixel
-                counter(notopx(i,1),notopx(i,2)) = counter(notopx(i,1),notopx(i,2)) +1
+                counter(notopx(i,1),notopx(i,2)) = counter(notopx(i,1),        &
+                                                           notopx(i,2)) +1
                 calc_px(i,1:2) = pixel_p%pos_xy
                 calc_px(i,3:4) = pixel_p%size_xy
                 CALL RemoveLast(pixel_list)
             END DO
             
-            PRINT '(A,I7,A,I7,A)', ' | | do raytrace with ',no_pixel,' pixel (', &
-                          no_pixel-(2*model%n_bin_map +1)**2, ' subpixel)' 
+            PRINT '(A,I7,A,I7,A)', ' | | do raytrace with ',no_pixel,          &
+                    ' pixel (', no_pixel-(2*model%n_bin_map +1)**2, ' subpixel)'
 
-            
+
             IF (basics%do_velo_ch_map ) THEN
                 PRINT *, '| | calculating velocity channel maps'
-                PRINT '(A,F8.2,A)',' | | | wavelength dust    :',dust%lam(dust%cont_map(1)) *1e6, ' micron'
-                PRINT '(A,F8.2,A)',' | | | central wavelength :',con_c/gas%trans_freq(gas%tr_cat(1))*1e6, ' micron'
+                PRINT '(A,F8.2,A)',' | | | wavelength dust    :',              &
+                                   dust%lam(dust%cont_map(1)) * 1e6, ' micron'
+                PRINT '(A,F8.2,A)',' | | | central wavelength :', con_c /      &
+                                   gas%trans_freq(gas%tr_cat(1))*1e6, ' micron'
             
-                ALLOCATE (inten_px (1:no_pixel,-gas%i_vel_chan:gas%i_vel_chan,1:gas%n_tr))
+                ALLOCATE (inten_px (1:no_pixel, -gas%i_vel_chan:gas%i_vel_chan,&
+                                    1:gas%n_tr))
 
                 inten_px = 0.0_r2
                 k = no_pixel/100
@@ -188,35 +210,41 @@ CONTAINS
                 !$omp do schedule(dynamic) private(i)
                 DO i = 1, no_pixel
                     IF (modulo(i,k) == 0 .or. i == no_pixel) THEN
-                        WRITE (*,'(A,I3,A)') ' | | | ',int(i/real(no_pixel)*100.0),' % done'//char(27)//'[A'
+                        WRITE (*, '(A,I3,A)') ' | | | ',                       &
+                                  int(i/real(no_pixel)*100.0),' % done' //     &
+                                  char(27)//'[A'
                     END IF 
                     
-                    inten_px(i,:,:)     =   get_line_intensity_in_px(basics, grid,     &
-                                            model, dust, gas,                  &
-                                            calc_px(i,1), calc_px(i,2), i_map)
+                    inten_px(i,:,:) = raytrace_px(basics,                      &
+                                      grid, model, dust, gas,                  &
+                                      calc_px(i,1), calc_px(i,2), i_map)
                 END DO
 
                 !$omp end do nowait
                 !$omp end parallel
 
                 DO i = 1, no_pixel
-                    fluxes%channel_map(notopx(i,1),notopx(i,2),:,:) = &
+                    fluxes%channel_map(notopx(i,1),notopx(i,2),:,:) =          &
                              fluxes%channel_map(notopx(i,1),notopx(i,2),:,:) + &
                              unit_value * inten_px(i,:,:) *                    &
                              (calc_px(i,3)*calc_px(i,4)*4.) /                  &
-                             (model%px_model_length_x(i_map)*model%px_model_length_y(i_map))
+                             (model%px_model_length_x(i_map)*                  &
+                             model%px_model_length_y(i_map))
                 END DO
-                
+
                 DEALLOCATE(inten_px)
                 print *, '| | | saving channel maps'
 
                 CALL save_ch_map(model, basics, gas, fluxes)
                 PRINT *, '| | done!'
-                
+
             END IF
-            
-            IF (basics%do_continuum_map ) THEN
-                ALLOCATE (continuum_px (1:no_pixel,1:dust%n_lam))
+
+            IF (basics%do_continuum_raytrace ) THEN
+                !reset flux map
+                fluxes%continuum_map(:,:,:,:) = 0.0_r2
+                
+                ALLOCATE (continuum_px (1:no_pixel,1:dust%n_lam,1:4))
                 continuum_px = 0.0_r2
                 k = no_pixel/100
                 PRINT *, '| | calculating continuum maps'
@@ -224,39 +252,38 @@ CONTAINS
                 !$omp do schedule(dynamic) private(i) 
                 DO i = 1, no_pixel
                     IF (modulo(i,k) == 0 .or. i == no_pixel) THEN
-                        WRITE (*,'(A,I3,A)') ' | | | ',int(i/real(no_pixel)*100.0),' % done'//char(27)//'[A'
+                        WRITE (*,'(A,I3,A)') ' | | | ',                        &
+                                  int(i/real(no_pixel)*100.0),' % done' //     &
+                                  char(27)//'[A'
                     END IF
-                    continuum_px(i,:)   =   get_continuum_intensity_in_px(grid,&
-                                            model, dust, gas,                  &
-                                            calc_px(i,1), calc_px(i,2), i_map)
-    !~                 print *,i
+                    continuum_px(i,:,:) = raytrace_px(         &
+                                        grid, model, dust, gas,                &
+                                        calc_px(i,1), calc_px(i,2), i_map)
                 END DO
 
                 !$omp end do nowait
                 !$omp end parallel
-                
                 DO i = 1, no_pixel
-                    fluxes%continuum_map(notopx(i,1),notopx(i,2),:) = &
-                             fluxes%continuum_map(notopx(i,1),notopx(i,2),:) + &
-                             unit_value * continuum_px(i,:) *                  &
+                    fluxes%continuum_map(notopx(i,1),notopx(i,2),:, :) =       &
+                             fluxes%continuum_map(notopx(i,1),notopx(i,2),:,:) + &
+                             unit_value * continuum_px(i,:,:) *                &
                              (calc_px(i,3)*calc_px(i,4)*4.) /                  &
-                             (model%px_model_length_x(i_map)*model%px_model_length_y(i_map))
+                             (model%px_model_length_x(i_map) *                 &
+                             model%px_model_length_y(i_map))
                 END DO
                 DEALLOCATE(continuum_px)
                 print *, '| | | saving continuum maps'
-        
-                CALL save_continuum_map(model, basics, dust, fluxes, 2)
+
+                CALL save_continuum_map(model, basics, dust,                   &
+                                        fluxes, 3, peel_off=.False.)
                 PRINT *, '| | done!'
             END IF
             DEALLOCATE( calc_px, notopx)
         END DO ! orientation map.
-        
+
         WRITE (*,"(A)") " | done! "
     END IF
-    
-    
-!~     print *, 'Simulation finished!'
-    
+
     END SUBROUTINE run_simu
-    
+
 END MODULE simulation_mod

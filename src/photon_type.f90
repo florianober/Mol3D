@@ -20,14 +20,16 @@ MODULE photon_type
         TYPE(Common_TYP) :: mtype                      ! -----------------     !
         !----------------------------------------------------------------------!
         LOGICAL                                         :: inside
-        LOGICAL                                         :: peel_off
-        LOGICAL                                         :: observe
         LOGICAL                                         :: kill
+        LOGICAL                                         :: fixed_lam
+        
+        CHARACTER(1)                                    :: last_interaction_type
         
         INTEGER                                         :: n_interact
         INTEGER                                         :: nr_cell
         INTEGER                                         :: nr_cell_new
         INTEGER                                         :: nr_lam
+        INTEGER                                         :: lot_th
         
         REAL(kind=r2), DIMENSION(1:3)                   :: pos_xyz
         REAL(kind=r2), DIMENSION(1:3)                   :: pos_xyz_li
@@ -40,6 +42,7 @@ MODULE photon_type
         REAL(kind=r2)                                   :: SINTHE, COSTHE
         
         REAL(kind=r2)                                   :: energy
+        REAL(kind=r2)                                   :: energy_scale
 
 
     END TYPE PHOTON_TYP
@@ -54,36 +57,40 @@ MODULE photon_type
         ClosePhoton, &
         GetPhotonType, &
         GetPhotonName, &
-        PhotonInitialized
+        PhotonInitialized, &
+        vecmat
     !--------------------------------------------------------------------------!
 CONTAINS
 
-    SUBROUTINE InitPhoton(this, ut, un, observe)
+    SUBROUTINE InitPhoton(this, ut, un, i_lam_in)
         IMPLICIT NONE
         !----------------------------------------------------------------------!
-        TYPE(PHOTON_TYP)        :: this
-        LOGICAL                 :: observe
+        TYPE(PHOTON_TYP)                            :: this
         
-        INTEGER                 :: ut
+        INTEGER                                     :: ut
+        INTEGER, INTENT(IN), OPTIONAL               :: i_lam_in
         
         CHARACTER(LEN=*)        :: un
-
-!~         LOGICAL,OPTIONAL        :: observe
         !----------------------------------------------------------------------!
-        INTENT(IN)              :: ut,un , observe
+        INTENT(IN)              :: ut, un
         INTENT(INOUT)           :: this
         !----------------------------------------------------------------------!
         CALL InitCommon(this%mtype,ut,un)
         
         this%inside      = .True.
-        this%observe     =  observe
-        this%peel_off    = .False.
         this%kill        = .False.
 
         this%n_interact  = 0
         this%nr_cell     = 0
         this%nr_cell_new = 0
-        this%nr_lam      = 0
+        IF (PRESENT(i_lam_in)) THEN
+            this%nr_lam = i_lam_in
+            this%fixed_lam = .True.
+        ELSE
+            this%nr_lam  = 0
+            this%fixed_lam = .False.
+        END IF
+        this%lot_th      = 0
         
         this%pos_xyz     = 0.0_r2
         this%pos_xyz_new = 0.0_r2
@@ -101,6 +108,7 @@ CONTAINS
         this%COS2PH      = 0.0_r2
         
         this%energy    = 0.0_r2
+        this%last_interaction_type = 'N'
 
     END SUBROUTINE InitPhoton
 
@@ -143,5 +151,34 @@ CONTAINS
           i = Initialized_common(this%mtype)
     END FUNCTION PhotonInitialized
     
+    SUBROUTINE vecmat(this)
+        IMPLICIT NONE
+        !--------------------------------------------------------------------!
+        TYPE(PHOTON_TYP), INTENT(INOUT)                     :: this
+        
+        real(kind=r2), dimension(1:3,1:3)                   :: D_help
+        REAL(kind=r2)                                       :: R,L,P
+        !--------------------------------------------------------------------!
+
+        R = -this%SINTHE * this%SINPHI
+        L =  this%SINTHE * this%COSPHI
+        P =  this%COSTHE
+
+        this%dir_xyz(2) = -( this%D(1,1) * R  +  this%D(1,2) * L  +  this%D(1,3) * P )
+        this%dir_xyz(1) =    this%D(2,1) * R  +  this%D(2,2) * L  +  this%D(2,3) * P
+        this%dir_xyz(3) =    this%D(3,1) * R  +  this%D(3,2) * L  +  this%D(3,3) * P
+
+        D_help(1,1) =   this%COSPHI
+        D_help(2,1) =   this%SINPHI
+        D_help(3,1) =   0.0_r2
+        D_help(1,2) = - this%SINPHI*this%COSTHE
+        D_help(2,2) =   this%COSPHI*this%COSTHE
+        D_help(3,2) = - this%SINTHE
+        D_help(1,3) = - this%SINPHI*this%SINTHE
+        D_help(2,3) =   this%COSPHI*this%SINTHE
+        D_help(3,3) =   this%COSTHE
+
+        this%D = matmul(this%D,D_help)
+    END SUBROUTINE vecmat
 
 End Module photon_type

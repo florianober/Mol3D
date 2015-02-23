@@ -1,35 +1,38 @@
 ! ---
-! mathematical routines
+! mathematical routines, some from MC3D, modified, new
 ! ---
-module math_mod
+MODULE math_mod
 
     USE datatype
     USE var_global
 
-    implicit none
-    public :: planck, planckhz, integ1, rad2grad, grad2rad, atan3, atanx, norm,cy2ca, sp2ca, ca2sp, ipol1, ipol2, &
-       arcdis, dasico, gauss_arr, solvestateq, binary_search, get_expo,get_opa,random_planck_frequency,dB_dT_l, &
-       generate_rotation_matrix, Vector3d
+    IMPLICIT NONE
+    PRIVATE
+    PUBLIC ::   planck, planckhz, integ1, rad2grad, grad2rad, atan3, atanx,    &
+                norm,cy2ca, sp2ca, ca2sp, ipol1, ipol2,                        &
+                arcdis, dasico, gauss_arr, solvestateq, binary_search,         &
+                get_expo,get_opa,dB_dT_l,                                      &
+                generate_rotation_matrix, Vector3d
+
     INTERFACE binary_search
         MODULE PROCEDURE binary_search_r1,binary_search_r2
     END INTERFACE
     INTERFACE ipol2
         MODULE PROCEDURE ipol2_r1,ipol2_r2
     END INTERFACE
+
     TYPE Vector3d
-        !-----------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         REAL(kind=r2),DIMENSION(1:3)              :: comp
         
         CHARACTER(15)                             :: c_sys
-        !-----------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
     END TYPE
     SAVE
-    
-contains
-    
 
+CONTAINS
 
-  ! ################################################################################################
+  ! ############################################################################
   ! kirchhoff-planck function [B.lambda.(T)]
   ! (unsoeld, s. 111, [4.61])
   ! ...
@@ -39,23 +42,24 @@ contains
   ! ---
     ELEMENTAL FUNCTION planck(tem_in, lam_in) result(planck_result)
   
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         real(kind=r1), intent(in)      :: tem_in
         real(kind=r2), intent(in)      :: lam_in
         real(kind=r2)                  :: planck_result
         real(kind=r2),parameter        :: c1 = 2.0_r2 * con_h * con_c * con_c
         real(kind=r2),parameter        :: c2 = con_h * con_c / con_k
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         
         if ( tem_in .gt. 1.0e-12 ) then
-            planck_result = c1 / lam_in /lam_in /lam_in/ lam_in /lam_in / (exp(c2/(tem_in*lam_in))-1.0)
+            planck_result = c1 / lam_in /lam_in /lam_in/ lam_in /lam_in /      &
+                            (exp(c2/(tem_in*lam_in))-1.0_r2)
         else
             planck_result = 0.0_r2
         endif
         
     END FUNCTION planck
 
-  ! ################################################################################################
+  ! ############################################################################
   ! Temperature deviation of kirchhoff-planck function [dB.lambda.(T/dT]
   ! (unsoeld, s. 111, [4.61])
   ! ...
@@ -65,16 +69,19 @@ contains
   ! ---
     ELEMENTAL FUNCTION dB_dT_l(tem_in, lam_in) result(dB_result)
   
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         real(kind=r1), intent(in)      :: tem_in
         real(kind=r2), intent(in)      :: lam_in
         real(kind=r2)                  :: dB_result
-        real(kind=r2),parameter        :: c1 = 2.0_r2 * con_h* con_h * con_c * con_c * con_c /con_k
+        real(kind=r2),parameter        :: c1 = 2.0_r2 * con_h* con_h * con_c * &
+                                               con_c * con_c /con_k
         real(kind=r2),parameter        :: c2 = con_h * con_c / con_k
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         if ( tem_in .gt. 1.0e-12 .and. c2/(tem_in*lam_in) .lt. 300.0_r2 ) THEN
-            dB_result = c1 / lam_in /lam_in /lam_in/ lam_in /lam_in /lam_in / tem_in / tem_in  &
-                        *exp(c2/(tem_in*lam_in))/ (exp(c2/(tem_in*lam_in))-1.0_r2)**2.0_r2
+            dB_result = c1 / lam_in /lam_in /lam_in/ lam_in /lam_in /lam_in /  &
+                        tem_in / tem_in *                                      &
+                        exp(c2/(tem_in*lam_in))/                               &
+                        (exp(c2/(tem_in*lam_in))-1.0_r2)**2.0_r2
         else
             dB_result = 0.0_r2
         endif
@@ -82,10 +89,10 @@ contains
     END FUNCTION dB_dT_l
 
     ELEMENTAL FUNCTION get_expo(var_in) result(var_out)
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         real(kind=r2), intent(in)      :: var_in
         real(kind=r2)                  :: var_out
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         IF (var_in .lt. -11.0) THEN
             var_out = 0.0_r2
         ELSE
@@ -94,10 +101,10 @@ contains
     END FUNCTION 
 
     ELEMENTAL FUNCTION get_opa(var1,var2,var3) result(var_out)
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         real(kind=r2), intent(in)      :: var1,var2,var3
         real(kind=r2)                  :: var_out
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         
         IF (var2 .lt. 1.0e-100_r2) THEN
             var_out = var3
@@ -106,7 +113,7 @@ contains
         END IF
     END FUNCTION 
     
-! ################################################################################################
+! ##############################################################################
   ! kirchhoff-planck function [B.lambda.(T)]
   ! (unsoeld, s. 111, [4.61])
   ! ...
@@ -117,24 +124,25 @@ contains
   
     ELEMENTAL FUNCTION planckhz(tem_in, freq_in) result(planck_result)
   
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         real(kind=r1), intent(in)       :: tem_in
         real(kind=r2), intent(in)       :: freq_in
         real(kind=r2)                   :: planck_result
         real(kind=r2),parameter         :: c1 = 2.0_r2 * con_h / con_c / con_c
         real(kind=r2),parameter         :: c2 = con_h/con_k
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         
         if ( tem_in .gt. 1.0e-12 ) then
             
-            planck_result = c1 * freq_in * freq_in * freq_in  / (exp(c2*freq_in/tem_in)-1.0)
+            planck_result = c1 * freq_in * freq_in * freq_in  /                &
+                            (exp(c2*freq_in/tem_in)-1.0)
 
         else
             planck_result = 0.0
         endif
     END FUNCTION planckhz
 
-  ! ################################################################################################
+  ! ############################################################################
   ! "linear" integration
   ! ---
   function integ1( x, y, xlow, xup ) result(integ1_result)
@@ -156,67 +164,9 @@ contains
        integ1_result = 0.0_r2
     end if
   end function integ1
-  
-  subroutine random_planck_frequency(nu,T, rand_nr)
-    
-    use randgen_type
-    ! Random frequency sampled from a planck function with temperature T
-
-    ! The algorithm is taken from 'Sampling a random variable distributed
-    ! according to planck's law' by Barnett and Canfield
-    ! note: this function is created by Robitaille and belongs to the HYPERION code.
-    !            It is implemented just for testing, it is not used in the Mol3d code.
-
-    implicit none
-
-    real(kind=r2),intent(in) :: T
-    real(kind=r2),intent(out) :: nu
-    real(kind=r2) :: x,r,ra1,ra2,ra3,ra4,a,y,z
-
-    real(kind=r2),parameter :: k  = 1.3806503e-23_r2 ! J/K
-    real(kind=r2),parameter :: h  = 6.626068e-34_r2 ! J.s
-    TYPE(Randgen_TYP)                                 :: rand_nr
-    
 
 
-    ! Sample a random number from x^3/(exp(x)-1)
-
-    do
-
-       CALL RAN2(rand_nr, ra1)
-       CALL RAN2(rand_nr, ra2)
-       CALL RAN2(rand_nr, ra3)
-       CALL RAN2(rand_nr, ra4)
-
-       r = ra1*ra2*ra3*ra4
-
-       if(r > 0._r2) exit
-
-    end do
-
-    x = - log(r)
-
-    a = 1._r2
-    y = 1._r2
-    z = 1._r2
-
-    CALL RAN2(rand_nr, ra1)
-    do
-       if(1.08232_r2*ra1 <= a) exit
-       y = y + 1._r2
-       z = 1._r2/y
-       a = a + z*z*z*z
-    end do
-    x = x * z
-
-    ! Convert to frequency
-
-    nu = x * k * T / h
-
-  end subroutine random_planck_frequency
-
-
-!!$  ! ################################################################################################
+!!$  ! #########################################################################
 !!$  ! "linear" integration
 !!$  ! ---
 !!$  function integ1( x, y, xlow, xup ) result(integ1_result)
@@ -244,7 +194,7 @@ contains
 !!$  end function integ1
 
 
-  ! ################################################################################################
+  ! ############################################################################
   ! rad -> grad
   ! ---
   function rad2grad(rad) result(rad2grad_result)
@@ -259,7 +209,7 @@ contains
   end function rad2grad
 
 
-  ! ################################################################################################
+  ! ############################################################################
   ! grad -> rad
   ! ---
   ELEMENTAL function grad2rad(grad) result(grad2rad_result)
@@ -274,7 +224,7 @@ contains
   end function grad2rad
 
 
-  ! ################################################################################################
+  ! ############################################################################
   ! atan3(y,x)
   ! - return angle in range 0...2pi [unit: radian]
   !   (y,x) = ( 0, 1) :   0°
@@ -300,8 +250,7 @@ contains
   end function atan3
   
 
-  ! ################################################################################################
-  ! x & y => arcustanges(y/x)=w  [rad]                -3.14 <= w <= 3.14
+  ! ############################################################################
   !  ---
   pure function atanx( yy, xx ) result(atanx_result)
     use datatype
@@ -319,7 +268,7 @@ contains
   end function atanx
 
 
-    ! ################################################################################################
+    ! ##########################################################################
     ! norm(vector)
     ! ---
     PURE FUNCTION norm(vec) result(norm_result)
@@ -333,7 +282,7 @@ contains
     END function norm
   
 
-  ! ################################################################################################
+  ! ############################################################################
   ! in : spherical coordinates    spco(r, theta, phi)
   ! out: cartesian coordinates    caco(x, y, z)
   ! --
@@ -383,7 +332,7 @@ contains
     
     END FUNCTION ca2sp
 
-  ! ################################################################################################
+  ! ############################################################################
   ! linear interpolation, typ 1: very general
   ! ---
   !  # 1. feldindex != 1
@@ -493,10 +442,11 @@ contains
   end function ipol1
 
 
-   !################################################################################################
+   !############################################################################
    !linear interpolation, typ 2: as simple as possible...
    !---
-  ELEMENTAL function ipol2_r1( x_min, x_max, y_min, y_max, x_ipol ) result(ipol2_result)
+  ELEMENTAL function ipol2_r1( x_min, x_max, y_min, y_max, x_ipol )            &
+                                               result(ipol2_result)
     use datatype
     
     real(kind=r1), intent(in) :: x_min, x_max, y_min, y_max, x_ipol
@@ -510,7 +460,8 @@ contains
   end function ipol2_r1
 
 
-  ELEMENTAL function ipol2_r2( x_min, x_max, y_min, y_max, x_ipol ) result(ipol2_result)
+  ELEMENTAL function ipol2_r2( x_min, x_max, y_min, y_max, x_ipol )            &
+                                               result(ipol2_result)
     use datatype
     
     real(kind=r2), intent(in) :: x_min, x_max, y_min, y_max, x_ipol
@@ -524,7 +475,7 @@ contains
   end function ipol2_r2
 
 
-  ! ################################################################################################
+  ! ############################################################################
   ! angular distance of 2 points with the spherical coordinates
   ! (a1,d1) and (a2,d2) [radian]                           Meeus, p. 118
   ! theta ... angle to z axis
@@ -542,26 +493,27 @@ contains
          p2_cos_th, p2_sin_th, p2_ph
     real(kind=r2)             :: arcdis_result
     ! ---
-    arcdis_result = acos( p1_cos_th*p2_cos_th + p1_sin_th*p2_sin_th*cos(p1_ph-p2_ph) )
+    arcdis_result = acos( p1_cos_th * p2_cos_th + p1_sin_th * p2_sin_th *      &
+                          cos(p1_ph-p2_ph) )
   end function arcdis
   
 
-  ! ################################################################################################
-  ! DCOS(winkel) [DCOSW] & DSIN(winkel) [DSINW] => W; [W]=rad
-  !                                                   -3.14 <= w <= 3.14
-  ! ---
-  function dasico( dsinw, dcosw ) result(dasico_result)
-    use datatype
-
-    implicit none
-    real(kind=r2), intent(in) :: dsinw, dcosw
-    real(kind=r2)             :: dasico_result
+    ! ##########################################################################
+    ! DCOS(winkel) [DCOSW] & DSIN(winkel) [DSINW] => W; [W]=rad
+    !                                                   -3.14 <= w <= 3.14
     ! ---
-    dasico_result = sign( acos(dcosw), dsinw )
-  end function dasico
+    function dasico( dsinw, dcosw ) result(dasico_result)
+        use datatype
+
+        implicit none
+        real(kind=r2), intent(in) :: dsinw, dcosw
+        real(kind=r2)             :: dasico_result
+        ! ---
+        dasico_result = sign( acos(dcosw), dsinw)
+    end function dasico
 
 
-  ! ################################################################################################
+  ! ############################################################################
   ! conversion: W/m/ x sr => W/m/sr !TBD!-!
   ! ---
 !~     PURE FUNCTION cnv_Wmsr( lum_x, map_x ) result(cnv_Wmsr_result)
@@ -570,12 +522,12 @@ contains
 !~         
 !~         IMPLICIT NONE
 !~         
-!~         !--------------------------------------------------------------------------!
+!~         !-------------------------------------------------------------------!
 !~         real(kind=r2), intent(in) :: lum_x
 !~         integer,       intent(in) :: map_x
-!~         !--------------------------------------------------------------------------!        
+!~         !-------------------------------------------------------------------!
 !~         real(kind=r2)             :: cnv_Wmsr_result
-!~         !--------------------------------------------------------------------------!
+!~         !-------------------------------------------------------------------!
 !~         ! ---
 !~         ! 1. normalization to W/m/sr
 !~         !if ((photon_type==2 .or. photon_type==3) .and. ree_type==2) then
@@ -595,7 +547,7 @@ contains
 !~     END FUNCTION cnv_Wmsr
 
 
-  ! ################################################################################################
+  ! ############################################################################
   ! conversion: W/m => Jy
   ! ---
 !~     function cnv_lum2Jy( lum_x, lam_x, map_x, distance ) result(cnv_lum2Jy_result)
@@ -614,7 +566,7 @@ contains
 !~         real(kind=r2)             :: hd_ny
 !~         real(kind=r2)             :: hd_flux
 !~         real(kind=r2)             :: cnv_lum2Jy_result
-!~         !--------------------------------------------------------------------------!      
+!~         !--------------------------------------------------------------------------!
 !~         
 !~         ! ---
 !~         ! 1. normalization to W/m/sr
@@ -638,15 +590,15 @@ contains
         !USE gas_type
     
         IMPLICIT NONE
-        !--------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
 
-        REAL(kind=r2), INTENT(IN)                               :: lscale
-        REAL(kind=r2), INTENT(IN)                               :: a
-        REAL(kind=r2), INTENT(IN)                               :: velo
+        REAL(kind=r2), INTENT(IN)                             :: lscale
+        REAL(kind=r2), INTENT(IN)                             :: a
+        REAL(kind=r2), INTENT(IN)                             :: velo
         
-        REAL(kind=r2)                                            :: gaussian_result
+        REAL(kind=r2)                                         :: gaussian_result
         
-        !--------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
 
         gaussian_result = lscale/a * exp( -(velo/a)**2 )
       
@@ -659,7 +611,7 @@ contains
         !
         ! solve the linear equation Ax = c
         IMPLICIT NONE
-        !--------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         INTEGER, INTENT(IN)                                       :: lenA   
         INTEGER, DIMENSION(1:lenA)                                :: p
         
@@ -671,12 +623,11 @@ contains
         
         REAL(kind=r2), DIMENSION(1:lenA)                          :: r_vec
         REAL(kind=r2), DIMENSION(1:lenA)                          :: help
-
-        !REAL(kind=r2)                                              :: t
         
-        INTEGER                                                    :: i,j,k, i_0, t
+        INTEGER                                                    :: i,j,k
+        INTEGER                                                    :: i_0, t
         
-        !--------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         DO i = 1 , lenA
             P(i) = i
         END DO
@@ -703,23 +654,6 @@ contains
                 
             END DO
         END DO
-        ! just renaming here, can be commented out
-!~         DO i = 1, lenA
-!~             DO j = 1, lenA
-!~                 IF (j .lt. i) THEN
-!~                     L(i,j) = A(i,j)
-!~                     R(i,j) = 0.0_r2
-!~                     
-!~                 ELSEIF (i == j) THEN
-!~                     L(i,j) = 1.0_r2
-!~                     R(i,j) = A(i,j)
-!~                 ELSE
-!~                     L(i,j) = 0.0_r2
-!~                     R(i,j) = A(i,j)
-!~                 END IF
-!~             
-!~             END DO
-!~         END DO 
         
         ! forward solving Lr = a
         r_vec(1) = c(p(1))
@@ -734,47 +668,16 @@ contains
         END DO
     END SUBROUTINE solvestateq
     
-    SUBROUTINE vecmat(photon)
-        USE photon_type
-        IMPLICIT NONE
-        
-        TYPE(PHOTON_TYP), INTENT(INOUT)                     :: photon
-        
-        real(kind=r2), dimension(1:3,1:3)                 :: D_help
-        REAL(kind=r2)                                      :: R,L,P
-        
-        ! ---
-        R = -photon%SINTHE * photon%SINPHI
-        L =  photon%SINTHE * photon%COSPHI
-        P =  photon%COSTHE
-
-        photon%dir_xyz(2) = -( photon%D(1,1) * R  +  photon%D(1,2) * L  +  photon%D(1,3) * P )
-        photon%dir_xyz(1) =    photon%D(2,1) * R  +  photon%D(2,2) * L  +  photon%D(2,3) * P
-        photon%dir_xyz(3) =    photon%D(3,1) * R  +  photon%D(3,2) * L  +  photon%D(3,3) * P
-
-        D_help(1,1) =   photon%COSPHI
-        D_help(2,1) =   photon%SINPHI
-        D_help(3,1) =   0.0_r2
-        D_help(1,2) = - photon%SINPHI*photon%COSTHE
-        D_help(2,2) =   photon%COSPHI*photon%COSTHE
-        D_help(3,2) = - photon%SINTHE
-        D_help(1,3) = - photon%SINPHI*photon%SINTHE
-        D_help(2,3) =   photon%COSPHI*photon%SINTHE
-        D_help(3,3) =   photon%COSTHE
-
-        photon%D = matmul(photon%D,D_help)
-    end subroutine vecmat
-    
     PURE FUNCTION binary_search_r1(var_in, array_in) RESULT (int_result)
     
         IMPLICIT NONE
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         REAL(kind=r1), DIMENSION(:), INTENT(IN)       :: array_in
         REAL(kind=r1), INTENT(IN)                     :: var_in
         
         INTEGER                                       :: int_result
         INTEGER                                       :: L, R, MID
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         int_result = 0
         L = 1
         R = SIZE(array_in)
@@ -802,13 +705,13 @@ contains
     PURE FUNCTION binary_search_r2(var_in, array_in) RESULT (int_result)
     
         IMPLICIT NONE
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         REAL(kind=r2), DIMENSION(:), INTENT(IN)       :: array_in
         REAL(kind=r2), INTENT(IN)                     :: var_in
         
         INTEGER                                       :: int_result
         INTEGER                                       :: L, R, MID
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         int_result = 0
         L = 1
         R = SIZE(array_in)
@@ -840,16 +743,16 @@ contains
         ! v_u1u2u3  = S^T * v_xyz  = matmul(transpose(S),v_u1u2u3)
         !
         IMPLICIT NONE
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         TYPE(Vector3d),INTENT(IN)                        :: p_vec
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
 
         REAL(kind=r2), DIMENSION(1:3)                    :: spco
         REAL(kind=r2), DIMENSION(1:3,1:3),INTENT(OUT)    :: S
         
         REAL(kind=r2)                                    :: sintheta, costheta
         REAL(kind=r2)                                    :: sinphi, cosphi
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         
         S(:,:) = 0.0_r2
         
@@ -903,7 +806,7 @@ contains
         CASE DEFAULT
             print *, 'ERROR: generate_rotatation_matrix: vectors coordinate system not found'
             stop
-        
+
         END SELECT
     END SUBROUTINE generate_rotation_matrix
     

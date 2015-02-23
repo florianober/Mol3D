@@ -1,7 +1,7 @@
-!----------------------------------------------------------------------------!
+!------------------------------------------------------------------------------!
 ! def Dust_TYP
 ! inspired by fosite by T. Illenseer 2011
-!----------------------------------------------------------------------------!
+!------------------------------------------------------------------------------!
 MODULE Dust_type
   
     USE datatype
@@ -28,46 +28,38 @@ MODULE Dust_type
         INTEGER                                            :: aniiso      
         INTEGER                                            :: n_scatt_th      
         INTEGER                                            :: nrndpt
-        INTEGER, DIMENSION(:),ALLOCATABLE                    :: num_lam_map
-        INTEGER, DIMENSION(:), ALLOCATABLE                   :: cont_map
-        INTEGER, DIMENSION(:,:,:),ALLOCATABLE                :: SCAANG
+        INTEGER, DIMENSION(:),ALLOCATABLE                  :: num_lam_map
+        INTEGER, DIMENSION(:), ALLOCATABLE                 :: cont_map
+        INTEGER, DIMENSION(:,:,:),ALLOCATABLE              :: SCAANG
         
-        REAL(kind=r2)                                      :: sizexp      
-        REAL(kind=r2)                                      :: D_ANG      
-        REAL(kind=r2), DIMENSION(:),ALLOCATABLE                :: den_dust
-        REAL(kind=r2), DIMENSION(:),ALLOCATABLE                :: r_dust
-        REAL(kind=r2), DIMENSION(:),ALLOCATABLE                :: sidi
-        REAL(kind=r2), DIMENSION(:,:),ALLOCATABLE              :: sidi_par
+        REAL(kind=r2)                                      :: sizexp
+        REAL(kind=r2)                                      :: D_ANG
+        REAL(kind=r2), DIMENSION(:),ALLOCATABLE            :: den_dust
+        REAL(kind=r2), DIMENSION(:),ALLOCATABLE            :: r_dust
+        REAL(kind=r2), DIMENSION(:),ALLOCATABLE            :: sidi
+        REAL(kind=r2), DIMENSION(:,:),ALLOCATABLE          :: sidi_par
         
-        REAL(kind=r2), DIMENSION(:),ALLOCATABLE                :: lam
-        REAL(kind=r2), DIMENSION(:),ALLOCATABLE                :: d_lam
-        REAL(kind=r2), DIMENSION(:,:),ALLOCATABLE              :: gscatt_all
-        REAL(kind=r2), DIMENSION(:,:),ALLOCATABLE              :: REF_RE
-        REAL(kind=r2), DIMENSION(:,:),ALLOCATABLE              :: REF_IM
-        REAL(kind=r2), DIMENSION(:,:),ALLOCATABLE              :: sizepar
-        REAL(kind=r2), DIMENSION(:,:),ALLOCATABLE              :: C_sca
-        REAL(kind=r2), DIMENSION(:,:),ALLOCATABLE              :: C_ext
-        REAL(kind=r2), DIMENSION(:,:),ALLOCATABLE              :: C_back
-        REAL(kind=r2), DIMENSION(:,:),ALLOCATABLE              :: C_abs
-        REAL(kind=r2), DIMENSION(:,:),ALLOCATABLE              :: Q_abs
-        REAL(kind=r2), DIMENSION(:,:),ALLOCATABLE              :: albedo
-        REAL(kind=r2), DIMENSION(:,:),ALLOCATABLE              :: QB
-        REAL(kind=r2), DIMENSION(:,:),ALLOCATABLE              :: QdB_dT
-        REAL(kind=r2), DIMENSION(:,:,:),ALLOCATABLE            :: QdB_dT_l
-        REAL(kind=r2), DIMENSION(:,:,:),ALLOCATABLE            :: QdB_dT_l_cdf
-        REAL(kind=r2), DIMENSION(:,:),ALLOCATABLE              :: planck_tab
-        REAL(kind=r2), DIMENSION(:,:,:,:,:),ALLOCATABLE        :: SME
-        REAL(kind=r2), DIMENSION(:),ALLOCATABLE                :: sctth
-        REAL(kind=r2), DIMENSION(:),ALLOCATABLE                :: i_star_emi
-        REAL(kind=r2), DIMENSION(:),ALLOCATABLE                :: c_in_star
-        REAL(kind=r2), DIMENSION(:),ALLOCATABLE                :: c_in_dust
-        REAL(kind=r1), DIMENSION(:),ALLOCATABLE                :: tem_tab
+        REAL(kind=r2), DIMENSION(:),ALLOCATABLE            :: lam
+        REAL(kind=r2), DIMENSION(:),ALLOCATABLE            :: d_lam
+        REAL(kind=r2), DIMENSION(:),ALLOCATABLE            :: nu
+        REAL(kind=r2), DIMENSION(:),ALLOCATABLE            :: d_nu
+        REAL(kind=r2), DIMENSION(:,:),ALLOCATABLE          :: sizepar
+        REAL(kind=r2), DIMENSION(:,:),ALLOCATABLE          :: C_sca
+        REAL(kind=r2), DIMENSION(:,:),ALLOCATABLE          :: C_ext
+        REAL(kind=r2), DIMENSION(:,:),ALLOCATABLE          :: C_abs
+        REAL(kind=r2), DIMENSION(:,:),ALLOCATABLE          :: albedo
+        REAL(kind=r2), DIMENSION(:,:),ALLOCATABLE          :: QB
+        REAL(kind=r2), DIMENSION(:,:),ALLOCATABLE          :: QdB_dT
+        REAL(kind=r2), DIMENSION(:,:,:),ALLOCATABLE        :: QdB_dT_l
+        REAL(kind=r2), DIMENSION(:,:,:),ALLOCATABLE        :: QdB_dT_l_cdf
+        REAL(kind=r2), DIMENSION(:,:),ALLOCATABLE          :: planck_tab
+        REAL(kind=r2), DIMENSION(:,:,:,:,:),ALLOCATABLE    :: SME
+        REAL(kind=r2), DIMENSION(:),ALLOCATABLE            :: sctth
+        REAL(kind=r1), DIMENSION(:),ALLOCATABLE            :: tem_tab
         
-        CHARACTER(len=8), DIMENSION(:),ALLOCATABLE             :: dust_cat
-        CHARACTER(len=12), DIMENSION(:,:),ALLOCATABLE          :: dust_single
-        
-        LOGICAL, DIMENSION(:),ALLOCATABLE            :: doRT
-        
+        CHARACTER(len=8), DIMENSION(:),ALLOCATABLE         :: dust_cat
+        CHARACTER(len=12), DIMENSION(:,:),ALLOCATABLE      :: dust_single
+
     END TYPE Dust_TYP
     SAVE
     !--------------------------------------------------------------------------!
@@ -84,16 +76,16 @@ MODULE Dust_type
     !--------------------------------------------------------------------------!
 CONTAINS
 
-    SUBROUTINE InitDust(this,basics , gas, model, ut,un,ndust,dendust, sizexp, &
-                        aniso, dust_cat,n_scatt_th, nrndpt)
+    SUBROUTINE InitDust(this,basics , gas, model, ut,un, ndust,dendust,        &
+                        sizexp, aniso, dust_cat, n_scatt_th, nrndpt)
         
         USE math_mod
         IMPLICIT NONE
         !----------------------------------------------------------------------!
-        TYPE(Basic_TYP)  , INTENT(IN)        :: basics
+        TYPE(Basic_TYP)  , INTENT(IN)         :: basics
         TYPE(Dust_TYP)                        :: this
         TYPE(Gas_TYP)                         :: gas
-        TYPE(Model_TYP), INTENT(IN)          :: model
+        TYPE(Model_TYP), INTENT(IN)           :: model
         
         INTEGER                               :: ut
         INTEGER                               :: hi1
@@ -116,10 +108,15 @@ CONTAINS
         REAL(kind=r2)                         :: REF_MED
         REAL(kind=r2), DIMENSION(0:180)       :: phg
         REAL(kind=r2), DIMENSION(-1:180)      :: Fphg
-        REAL(kind=r2), dimension(ndust)       :: dendust
+        REAL(kind=r2), DIMENSION(ndust)       :: dendust
+
+        REAL(kind=r2), DIMENSION(:,:), ALLOCATABLE    :: gscatt_all
+        REAL(kind=r2), DIMENSION(:,:), ALLOCATABLE    :: REF_RE
+        REAL(kind=r2), DIMENSION(:,:), ALLOCATABLE    :: REF_IM
+        REAL(kind=r2), DIMENSION(:,:), ALLOCATABLE    :: C_back
         
         CHARACTER(len=8), DIMENSION(ndust)    :: dust_cat
-        CHARACTER(LEN=*)                       :: un
+        CHARACTER(LEN=*)                      :: un
     
         !----------------------------------------------------------------------!
         INTENT(IN)          :: ut,un, ndust, dendust, sizexp, aniso, dust_cat, &
@@ -137,7 +134,7 @@ CONTAINS
         close(unit=1)
         
         this%n_lam_map          = this%n_lam
-        this%aniiso              = aniso
+        this%aniiso             = aniso
         this%sizexp             = sizexp
         this%n_scatt_th         = n_scatt_th
         this%nrndpt             = nrndpt
@@ -148,53 +145,41 @@ CONTAINS
             this%sidi_par( 1:this%n_dust,1:3), &
             this%lam( 1:this%n_lam ), & 
             this%d_lam( 1:this%n_lam ), & 
+            this%nu( 1:this%n_lam ), & 
+            this%d_nu( 1:this%n_lam ), & 
             this%num_lam_map( 1:this%n_lam_map ), & 
             this%dust_single( 1:this%n_dust, 1:this%n_lam ), &
-            this%gscatt_all(  1:this%n_dust, 1:this%n_lam ), &
-            this%REF_RE(      1:this%n_dust, 1:this%n_lam ), &
-            this%REF_IM(      1:this%n_dust, 1:this%n_lam ), &
             this%sizepar(     1:this%n_dust, 1:this%n_lam ), &
             this%C_sca(       1:this%n_dust, 1:this%n_lam ), &
             this%C_ext(       1:this%n_dust, 1:this%n_lam ), &
-            this%C_back(      1:this%n_dust, 1:this%n_lam ), &
             this%C_abs(       1:this%n_dust, 1:this%n_lam ), &
-            this%Q_abs(       1:this%n_dust, 1:this%n_lam ), &
             this%albedo(      1:this%n_dust, 1:this%n_lam ), &
             this%QdB_dT_l(    1:this%n_lam,0:basics%n_tem, 1:this%n_dust ),    &
             this%QdB_dT_l_cdf( 1:this%n_lam,0:basics%n_tem, 1:this%n_dust ),   &
             this%QB(       -1:basics%n_tem,1:this%n_dust ),                    &
             this%QdB_dT(        0:basics%n_tem,1:this%n_dust ),                &
             this%planck_tab(  1:this%n_lam,0:basics%n_tem ),                   &
-            this%doRT(       1:this%n_lam ),                                   &
+
             this%tem_tab(      0:basics%n_tem ),                               &
-            this%i_star_emi( 1:this%n_lam ),                                   &
-            this%c_in_star(  1:this%n_lam ),                                   &
-            this%c_in_dust(  1:this%n_lam ),                                   &
             this%SME(1:4, 1:4, 1:this%n_dust, this%n_lam, this%n_scatt_th),    &
             this%SCAANG(1:this%n_dust,1:this%n_lam,0:this%nrndpt),             &
             this%cont_map(1:gas%n_tr),                                         &
-            this%sctth(1:n_scatt_th) ) 
+            this%sctth(1:n_scatt_th) )
+
         
-        
-        this%doRT(:)            = .false.
         this%den_dust = dendust
         
         this%r_dust(:)          = 0.0_r2
         this%sidi(:)            = 0.0_r2
         this%sidi_par(:,:)      = 0.0_r2
 
-        
         this%lam(:)             = 0.0_r2
+        this%d_lam(:)           = 0.0_r2
         this%dust_single( :,: ) = ''
-        this%gscatt_all(  :,: ) = 0.0_r2
-        this%REF_RE(      :,: ) = 0.0_r2
-        this%REF_IM(      :,: ) = 0.0_r2
         this%sizepar(     :,: ) = 0.0_r2
         this%C_sca(       :,: ) = 0.0_r2
         this%C_ext(       :,: ) = 0.0_r2
-        this%C_back(      :,: ) = 0.0_r2
         this%C_abs(       :,: ) = 0.0_r2
-        this%Q_abs(       :,: ) = 0.0_r2
         this%albedo(      :,: ) = 0.0_r2
         this%SME(    :,:,:,:,:) = 0.0_r2
         this%SCAANG(     :,:,:) = 0
@@ -204,12 +189,17 @@ CONTAINS
         this%QdB_dT_l(:,:,:)    = 0.0_r2
         this%QdB_dT_l_cdf(:,:,:)    = 0.0_r2
         this%tem_tab(:)         = 0.0_r2
-        
-        this%i_star_emi(:)      = 0.0_r2
-        this%c_in_star(:)       = 0.0_r2
-        this%c_in_dust(:)       = 0.0_r2
-        
-        
+
+        ALLOCATE(gscatt_all(  1:this%n_dust, 1:this%n_lam ),                   &
+                 REF_RE(      1:this%n_dust, 1:this%n_lam ),                   &
+                 REF_IM(      1:this%n_dust, 1:this%n_lam ),                   &
+                 C_back(      1:this%n_dust, 1:this%n_lam ) )
+                 
+        gscatt_all(:, :) = 0.0_r2
+        REF_RE(:, :)     = 0.0_r2
+        REF_IM(:, :)     = 0.0_r2
+        C_back(:, :)     = 0.0_r2
+
         ! 1. read dust name catalogues
         do i_dust = 1, this%n_dust
             open(unit=2, file=path_dust_cat//this%dust_cat(i_dust)//".dct", &
@@ -225,31 +215,44 @@ CONTAINS
         ! 2. read individual files
         !    NOTE: this routine is a mainly unmodified version from MC3D.
         !          it is working for 1 dust grain, more are feasible in
-        !          princible, but is not tested.
+        !          princible, but not tested.
         do i_dust=1, this%n_dust
-            if (this%n_dust>1) then
-                print *,"   > type of dust [=f(chemistry,size)] :", i_dust, " / ", this%n_dust
-            end if
-       
+!~             if (this%n_dust>1) then
+!~                 print *,"   > type of dust [=f(chemistry,size)] :", i_dust, " / ", this%n_dust
+!~             end if
+
             do i_lam=1, this%n_lam
                 ! ---
                 ! 2.1. load data from file
                 open(unit=1, file=path_dust_single//this%dust_single(i_dust,i_lam)//".lot", &
                 action="read", status="unknown", form="formatted")
           
-                ! handling of anisotropy: aniso == 1:  * anisotropic       scattering *
-                !                         aniso == 2:  * isotropic         scattering *
-                !                         aniso == 3:  * henyey-greenstein scattering *
+                ! handling of anisotropy: aniso == 1: anisotropic       scattering
+                !                         aniso == 2: isotropic         scattering
+                !                         aniso == 3: henyey-greenstein scattering
                 read(unit=1,fmt=*) hi1      ! scatt. matrix / henyey-greenstein
-                if (this%aniiso==1) then     ! * before: only anisotropy chosen
-                    this%aniiso = hi1        ! * now specify handling of anisotropy (aniiso == 1 or aniiso == 3)
+
+                if (this%aniiso==1) then    ! before: only anisotropy chosen
+                    this%aniiso = hi1       ! now specify handling of anisotropy (aniiso == 1 or aniiso == 3)
                 end if
-          
-                ! wavelength
+
+                ! wavelength/ frequqncy
+                ! Tbd: this should be generalized. We should use a frequency
+                !      table and interpolate for every frequency in the MC
+                !      process. Otherwise we introduce errors due to the
+                !      energy integration and unit conversion.
+                !      
                 hd1 = this%lam(i_lam)
                 read(unit=1,fmt=*)  this%lam(i_lam)
-                this%lam(i_lam) = 1.0e-06_r2 * this%lam(i_lam)
-          
+                this%lam(i_lam) = 1.0e-6_r2 * this%lam(i_lam)
+                this%nu(i_lam) = con_c/this%lam(i_lam)
+                ! set wavelength/frequency intervals
+
+                IF (i_lam > 1 ) THEN
+                    this%d_lam(i_lam) = (this%lam(i_lam)-this%lam(i_lam-1))
+                    this%d_nu(i_lam) = this%nu(i_lam-1) - this%nu(i_lam)
+                END IF
+
                 ! verify: wavelength correct?
                 if ((this%n_dust>1) .and. (i_dust>1)) then
                     if (((hd1-this%lam(i_lam))/hd1) > 1.0e-3) then
@@ -258,15 +261,19 @@ CONTAINS
                         stop
                     end if
                 end if
-          
+
                 ! grain size distribution
-                read(unit=1,fmt=*)  this%sidi_par(i_dust,1)               ! smallest radius [micron]
-                read(unit=1,fmt=*)  this%sidi_par(i_dust,2)               ! largest radius  [micron]
-                read(unit=1,fmt=*)  this%sidi_par(i_dust,3)               ! size distribution exp. (<0)
-                this%sidi_par(i_dust,1:2) = this%sidi_par(i_dust,1:2) * 1.0e-6_r2 ! [micron] -> [m]
+                ! smallest radius [micron]
+                read(unit=1,fmt=*)  this%sidi_par(i_dust, 1)
+                ! largest radius  [micron]
+                read(unit=1,fmt=*)  this%sidi_par(i_dust, 2)
+                ! size distribution exp. (<0)
+                read(unit=1,fmt=*)  this%sidi_par(i_dust, 3)
+                ! [micron] -> [m]
+                this%sidi_par(i_dust,1:2) = this%sidi_par(i_dust,1:2) * 1.0e-6_r2
 
                 ! HG scattering g
-                read(unit=1,fmt=*)  this%gscatt_all(i_dust,i_lam)
+                read(unit=1,fmt=*)  gscatt_all(i_dust, i_lam)
           
                 ! environment
                 read(unit=1,fmt=*)  REF_MED
@@ -276,19 +283,12 @@ CONTAINS
                 read(unit=1,fmt=*)  N_AN
 
                 ! dust grain: refractive index
-                read(unit=1,fmt=*)  this%REF_RE( i_dust,i_lam )
-                read(unit=1,fmt=*)  this%REF_IM( i_dust,i_lam )
+                read(unit=1,fmt=*)  REF_RE( i_dust,i_lam )
+                read(unit=1,fmt=*)  REF_IM( i_dust,i_lam )
 
                 ! radius & size parameter
-                ! r_dust(): used to calculate Q_abs from C_abs and thus in the process of temperature
-                !           calculation. however, it effectively cancels out from the equation
-                !           for the temperature calculation in sr immediate_temp. therefore,
-                !           the value of r_dust() has *no* impact on anything 
-                !           (i.e., it should be removed entirely from the file and mc3d source code)
-                !           note: in mc3d.v3, dust parameter calculation routines r_dust=maximum grain size
-                !                 of a grain size distribution (it should be the surface averaged
-                !                 radius of the distribution). however -again-, it has no impact
-                !                 on the calculations, whats'o'ever
+                ! r_dust(): used to calculate the dust mass
+
                 read(unit=1,fmt=*)  this%r_dust(i_dust)
                 
                 if (this%sidi_par(i_dust,3)==0.0_r2) then
@@ -302,10 +302,8 @@ CONTAINS
                     hd2 = hd2**(1.0_r2/3.0_r2)
                 end if
                 this%r_dust(i_dust) = hd2                                 ! [m]
-!~                 this%r_dust(i_dust) = this%r_dust(i_dust) * 1.0e-6_r2  ! [micron] -> [m]
-                if (i_lam == 1) then
-                    hd2 = this%r_dust(i_dust)
-                else
+
+                if (i_lam /= 1) then
                     if (this%r_dust(i_dust) /= hd2) then
                         print *,"subroutine ld_dust(): wrong grain size" 
                         print *,"              i_lam : ", i_lam
@@ -315,15 +313,14 @@ CONTAINS
                         stop
                     end if
                 end if
-                read(unit=1,fmt=*)  this%sizepar(i_dust,i_lam)
+                read(unit=1,fmt=*)  this%sizepar(i_dust, i_lam)
 
                 ! scattering cross sections
-                read(unit=1,fmt=*)  this%C_sca(  i_dust,i_lam)
-                read(unit=1,fmt=*)  this%C_ext(  i_dust,i_lam)
-                read(unit=1,fmt=*)  this%C_back( i_dust,i_lam)
+                read(unit=1,fmt=*)  this%C_sca(  i_dust, i_lam)
+                read(unit=1,fmt=*)  this%C_ext(  i_dust, i_lam)
+                read(unit=1,fmt=*)  C_back( i_dust, i_lam)
 
                 this%C_abs( i_dust,i_lam) = this%C_ext(i_dust,i_lam) - this%C_sca(i_dust,i_lam)
-                this%Q_abs( i_dust,i_lam) = this%C_abs(i_dust,i_lam) / (PI * this%r_dust(i_dust)**2)
                 this%albedo(i_dust,i_lam) = this%C_sca(i_dust,i_lam) / this%C_ext(i_dust,i_lam)
 
                 do i_scatt_th=1, n_scatt_th
@@ -350,7 +347,7 @@ CONTAINS
                         print *,"             mie-scattering prepared for 181 scattering angles only"
                         stop
                     end if
-             
+
                     phg(:)  = 0.0_r2
                     Fphg(:) = 0.0_r2
                     hd_dth  = grad2rad(0.5_r2)
@@ -386,51 +383,47 @@ CONTAINS
                         this%SCAANG(i_dust,i_lam, ptr_1:ptr_2) = i_scatt_th +1
                     end do
 
+                case (2) ! --- isotropic scattering  ---
+                    ! SCAANG: not defined
 
-!          case (2) ! --- isotropic scattering  ---
-!             ! SCAANG: not defined
+                case (3) ! --- anisotropic scattering: HENYEY GREENSTEIN approximation
+                    ! assumption: streuwinkel = 0, 1, 2, ..., 180 degree
+                    ! resulting <g> agrees with the g scattering parameter used as input parameter
+                    if (N_AN/=181) then
+                        print *,"!!! Warning: subroutine ld_dust()"
+                        print *,"             mie-scattering prepared for 181 scattering angles only"
+                        stop
+                    end if
 
-
-!          case (3) ! --- anisotropic scattering: HENYEY GREENSTEIN approximation ---
-!             ! assumption: streuwinkel = 0, 1, 2, ..., 180 degree
-!             ! resulting <g> agrees with the g scattering parameter used as input parameter
-!             if (N_AN/=181) then
-!                print *,"!!! Warning: subroutine ld_dust()"
-!                print *,"             mie-scattering prepared for 181 scattering angles only"
-!                stop
-!             end if
-
-!             phg(:)  = 0.0_r2
-!             Fphg(:) = 0.0_r2
-             
-!             do i_scatt_th = 0, 180
-!                hd_th = grad2rad(real(i_scatt_th,kind=r2))
-!                phg(i_scatt_th) = (1.0_r2 - gscatt_all(i_dust,i_lam)**2) / &
-!                     ( 1.0_r2   &
-!                     + gscatt_all(i_dust,i_lam)**2   &
-!                     - (2.0_r2*gscatt_all(i_dust,i_lam) * cos(hd_th))   &
-!                     )**1.5
-!                Fphg(i_scatt_th) = Fphg(i_scatt_th-1) + phg(i_scatt_th)*sin(hd_th)
-!             end do
-!             Fphg(:) = Fphg(:) / Fphg(180)
-             
-!             ptr_1 = 0
-!             ptr_2 = 0
-!             do i_scatt_th = 0, 180
-!                ptr_1 = int( Fphg(i_scatt_th-1) * real(nrndpt,kind=r2) )
-                
-!                if (i_scatt_th<180) then
-!                   ptr_2 = int( Fphg(i_scatt_th) * real(nrndpt,kind=r2) )
-!                   if (ptr_2>nrndpt) then
-!                      ptr_2 = nrndpt
-!                   end if
-!                else
-!                   ptr_2 = nrndpt
-!                end if
-                
-!                SCAANG(i_dust,i_lam, ptr_1:ptr_2) = i_scatt_th
-!             end do
-             
+                    phg(:)  = 0.0_r2
+                    Fphg(:) = 0.0_r2
+                 
+                    do i_scatt_th = 0, 180
+                        hd_th = grad2rad(real(i_scatt_th,kind=r2))
+                        phg(i_scatt_th) = (1.0_r2 - gscatt_all(i_dust,i_lam)**2) / &
+                            ( 1.0_r2   &
+                             + gscatt_all(i_dust,i_lam)**2   &
+                             - (2.0_r2*gscatt_all(i_dust,i_lam) * cos(hd_th))   &
+                             )**1.5
+                        Fphg(i_scatt_th) = Fphg(i_scatt_th-1) + phg(i_scatt_th)*sin(hd_th)
+                    end do
+                    Fphg(:) = Fphg(:) / Fphg(180)
+                 
+                    ptr_1 = 0
+                    ptr_2 = 0
+                    do i_scatt_th = 0, 180
+                        ptr_1 = int( Fphg(i_scatt_th-1) * real(nrndpt,kind=r2) )
+                    
+                        if (i_scatt_th<180) then
+                            ptr_2 = int( Fphg(i_scatt_th) * real(nrndpt,kind=r2) )
+                            if (ptr_2>nrndpt) then
+                                ptr_2 = nrndpt
+                            end if
+                        else
+                            ptr_2 = nrndpt
+                        end if
+                        this%SCAANG(i_dust,i_lam, ptr_1:ptr_2) = i_scatt_th
+                    end do
                 case default
                     print *,"<!> subroutine ld_dust: select case(aniiso): wrong input parameter. stopped."
                     stop
@@ -452,16 +445,15 @@ CONTAINS
         this%sidi(:) = this%sidi(:) / sum( this%sidi(:) )
     
         ! some output
-        if (this%n_dust>1) then
-            do i_dust=1, this%n_dust
-                print *,"   - type of dust ", i_dust, " -- radius : ", &
-                real(this%r_dust(i_dust)*1.0e+6_r2), " micron"
-                print *,"     rel. number of particles [%] : ", &
-                real(this%sidi(i_dust)*100.0_r2)
-            end do
-        end if
-        
-        
+!~         if (this%n_dust>1) then
+!~             do i_dust=1, this%n_dust
+!~                 print *,"   - type of dust ", i_dust, " -- radius : ", &
+!~                 real(this%r_dust(i_dust)*1.0e+6_r2), " micron"
+!~                 print *,"     rel. number of particles [%] : ", &
+!~                 real(this%sidi(i_dust)*100.0_r2)
+!~             end do
+!~         end if
+
         do i_lam_map=1, this%n_lam_map
             this%num_lam_map(i_lam_map) = i_lam_map
         end do
@@ -486,100 +478,24 @@ CONTAINS
             END IF
           END IF
         END DO
-        DO i_lam = 1, this%n_lam
-            this%i_star_emi(i_lam) = PI * 4.0_r2 * PI * model%r_star**2 *      &
-                                     planck(model%t_star,this%lam(i_lam))! [W/m]
-            this%c_in_star( i_lam) = this%i_star_emi(i_lam) / model%no_photon
-        END DO
-        
-        !CALL acc_select(this)
         CALL prepare_QB(this,basics)
     
-        
+        DEALLOCATE(gscatt_all, REF_RE, REF_IM, C_back)
     END SUBROUTINE InitDust
 
-!~     SUBROUTINE acc_select(this) !routine by mc3d v4, is obsolent now!
-!~ 
-!~         
-!~         IMPLICIT NONE
-!~         
-!~         !------------------------------------------------------------------------!
-!~         TYPE(Dust_TYP)                        :: this
-!~         !------------------------------------------------------------------------!
-!~         INTEGER                             :: i_lam, hi3
-!~         REAL(kind=r2)                       :: hd1, hd2, hd3
-!~         LOGICAL                             :: hl1
-!~         
-!~         !------------------------------------------------------------------------!
-!~         ! ---
-!~         ! doRT = .true. -> do RT for this wavelength
-!~         this%doRT(:) = .false.! [default]
-!~            
-!~         ! ---
-!~         ! mark wavelengths
-!~         ! 1. wavelengths for which flux > minimal flux
-!~         hd1 = acc_select_level * maxval(this%lam(:)*this%i_star_emi(:))    !To do set acc_select_level, this%i_star_emi
-!~         do i_lam=1,this%n_lam
-!~             if (this%lam(i_lam)*this%i_star_emi(i_lam) > hd1) then
-!~                 this%doRT(i_lam) = .true.
-!~             end if
-!~         end do
-!~            
-!~         ! 2. wavelength to the left and the right beside the found wavelengths
-!~         hl1 = .false.
-!~         do i_lam=1, this%n_lam
-!~             if (this%doRT(i_lam)) then
-!~                 hl1 = .true.
-!~             else
-!~                 if (hl1) then
-!~                     this%doRT(i_lam) = .true.
-!~                 end if
-!~                 if (i_lam+1 <= this%n_lam) then
-!~                     if (this%doRT(i_lam+1)) then
-!~                        this%doRT(i_lam) = .true.
-!~                     end if
-!~                 end if
-!~                 hl1 = .false.
-!~             endif
-!~         end do
-!~            
-!~         ! hd2 ... neglected amount of energy
-!~         ! hd3 ... total amount of energy (including hd2)
-!~         hd3 = integ1( this%lam(:), this%i_star_emi(:), 1, this%n_lam )
-!~         do i_lam=1, this%n_lam
-!~             if (.not. this%doRT(i_lam)) then
-!~                 this%i_star_emi(i_lam) = 0.0_r2
-!~             end if
-!~         end do
-!~         hd2 = hd3 - integ1(this%lam(:), this%i_star_emi(:), 1, this%n_lam)
-!~            
-!~         ! count number of (re-emitting cells)*wavelengths
-!~         hi3 = 0
-!~         do i_lam=1,this%n_lam
-!~             if (this%doRT(i_lam)) then
-!~                 hi3 = hi3 + 1
-!~             end if
-!~         end do
-!~            
-!~         print *,"radiative transfer only for fraction of wavelengths [%]: ", &
-!~                 nint(100.0 *real(hi3)/real(this%n_lam))
-!~         print *,"                      => Neglected amount of energy [%]: ", &
-!~                 real(hd2/hd3*100.0_r2)
-!~     
-!~     END SUBROUTINE 
     
     SUBROUTINE prepare_QB(this,basics)
 
         IMPLICIT NONE
         
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         TYPE(Dust_TYP)                                 :: this
         TYPE(Basic_TYP),INTENT(IN)                     :: basics
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         INTEGER                                        :: i_lam, i_dust, i_tem
         REAL(kind=r2), DIMENSION(:), allocatable       :: QBx
         REAL(kind=r2)                                  :: hd1
-        !------------------------------------------------------------------------
+        !-----------------------------------------------------------------------
         
         ! ---
         print *,"tabulating: - right side of energy equation"
@@ -596,47 +512,42 @@ CONTAINS
                 this%tem_tab(i_tem) = real(i_tem, kind=r2) * basics%d_tem  +  basics%t_dust_min
                 ! tabulating planck function
                 this%planck_tab(:,i_tem) = planck( this%tem_tab(i_tem), this%lam(:))
-                     
-                    ! individual contributions C_abs * B(T)
+
+                ! individual contributions C_abs * B(T)
                 QBx(:) =  this%C_abs(i_dust,:) * this%planck_tab(:,i_tem)
 
                 ! integral [W]
-                this%QB(i_tem,i_dust) = integ1(this%lam(:), QBx(:), 1, this%n_lam)
-                     
-                ! individual contributions C_abs * dB(T)/dT (needed for Bjorkman & Wood temperature correction)
+                this%QB(i_tem, i_dust) = integ1(this%lam(:), QBx(:), 1, this%n_lam)
+
+                ! individual contributions C_abs * dB(T)/dT
+                ! (needed for Bjorkman & Wood temperature/wavelength correction)
                 this%QdB_dT_l(:,i_tem,i_dust) =  this%C_abs(i_dust,:) * dB_dT_l(this%tem_tab(i_tem), this%lam(:))
                 ! integral [W]
                 this%QdB_dT(i_tem,i_dust) = integ1(this%lam(:),this%QdB_dT_l(:,i_tem,i_dust) , 1, this%n_lam)
-                
+
                 ! normalize -> cdf ->  used to get the new wavelength in B & W approach
                 hd1 = 0.0_r2
                 IF (this%QdB_dT(i_tem,i_dust) .lt. 1.0e-301_r2) THEN
                     this%QdB_dT_l_cdf(:,i_tem,i_dust) = 0.0_r2
                 ELSE
                     DO i_lam=2, this%n_lam
-                        hd1 = hd1 + integ1(this%lam(:),this%QdB_dT_l(:,i_tem,i_dust)/this%QdB_dT(i_tem,i_dust),i_lam-1,i_lam)
+                        hd1 = hd1 +                                            &
+                            integ1(this%lam(:),this%QdB_dT_l(:,i_tem,i_dust)/  &
+                            this%QdB_dT(i_tem,i_dust),i_lam-1,i_lam)
                         this%QdB_dT_l_cdf(i_lam,i_tem,i_dust) =  hd1
                     END DO
                 END IF
            end do
         end do
         deallocate(QBx)
-        ! set wavelength intervals
-        this%d_lam(1) = this%lam(2)-this%lam(1)
-        DO i_lam=2, this%n_lam-1
-           this%d_lam(i_lam) = 0.5_r2*(this%lam(i_lam)-this%lam(i_lam-1)) + &
-                               0.5_r2*(this%lam(i_lam+1)-this%lam(i_lam)) 
-        END DO
-        this%d_lam(this%n_lam) = this%lam(this%n_lam) - this%lam(this%n_lam-1)
-        
-    END SUBROUTINE prepare_QB
 
+    END SUBROUTINE prepare_QB
 
     SUBROUTINE CloseDust(this)
         IMPLICIT NONE
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         TYPE(Dust_TYP), INTENT(INOUT) :: this
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         CALL CloseCommon(this%dttype)
         DEALLOCATE( this%dust_cat, &
                     this%den_dust, &
@@ -645,27 +556,20 @@ CONTAINS
                     this%sidi_par, &
                     this%lam, & 
                     this%d_lam, & 
+                    this%nu, & 
+                    this%d_nu, & 
                     this%dust_single, &
                     this%cont_map, &
-                    this%gscatt_all, &
-                    this%REF_RE, &
-                    this%REF_IM, &
                     this%sizepar, &
                     this%C_sca, &
                     this%C_ext, &
-                    this%C_back, &
                     this%C_abs, &
-                    this%Q_abs, &
                     this%albedo, &
                     this%planck_tab, &
                     this%QB, &
                     this%QdB_dT, &
                     this%QdB_dT_l, &
                     this%QdB_dT_l_cdf, &
-                    this%doRT, &
-                    this%i_star_emi, &
-                    this%c_in_star, &
-                    this%c_in_dust, &
                     this%SME, &
                     this%SCAANG, &
                     this%tem_tab, &
@@ -676,32 +580,31 @@ CONTAINS
 
     PURE FUNCTION GetDustType(this) RESULT(ut)
         IMPLICIT NONE
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         TYPE(Dust_TYP), INTENT(IN) :: this
         INTEGER :: ut
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         ut = GetType_common(this%dttype)
     END FUNCTION GetDustType
 
 
     PURE FUNCTION GetDustName(this) RESULT(un)
         IMPLICIT NONE
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         TYPE(Dust_TYP), INTENT(IN) :: this
         CHARACTER(LEN=32) :: un
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         un = GetName_common(this%dttype)
     END FUNCTION GetDustName
 
     PURE FUNCTION DustInitialized(this) RESULT(i)
         IMPLICIT NONE
-          !------------------------------------------------------------------------!
+          !--------------------------------------------------------------------!
           TYPE(Dust_TYP), INTENT(IN) :: this
           LOGICAL :: i
-          !------------------------------------------------------------------------!
+          !--------------------------------------------------------------------!
           i = Initialized_common(this%dttype)
     END FUNCTION DustInitialized
-    
 
 
 End Module Dust_type

@@ -21,8 +21,9 @@ module transfer_mod
     !--------------------------------------------------------------------------!
     PRIVATE
     !--------------------------------------------------------------------------!
-    PUBLIC  ::  path, &
-                path_skip,next_pos_const
+    PUBLIC  ::  path,                                                          &
+                path_skip, next_pos_const, get_total_tau_direction
+                
     !--------------------------------------------------------------------------!
 contains
 
@@ -30,7 +31,7 @@ contains
     ! photon transfer through model space
     ! here: constant density in each ESC is assumed
     ! ---
-    subroutine next_pos_const(model, rand_nr, grid, dust, photon)
+    subroutine next_pos_const(model, rand_nr, grid, dust, photon, deposit_energy)
 
         IMPLICIT NONE
         !----------------------------------------------------------------------!
@@ -40,6 +41,7 @@ contains
         TYPE(Dust_TYP),INTENT(IN)                         :: dust
         TYPE(Grid_TYP),INTENT(INOUT)                      :: grid
         TYPE(PHOTON_TYP),INTENT(INOUT)                    :: photon
+        LOGICAL,INTENT(IN)                                :: deposit_energy
         !----------------------------------------------------------------------!
                     
         LOGICAL                                           :: kill_photon
@@ -53,8 +55,7 @@ contains
         ! 1. determine optical depth (distance) to next point of interaction
         CALL RAN2(rand_nr,rndx)
         tau_end = -log(1.0_r2 - rndx)
-!~         grid%cell_energy_sum(1,photon%nr_cell,1) = 12.3_r2
-!~         grid%n(1) = 150
+
         ! 2. go to next point of interaction
         DO
             ! 2.1. inside the dust sublimation radius: skip
@@ -92,8 +93,6 @@ contains
                 ! 2.3. determine corresponding optical path length        (d_tau)
                 d_tau = (d_l * model%ref_unit) * sum(dust%C_ext(:,photon%nr_lam) *&
                          grid%grd_dust_density(photon%nr_cell,:))
-                !print *, 'd_tau', sum(dust%C_ext(:,photon%nr_lam)),photon%nr_lam
-
             END IF
 
             ! 2.4. check status
@@ -107,69 +106,123 @@ contains
               
                 ! b) consider only fraction of path in current cell (i.e., nr_cell_new = nr_cell)
                 photon%pos_xyz_new(:) = photon%pos_xyz(:) + photon%dir_xyz(:) * d_l
-
+                IF (deposit_energy) THEN
                 ! c) store information about (fractional) path through last cell
-                DO i_dust=1,dust%n_dust
-                    !$omp atomic
-                    grid%cell_energy_sum(i_dust,photon%nr_cell,1) = &
-                                        grid%cell_energy_sum(i_dust,photon%nr_cell,1)+ &
-                                        d_l * photon%energy * dust%C_abs(i_dust,photon%nr_lam) * &
-                                        model%ref_unit
-                END DO
-!~                 !$omp end critical
+                    DO i_dust=1,dust%n_dust
+                        !$omp atomic
+                        grid%cell_energy_sum(i_dust,photon%nr_cell,1) = &
+                                grid%cell_energy_sum(i_dust,photon%nr_cell,1)+ &
+                                d_l * photon%energy * dust%C_abs(i_dust,photon%nr_lam) * &
+                                model%ref_unit
+
+                    END DO
+                END IF
                 ! d) new point of interaction
                 photon%pos_xyz(:) = photon%pos_xyz_new(:)
 
                 ! e) nr_cell: remains unchanged (photon does not leave current cell)
                 ! photon%nr_cell = photon%nr_cell_new
-                exit
-      
+                EXIT
             ELSE
-                !print *, 'lower',d_tau, photon%nr_cell
                 ! optical depth has not yet been reached
-                IF ( check_inside(photon%pos_xyz_new(:),grid, model) ) THEN
-                    ! photon still inside model space
-                    ! ---
-                    ! a) store information about (fractional) path through last cell
-                    
-                    !#######################################################
-                    ! be careful here
+                ! ---
+                ! a) store information about (fractional) path through last cell
+                IF (deposit_energy) THEN    
                     DO i_dust=1,dust%n_dust
                         !$omp atomic
                         grid%cell_energy_sum(i_dust,photon%nr_cell,1) = &
-                                            grid%cell_energy_sum(i_dust,photon%nr_cell,1)+ &
-                                            d_l * photon%energy * dust%C_abs(i_dust,photon%nr_lam) * &
-                                            model%ref_unit
+                                grid%cell_energy_sum(i_dust,photon%nr_cell,1)+ &
+                                d_l * photon%energy * dust%C_abs(i_dust,photon%nr_lam) * &
+                                model%ref_unit
                     END DO
-                    !#######################################################
+                END IF
+                IF ( check_inside(photon%pos_xyz_new(:),grid, model) ) THEN
+                    ! photon still inside model space
+                    ! ---
                     ! b) set new starting point; adjust optical depth
                     photon%pos_xyz(:) = photon%pos_xyz_new(:)             
                     photon%nr_cell    = photon%nr_cell_new
                     tau_end    = tau_end - d_tau
-                    cycle
-
+                    CYCLE
                 ELSE
-                    ! photon already outside model space
-                    ! ---
-                    ! a) store information about (fractional) path through last cell
-                    DO i_dust=1,dust%n_dust
-                        !$omp atomic
-                        grid%cell_energy_sum(i_dust,photon%nr_cell,1) = &
-                                            grid%cell_energy_sum(i_dust,photon%nr_cell,1)+ &
-                                            d_l * photon%energy * dust%C_abs(i_dust,photon%nr_lam) * &
-                                            model%ref_unit
-                    END DO
+                    ! photon outside model space
                     ! b) set flag
                     photon%inside = .false.
                     exit
                 END IF
             END IF
         END DO
-!~         print *,'now_let_go'
     end subroutine next_pos_const
+    
+    SUBROUTINE get_total_tau_direction(model, grid, dust, photon, tau)
+        ! get the total tau of a photon package, following its
+        ! direction until it leaves the model space
+        ! (developed for the peel of technique)
+        
+        USE photon_type
+        USE fluxes_type
+        IMPLICIT NONE
+        
+        !----------------------------------------------------------------------!
+        TYPE(Grid_TYP),INTENT(IN)                        :: grid
+        TYPE(Model_TYP),INTENT(IN)                       :: model
+        TYPE(Dust_TYP),INTENT(IN)                        :: dust
+        TYPE(PHOTON_TYP),INTENT(INOUT)                   :: photon
+        !----------------------------------------------------------------------!
+        INTEGER                                          :: i_map
+        REAL(kind=r2)                                    :: d_l
+        REAL(kind=r2)                                    :: d_tau
+        REAL(kind=r2), INTENT(OUT)                       :: tau
+        !----------------------------------------------------------------------!
+
+        tau = 0.0_r2
+        d_tau = 0.0_r2
+        ! transport photon in direction to observer
+        DO WHILE (check_inside(photon%pos_xyz(:), grid, model))
+
+            ! 1. inside the dust sublimation radius: skip
+            IF (photon%nr_cell == 0) THEN
+
+                CALL path_skip( grid, photon%pos_xyz, photon%dir_xyz, &
+                               photon%pos_xyz_new, photon%nr_cell_new, d_l)
+                photon%pos_xyz = photon%pos_xyz_new
+                photon%nr_cell = photon%nr_cell_new
+                IF (.not. check_inside(photon%pos_xyz_new(:), grid, model) ) THEN
+                    photon%inside = .False.
+                    photon%kill = .True.
+                    EXIT
+                END IF
+            END IF
+            
+            ! 2. determine: - geometric path length in current cell (d_l [ref_unit])
+            !               - new entry point in neighbouring cell
+            !               - new cell number
+            CALL path( grid, photon%pos_xyz, photon%pos_xyz_new, photon%nr_cell, &
+                        photon%nr_cell_new, d_l, photon%kill, photon%dir_xyz)
+            IF (photon%kill) THEN
+                ! stop transfer of this photon package
+                d_l = 0.0_r2
+
+                ! move photon package outside model space
+                ! maybe we should generalize this,
+                ! but however it should work this way
+                photon%pos_xyz_new(1)   = model%r_ou * 1.01_r2
+                photon%pos_xyz_new(2:3) = 0.0_r2
+                photon%inside = .False.
+                EXIT
+            ELSE
+                ! 2.3. determine corresponding optical path length       (d_tau)
+                d_tau = (d_l * model%ref_unit) * sum(dust%C_ext(:,photon%nr_lam) *&
+                         grid%grd_dust_density(photon%nr_cell,:))
+                tau = tau + d_tau
+                photon%pos_xyz = photon%pos_xyz_new
+                photon%nr_cell = photon%nr_cell_new
+            END IF
+        END DO
+
+    END SUBROUTINE get_total_tau_direction
   
-  
-  ! ################################################################################################
+  ! ############################################################################
   ! determine geometrical distance between given point and next cell boundary
   ! ---
   SUBROUTINE path_skip( grid,pos_xyz,dir_xyz,pos_xyz_new,nr_cell_new,d_l)
@@ -283,7 +336,6 @@ contains
 
 !~     photon%pos_xyz_new(:) = photon%pos_xyz(:) +   d_l * photon%dir_xyz(:)
     pos_xyz_new(:) = pos_xyz(:) +   d_l * dir_xyz(:)
-    
     ! -
     ! 3. determine new cell number
     nr_cell_new = get_cell_nr( grid, pos_xyz_new)
@@ -350,41 +402,41 @@ contains
         logical,                     intent(out)          :: kill_photon
         !----------------------------------------------------------------------!
         real(kind=r2),dimension(6) :: d_l_selc
-        integer       :: i_x, i_y, i_z, i
+        integer       :: i_x, i_y, i_z, i, hi1
         
         !----------------------------------------------------------------------!
         ! ---
         ! default:
         kill_photon = .false.
-        
-        i_x  = grid%cell_nr2idx(1,nr_cell)
-        i_y  = grid%cell_nr2idx(2,nr_cell)
-        i_z  = grid%cell_nr2idx(3,nr_cell)
-        
+
+        i_x  = grid%cell_nr2idx(1, nr_cell)
+        i_y  = grid%cell_nr2idx(2, nr_cell)
+        i_z  = grid%cell_nr2idx(3, nr_cell)
+
         d_l_selc(:) = 0.0_r2
-        
+
         ! find x component
         IF ( abs(dir_xyz(1)) .gt. epsilon(1.0_r2) ) THEN
         
-            d_l_selc(1) = (grid%co_mx_a(i_x-1)-pos_xyz(3))/dir_xyz(1)
-            d_l_selc(2) = (grid%co_mx_a(i_x)-pos_xyz(3))/dir_xyz(1)
+            d_l_selc(1) = (grid%co_mx_a(i_x-1)-pos_xyz(1))/dir_xyz(1)
+            d_l_selc(2) = (grid%co_mx_a(i_x)-pos_xyz(1))/dir_xyz(1)
         ELSE 
             d_l_selc(1) = -1.0_r2
             d_l_selc(2) = -1.0_r2
         END IF
-    
+
         ! find y component
         
         IF ( abs(dir_xyz(2)) .gt. epsilon(1.0_r2) ) THEN
         
-            d_l_selc(3) = (grid%co_mx_b(i_y-1)-pos_xyz(3))/dir_xyz(2)
-            d_l_selc(4) = (grid%co_mx_b(i_y)-pos_xyz(3))/dir_xyz(2)
+            d_l_selc(3) = (grid%co_mx_b(i_y-1)-pos_xyz(2))/dir_xyz(2)
+            d_l_selc(4) = (grid%co_mx_b(i_y)-pos_xyz(2))/dir_xyz(2)
         ELSE 
             d_l_selc(3) = -1.0_r2
             d_l_selc(4) = -1.0_r2
         END IF
         ! find z component
-        
+
         IF ( abs(dir_xyz(3)) .gt. epsilon(1.0_r2) ) THEN
         
             d_l_selc(5) = (grid%co_mx_c(i_z-1)-pos_xyz(3))/dir_xyz(3)
@@ -393,28 +445,57 @@ contains
             d_l_selc(5) = -1.0_r2
             d_l_selc(6) = -1.0_r2
         END IF
-        
+
         ! find shortest path and leaving boundary
-        
+
         d_l = 1.0e150_r2
-        DO i=1,6
-            IF ( d_l_selc(i) .gt. epsilon(d_l) .and. d_l_selc(i) .lt. d_l ) THEN
-                d_l = d_l_selc(i)
-!~                 loca = i 
+
+        hi1 =  MINLOC(d_l_selc, 1, MASK = d_l_selc .GT. 0.0_r2)
+        
+        d_l = d_l_selc(hi1) + 1.0e6_r2*epsilon(d_l)
+        pos_xyz_new = d_l * dir_xyz + pos_xyz
+        ! a) use the generic routine (extensively tested)
+
+!~         nr_cell_new = get_cell_nr(grid, d_l * dir_xyz + pos_xyz)
+
+        ! b) use the cell id (tbd.)
+        IF (hi1 == 1) THEN
+            IF (i_x > 0) THEN
+                i_x = i_x - 1
             END IF
-        END DO
-        d_l = d_l + 1.0e6_r2*epsilon(d_l)
-        nr_cell_new = get_cell_nr(grid,d_l*dir_xyz + pos_xyz)
-        pos_xyz_new = d_l*dir_xyz + pos_xyz
-        
-        
+        ELSE IF  (hi1 == 2) THEN
+            IF (i_x < grid%n(1)) THEN
+                i_x = i_x + 1
+            END IF
+        ELSE IF (hi1 == 3) THEN
+            IF (i_y > 0) THEN
+                i_y = i_y - 1
+            END IF
+        ELSE IF (hi1 == 4) THEN
+            IF (i_y < grid%n(2)) THEN
+                i_y = i_y + 1
+            END IF
+        ELSE IF (hi1 == 5) THEN
+            IF (i_z > 0) THEN
+                i_z = i_z - 1
+            END IF
+        ELSE IF (hi1 == 6) THEN
+            IF (i_z < grid%n(3)) THEN
+                i_z = i_z + 1
+            END IF
+        ELSE
+            print *, "ERROR in path routine"
+            print *, d_l_selc
+            stop
+        END IF
+        nr_cell_new = grid%cell_idx2nr(i_x, i_y, i_z)
+
         IF (d_l < grid%d_l_min) then
            ! step width too small
             kill_photon       = .true.
             d_l = d_l+1.0e3_r2*epsilon(d_l) 
         end if
 
-  
     END SUBROUTINE path_ca
   
     SUBROUTINE path_cy( grid, pos_xyz, pos_xyz_new, nr_cell, nr_cell_new, d_l, &
@@ -515,17 +596,12 @@ contains
         ! find shortest path and leaving boundary
         
         d_l = 1.0e150_r2
-!~         DO i=1,6
-!~             IF ( d_l_selc(i) .gt. epsilon(d_l) .and. d_l_selc(i) .lt. d_l ) THEN
-!~                 d_l = d_l_selc(i)
-!~             END IF
-!~         END DO
+
         hi1     =  MINLOC(d_l_selc, 1, MASK = d_l_selc .GT. 0.0_r2)
         d_l = d_l_selc(hi1)
 
-        
         d_l = d_l + 1.0e6_r2*epsilon(d_l)
-        
+
         pos_xyz_new = d_l*dir_xyz + pos_xyz
         
         IF (d_l < grid%d_l_min) then
@@ -537,15 +613,35 @@ contains
         ! 4. new cell number
         ! a) use the generic routine (extensively tested)
 !~         nr_cell_new = get_cell_nr( grid,pos_xyz_new )
-        
-        ! b) use the cell_neighbours id
-        !    (about 2 times faster, not well tested, but no errors yet)
-        ! tbd. here, a critical if case should be added if hi1< 1 or hi1 > 6 
-        nr_cell_new = grid%cell_neighbours(hi1, nr_cell)
+
+        ! b) use the cell id (tbd.)
+        IF (hi1 == 1) THEN
+            i_r = i_r - 1
+        ELSE IF  (hi1 == 2) THEN
+            IF (i_r < grid%n(1)) THEN
+                i_r = i_r + 1
+            END IF
+        ELSE IF (hi1 == 3) THEN
+            i_ph = i_ph - 1
+        ELSE IF (hi1 == 4) THEN
+            i_ph = i_ph + 1
+        ELSE IF (hi1 == 5) THEN
+            IF (i_z > 0) THEN
+                i_z = i_z - 1
+            END IF
+        ELSE IF (hi1 == 6) THEN
+            IF (i_z < grid%n(3)) THEN
+                i_z = i_z + 1
+            END IF
+        ELSE
+            print *, "ERROR in path routine"
+            print *, d_l_selc
+            stop
+        END IF
+        nr_cell_new = grid%cell_idx2nr(i_r, i_ph, i_z)
 
     END SUBROUTINE path_cy
-  
-  
+
     SUBROUTINE path_sp( grid, p0_vec, pos_xyz_new, nr_cell, nr_cell_new, d_l,  &
                         kill_photon, d_vec)
     
@@ -554,30 +650,32 @@ contains
         TYPE(Grid_TYP),INTENT(IN)                         :: grid
         !----------------------------------------------------------------------!
         
-        real(kind=r2),               intent(out)         :: d_l
-        real(kind=r2), dimension(1:3), intent(in)        :: p0_vec
-        real(kind=r2), dimension(1:3), intent(out)       :: pos_xyz_new
-        real(kind=r2), dimension(1:3), intent(in)        :: d_vec
-        
-        
+        real(kind=r2),               intent(out)          :: d_l
+        real(kind=r2), dimension(1:3), intent(in)         :: p0_vec
+        real(kind=r2), dimension(1:3), intent(out)        :: pos_xyz_new
+        real(kind=r2), dimension(1:3), intent(in)         :: d_vec
+
         integer,                     intent(in)           :: nr_cell
         integer,                     intent(out)          :: nr_cell_new
         integer                                           :: nr_cell_new2
 
         logical,                     intent(inout)        :: kill_photon
         !----------------------------------------------------------------------!
-        integer                                           :: hi1
-        real(kind=r2)                                     :: hd1, hd2, hd3
-        real(kind=r2)                                     :: hd_r1, hd_th1, hd_ph1
-        real(kind=r2)                                     :: c2,c1,c0
-        real(kind=r2)                                     :: disc, g
-        real(kind=r2)                                     :: l1, l2
-        real(kind=r2), dimension(1:6)                     :: d_lx
-        real(kind=r2), dimension(1:2)                     :: hd_arr1
+        integer                                         :: hi1
+        integer                                         :: i_r, i_th, i_ph
+        real(kind=r2)                                   :: hd1, hd2, hd3
+        real(kind=r2)                                   :: hd_r1, hd_th1, hd_ph1
+        real(kind=r2)                                   :: c2,c1,c0
+        real(kind=r2)                                   :: disc, g
+        real(kind=r2)                                   :: l1, l2
+        real(kind=r2), dimension(1:6)                   :: d_lx
+        real(kind=r2), dimension(1:2)                   :: hd_arr1
         !$ INTEGER omp_get_thread_num 
         !----------------------------------------------------------------------!
         ! ---
-
+        i_r  = grid%cell_nr2idx(1, nr_cell)
+        i_th = grid%cell_nr2idx(2, nr_cell)
+        i_ph = grid%cell_nr2idx(3, nr_cell)
         ! starting point: pos_xyz (grid type variable)
         ! direction     : dir_xyz (grid type variable)
         ! cell number   : nr_cell (grid type variable)
@@ -812,52 +910,34 @@ contains
             ! a) use the generic routine (extensively tested)
             nr_cell_new = get_cell_nr( grid,pos_xyz_new )
         
-            ! b) use the cell_neighbours id (about 2 times faster, still buggy
-            !                                in some rare cases, tbd)
-!~             nr_cell_new = grid%cell_neighbours(hi1, nr_cell)
-        END IF
+            ! b) use the cell id (tbd)
 
-
-
-!~         nr_cell_new = nr_cell_new2
-!~         IF (show_error) THEN
-!~             IF (grid%cell_neighbours(hi1, nr_cell) /= nr_cell_new) THEN
-!~                 print *, nr_cell_new, nr_cell, grid%cell_neighbours(hi1, nr_cell)
-!~                 print *,hi1
+!~             IF (hi1 == 1) THEN
+!~                 i_r = i_r - 1
+!~             ELSE IF  (hi1 == 2) THEN
+!~                 IF (i_r < grid%n(1)) THEN
+!~                     i_r = i_r + 1
+!~                 END IF
+!~             ELSE IF (hi1 == 3) THEN
+!~                 IF (i_th > 0) THEN
+!~                     i_th = i_th - 1
+!~                 END IF
+!~             ELSE IF (hi1 == 4) THEN
+!~                 IF (i_th < grid%n(2)) THEN
+!~                     i_th = i_th + 1
+!~                 END IF
+!~             ELSE IF (hi1 == 5) THEN
+!~                 i_ph = i_ph - 1
+!~             ELSE IF (hi1 == 6) THEN
+!~                 i_ph = i_ph + 1
+!~             ELSE
+!~                 print *, "ERROR in path routine"
+!~                 print *, d_lx
 !~                 stop
 !~             END IF
-!~         END IF
-!~         nr_cell_new = nr_cell_new2
-!~         IF (show_error) THEN
-!~             IF (grid%cell_nr2idx(2,nr_cell)+1 /= grid%cell_nr2idx(2,nr_cell_new) .and. &
-!~                 grid%cell_nr2idx(2,nr_cell)-1 /= grid%cell_nr2idx(2,nr_cell_new) .and. &
-!~                 grid%cell_nr2idx(2,nr_cell)  /= grid%cell_nr2idx(2,nr_cell_new) .and. &
-!~                 grid%cell_nr2idx(2,nr_cell_new) /= 0 ) THEN
-!~                 print *, 'main error'
-!~                 print *, d_lx
-!~                 print *, hi1
-!~                 print *, 'pos:'
-!~                 print *, ca2sp(p0_vec)
-!~                 print *, ca2sp(pos_xyz_new)
-!~                 print *, p0_vec
-!~                 print *, pos_xyz_new
-!~                 print *, d_vec
-!~                 
-!~                 print *, ''
-!~                 print *, grid%cell_nr2idx(:,nr_cell)
-!~                 print *, grid%cell_nr2idx(:,nr_cell_new)
-!~                 print *, nr_cell
-!~ 
-!~             ELSEIF (grid%cell_nr2idx(2,nr_cell) /= grid%cell_nr2idx(2,nr_cell_new) .and. nr_cell_new /= 0 ) THEN
-!~                 IF  (hi1 > 4 .or. hi1 < 3) THEN
-!~                     print *, 'theta change without theta wall detected'
-!~                     print *, hi1
-!~                     print *, grid%cell_nr2idx(1,nr_cell) ,grid%cell_nr2idx(1,nr_cell_new)
-!~                     print *, grid%cell_nr2idx(2,nr_cell) ,grid%cell_nr2idx(2,nr_cell_new)
-!~                     print *, grid%cell_nr2idx(3,nr_cell) ,grid%cell_nr2idx(3,nr_cell_new)
-!~                 END IF
-!~             END IF
-!~         END IF
+!~             nr_cell_new = grid%cell_idx2nr(i_r, i_th, i_ph)
+        END IF
+
     END SUBROUTINE path_sp
 
 end module transfer_mod

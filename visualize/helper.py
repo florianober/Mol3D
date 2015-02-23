@@ -98,6 +98,13 @@ def sp2ca(p):
     r[2] = p[0] * math.sin(p[1])
     return r
 
+def cy2ca(p):
+    r = np.zeros(3)
+    r[0] = p[0] * math.cos(p[1]) 
+    r[1] = p[0] * math.sin(p[1])
+    r[2] = p[2]
+    return r
+
 def conv(image, beam=0.1, r_ou=200, dist=140, gg=''):
     """ convolve an image with given beam """
     from numpy import sqrt

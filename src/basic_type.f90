@@ -58,12 +58,15 @@ MODULE basic_type
         CHARACTER(len=256)                :: pronam
         CHARACTER(len=256)                :: pronam_old
         CHARACTER(len=256)                :: path_results
-        LOGICAL                           :: MCRT
-        LOGICAL                           :: calc_tmp
+        CHARACTER(len=256)                :: input_file
+        CHARACTER(len=256)                :: new_input_file
+        LOGICAL                           :: do_MC_temperature
         LOGICAL                           :: old_model
         LOGICAL                           :: pluto_data
         LOGICAL                           :: do_raytr
-        LOGICAL                           :: do_continuum_map
+        LOGICAL                           :: do_continuum_raytrace
+        LOGICAL                           :: do_continuum_mc
+        LOGICAL                           :: do_peel_off
         LOGICAL                           :: do_velo_ch_map
 
     END TYPE Basic_TYP
@@ -83,8 +86,13 @@ MODULE basic_type
     !--------------------------------------------------------------------------!
 CONTAINS
 
-    SUBROUTINE InitBasic(this, ut, un, pname, presult, concept, calc_tmp,old_pname, old_model, &
-                            do_raytr, do_continuum_map,do_velo_ch_map,n_tem, t_dust_min, t_dust_max, num_core,pluto_data)
+    SUBROUTINE InitBasic(this, ut, un, pname, presult, concept,                &
+                         do_MC_temperature, old_pname, old_model,              &
+                         do_continuum_raytrace, do_continuum_mc,               &
+                         do_velo_ch_map, do_peel_off,                          &
+                         n_tem, t_dust_min, t_dust_max, num_core, pluto_data,  &
+                         input_file, new_input_file)
+
         IMPLICIT NONE
         !----------------------------------------------------------------------!
         TYPE(Basic_TYP)       :: this
@@ -98,21 +106,26 @@ CONTAINS
         CHARACTER(LEN=*)      :: pname
         CHARACTER(LEN=*)      :: old_pname
         CHARACTER(LEN=*)      :: presult
+        CHARACTER(len=*)      :: input_file
+        CHARACTER(len=*)      :: new_input_file
         
         REAL(kind=r1)         :: t_dust_max
         REAL(kind=r1)         :: t_dust_min
         
-        LOGICAL               :: calc_tmp
+        LOGICAL               :: do_MC_temperature
         LOGICAL               :: old_model
         LOGICAL               :: pluto_data
-        LOGICAL               :: do_raytr
-        LOGICAL               :: do_continuum_map
+        LOGICAL               :: do_continuum_raytrace
+        LOGICAL               :: do_continuum_mc
         LOGICAL               :: do_velo_ch_map
+        LOGICAL               :: do_peel_off
 
         !----------------------------------------------------------------------!
-        INTENT(IN)          :: ut,un,presult, pname, concept, num_core, &
-                                n_tem, t_dust_max, t_dust_min, calc_tmp,old_model,old_pname, &
-                                pluto_data,do_continuum_map,do_velo_ch_map
+        INTENT(IN)          :: ut, un, presult, pname, concept, num_core,      &
+                               n_tem, t_dust_max, t_dust_min,                  &
+                               do_MC_temperature, old_model, old_pname,        &
+                               pluto_data, do_continuum_raytrace,              &
+                               do_continuum_mc, do_velo_ch_map, do_peel_off
         INTENT(INOUT)       :: this
         !----------------------------------------------------------------------!
         CALL InitCommon(this%mtype,ut,un)
@@ -161,72 +174,82 @@ CONTAINS
         this%mat_ident4(4,3) = 0.0
         this%mat_ident4(4,4) = 1.0
 
-
-        this%MCRT       = .false.
         this%n_tem = n_tem
         this%t_dust_max = t_dust_max
         this%t_dust_min = t_dust_min
-        this%calc_tmp   = calc_tmp
-        this%old_model    = old_model
-        this%pluto_data    = pluto_data
-        this%do_raytr   = do_raytr
-        this%do_continuum_map   = do_continuum_map
+        this%do_MC_temperature   = do_MC_temperature
+        this%old_model  = old_model
+        this%pluto_data = pluto_data
+
+        this%do_continuum_raytrace  = do_continuum_raytrace
+        this%do_continuum_mc  = do_continuum_mc
+        this%do_peel_off = do_peel_off
         this%do_velo_ch_map = do_velo_ch_map
-        
-        this%d_tem = (this%t_dust_max - this%t_dust_min) / (real(this%n_tem, kind=r2)-1)
+
+        IF (do_continuum_raytrace .or. do_velo_ch_map) THEN
+            this%do_raytr = .True.
+        ELSE
+            this%do_raytr = .False.
+        END IF
+
+        this%d_tem = (this%t_dust_max - this%t_dust_min) /                     &
+                     (real(this%n_tem, kind=r2)-1)
         
         this%pronam = pname    
         this%pronam_old = old_pname    
         this%path_results = presult
         this%pnamelen = LEN_TRIM(pname)
         this%concept_ps = concept
+        this%input_file = input_file
+        this%new_input_file = new_input_file
+        
         
     END SUBROUTINE InitBasic
 
 
     SUBROUTINE CloseBasic(this)
         IMPLICIT NONE
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         TYPE(Basic_TYP), INTENT(INOUT) :: this
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         CALL CloseCommon(this%mtype)
     END SUBROUTINE CloseBasic
 
 
     PURE FUNCTION GetSimuType(this) RESULT(ut)
         IMPLICIT NONE
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         TYPE(Basic_TYP), INTENT(IN) :: this
         INTEGER :: ut
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         ut = GetType_common(this%mtype)
     END FUNCTION GetSimuType
 
 
     PURE FUNCTION GetName(this) RESULT(un)
         IMPLICIT NONE
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         TYPE(Basic_TYP), INTENT(IN) :: this
         CHARACTER(LEN=32) :: un
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         un = GetName_common(this%mtype)
     END FUNCTION GetName
 
     PURE FUNCTION BasicInitialized(this) RESULT(i)
         IMPLICIT NONE
-          !------------------------------------------------------------------------!
+          !--------------------------------------------------------------------!
           TYPE(Basic_TYP), INTENT(IN) :: this
           LOGICAL :: i
-          !------------------------------------------------------------------------!
+          !--------------------------------------------------------------------!
           i = Initialized_common(this%mtype)
     END FUNCTION BasicInitialized
     
     FUNCTION Getproname(this) RESULT(pname)
         IMPLICIT NONE
-          !------------------------------------------------------------------------!
+          !--------------------------------------------------------------------!
           TYPE(Basic_TYP), INTENT(IN) :: this
           CHARACTER(len=this%pnamelen) :: pname
-          !------------------------------------------------------------------------!
+          !--------------------------------------------------------------------!
           pname = this%pronam
     END FUNCTION Getproname
     

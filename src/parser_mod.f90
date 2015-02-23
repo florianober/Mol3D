@@ -1,5 +1,5 @@
 !
-! This module has been developed to handle input files in a more dynamic way
+! This module has been developed to handle input files in a more flexible way
 !
 !
 MODULE parser_mod
@@ -11,7 +11,8 @@ MODULE parser_mod
     PUBLIC :: parse
     !--------------------------------------------------------------------------!
     INTERFACE parse
-        MODULE PROCEDURE parse_int_i1, parse_int_i2, parse_real, parse_str, parse_log
+        MODULE PROCEDURE parse_int_i1, parse_int_i2,                           &
+                         parse_real, parse_str, parse_log
     END INTERFACE
     !--------------------------------------------------------------------------!
     
@@ -22,14 +23,14 @@ MODULE parser_mod
         IMPLICIT NONE
         ! 
         !
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         CHARACTER(len=*),INTENT(IN) :: keyword 
         CHARACTER(len=*),INTENT(IN) :: data_file
         INTEGER,INTENT(INOUT)       :: var
         
         CHARACTER(len=256)          :: val_st
         INTEGER                     :: iost
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         CALL get_value(keyword,data_file,val_st,iost)
         IF ( iost == 0 ) THEN
             READ(val_st,fmt=*,IOSTAT=iost) var
@@ -45,14 +46,14 @@ MODULE parser_mod
         IMPLICIT NONE
         ! 
         !
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         CHARACTER(len=*),INTENT(IN) :: keyword 
         CHARACTER(len=*),INTENT(IN) :: data_file
         INTEGER(8),INTENT(INOUT)    :: var
         
         CHARACTER(len=256)          :: val_st
         INTEGER                     :: iost
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         CALL get_value(keyword,data_file,val_st,iost)
         IF ( iost == 0 ) THEN
             READ(val_st,fmt=*,IOSTAT=iost) var
@@ -69,17 +70,17 @@ MODULE parser_mod
         IMPLICIT NONE
         ! 
         !
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         CHARACTER(len=*),INTENT(IN) :: keyword 
         CHARACTER(len=*),INTENT(IN) :: data_file
         REAL(kind=r2),INTENT(INOUT) :: var
         
         CHARACTER(len=256)          :: val_st
         INTEGER                     :: iost
-        !------------------------------------------------------------------------!
-        CALL get_value(keyword,data_file,val_st,iost)
+        !----------------------------------------------------------------------!
+        CALL get_value(keyword, data_file, val_st, iost)
         IF ( iost == 0 ) THEN
-            READ(val_st,fmt=*,IOSTAT=iost) var
+            READ(val_st, fmt=*, IOSTAT=iost) var
         END IF
         IF ( iost /= 0 ) THEN
             PRINT '(2A)','ERROR in input file ('//TRIM(data_file)//') with keyword: ', keyword
@@ -95,14 +96,14 @@ MODULE parser_mod
         IMPLICIT NONE
         ! 
         !
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         CHARACTER(len=*),INTENT(IN)    :: keyword 
         CHARACTER(len=*),INTENT(IN)    :: data_file
         CHARACTER(len=*),INTENT(INOUT) :: var
         
         CHARACTER(len=256)          :: val_st
         INTEGER                     :: iost
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         CALL get_value(keyword,data_file,val_st,iost)
         IF ( iost == 0 ) THEN
             READ(val_st,fmt='(A)',IOSTAT=iost) var
@@ -120,14 +121,14 @@ MODULE parser_mod
         IMPLICIT NONE
         ! 
         !
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         CHARACTER(len=*),INTENT(IN)    :: keyword 
         CHARACTER(len=*),INTENT(IN)    :: data_file
         LOGICAL,INTENT(INOUT)          :: var
         
         CHARACTER(len=256)          :: val_st
         INTEGER                     :: iost
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         CALL get_value(keyword,data_file,val_st,iost)
         IF ( iost == 0 ) THEN
             READ(val_st,fmt='(L1)',IOSTAT=iost) var
@@ -139,16 +140,15 @@ MODULE parser_mod
 
 
     END SUBROUTINE parse_log
-    
-    
+
     !This is the main work
     !
-    SUBROUTINE get_value(keyword,data_file,val_st,iost)
+    SUBROUTINE get_value(keyword, data_file, val_st, iost)
 
         IMPLICIT NONE
-        !This routine seaches each line for the keyword and returns the value as a string
-        !
-        !------------------------------------------------------------------------!
+        ! This routine seaches each line for the keyword and returns the value 
+        ! as a string
+        !----------------------------------------------------------------------!
         CHARACTER(len=*),INTENT(IN)      :: keyword 
         CHARACTER(len=*),INTENT(IN)      :: data_file
         CHARACTER(len=256),INTENT(OUT)   :: val_st
@@ -161,9 +161,9 @@ MODULE parser_mod
         INTEGER                          :: key_found
         
         
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         iost = 0
-        
+
         OPEN(unit=1, file=data_file, &
              action="read", status="unknown", form="formatted")
         key_found = 0
@@ -213,7 +213,7 @@ MODULE parser_mod
                     EXIT
                 END IF
 
-                !now set the file value (inside the {} brackets) to the given var 
+                !now set the file value (inside the {} brackets) to the given var
                 !
                 val_st = line(br_l+1:br_r-1)
             END IF

@@ -1,9 +1,10 @@
 !----------------------------------------------------------------------------!
 ! def fluxes_TYP
 ! inspired by fosite by T. Illenseer 2011
+! Note, I'm not sure about this type, maybe we should remove it?
 !----------------------------------------------------------------------------!
 MODULE fluxes_type
-  
+
     USE datatype
     USE var_global
     USE common_type, &
@@ -18,19 +19,15 @@ MODULE fluxes_type
     TYPE Fluxes_TYP
         TYPE(Common_TYP) :: fltype                       ! ------------------- !
         !----------------------------------------------------------------------!
-        CHARACTER(len=1), dimension(1:4)               :: stokes_ext
-        
-        REAL(kind=r2), dimension(1:4)                  :: stokes, stokes_ini
-        !REAL(kind=r2), dimension(:,:,:,:,:), ALLOCATABLE   :: stokes_map
-        REAL(kind=r2), DIMENSION(:,:,:,:), ALLOCATABLE     :: channel_map
-        REAL(kind=r2), DIMENSION(:,:,:), ALLOCATABLE       :: continuum_map
-        REAL(kind=r2), DIMENSION(:,:,:), ALLOCATABLE       :: continuum_map_temp
-        INTEGER                :: n_dust_emi
+        CHARACTER(len=1), dimension(1:4)                      :: stokes_ext
+
+        REAL(kind=r2), DIMENSION(:, :, :, :), ALLOCATABLE     :: channel_map
+        REAL(kind=r2), DIMENSION(:, :, :, :), ALLOCATABLE     :: continuum_map
         
     END TYPE Fluxes_TYP
     SAVE
     !--------------------------------------------------------------------------!
-    
+
     PUBLIC :: &
         ! types
         Fluxes_TYP, &
@@ -43,21 +40,20 @@ MODULE fluxes_type
     !--------------------------------------------------------------------------!
 CONTAINS
 
-    SUBROUTINE InitFluxes(this,ut,un, emi_dust, n_bin_map, n_tr, vch,n_lam)
+    SUBROUTINE InitFluxes(this, ut, un, n_bin_map, n_tr, vch, n_lam)
         IMPLICIT NONE
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         TYPE(Fluxes_TYP)       :: this
-        INTEGER                :: emi_dust
         INTEGER                :: n_bin_map
         INTEGER                :: n_tr
         INTEGER                :: ut
         INTEGER                :: vch
         INTEGER                :: n_lam
         CHARACTER(LEN=*)       :: un
-        !------------------------------------------------------------------------!
-        INTENT(IN)             :: ut,un, emi_dust, n_bin_map, n_tr, vch,n_lam
+        !----------------------------------------------------------------------!
+        INTENT(IN)             :: ut, un, n_bin_map, n_tr, vch, n_lam
         INTENT(INOUT)          :: this
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         CALL InitCommon(this%fltype,ut,un)
 
         ! stokes parameters
@@ -65,73 +61,52 @@ CONTAINS
         this%stokes_ext(2) = "Q"
         this%stokes_ext(3) = "U"
         this%stokes_ext(4) = "V"
-        
-        this%stokes_ini(1)  = 1.0_r2
-        this%stokes_ini(2)  = 0.0_r2
-        this%stokes_ini(3)  = 0.0_r2
-        this%stokes_ini(4)  = 0.0_r2
-        
-        this%stokes(1)  = 1.0_r2
-        this%stokes(2)  = 0.0_r2
-        this%stokes(3)  = 0.0_r2
-        this%stokes(4)  = 0.0_r2
-        
-        this%n_dust_emi = emi_dust
-        
-        
-        
-        allocate(  &
-                  this%channel_map(0:2*n_bin_map, 0:2*n_bin_map,-vch:vch,1:n_tr), &
-                  this%continuum_map(0:2*n_bin_map, 0:2*n_bin_map,1:n_lam), &
-                  this%continuum_map_temp(0:2*n_bin_map, 0:2*n_bin_map,1:n_lam))
-                  
-        !this%stokes_map(:,:,:,:,:) = 0.0_r2
-        this%channel_map(:,:,:,:)    = 0.0_r2
-        this%continuum_map(:,:,:)    = 0.0_r2
-        this%continuum_map_temp(:,:,:)    = 0.0_r2
+
+        allocate(                                                              &
+                 this%channel_map(0:2*n_bin_map,                               &
+                                0:2*n_bin_map,-vch:vch,1:n_tr),                &
+                 this%continuum_map(0:2*n_bin_map, 0:2*n_bin_map, 1:n_lam, 1:4))
+
+        this%channel_map(:, :, :, :) = 0.0_r2
+        this%continuum_map(:, :, :, :) = 0.0_r2
 
     END SUBROUTINE InitFluxes
 
-
     SUBROUTINE CloseFluxes(this)
         IMPLICIT NONE
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         TYPE(Fluxes_TYP), INTENT(INOUT) :: this
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         CALL CloseCommon(this%fltype)
-        DEALLOCATE(this%channel_map,this%continuum_map,this%continuum_map_temp )
-        
-        
+        DEALLOCATE(this%channel_map, this%continuum_map)
+
     END SUBROUTINE CloseFluxes
 
     PURE FUNCTION GetFluxesType(this) RESULT(ut)
         IMPLICIT NONE
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         TYPE(Fluxes_TYP), INTENT(IN) :: this
         INTEGER :: ut
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         ut = GetType_common(this%fltype)
     END FUNCTION GetFluxesType
 
-
     PURE FUNCTION GetFluxesName(this) RESULT(un)
         IMPLICIT NONE
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         TYPE(Fluxes_TYP), INTENT(IN) :: this
         CHARACTER(LEN=32) :: un
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         un = GetName_common(this%fltype)
     END FUNCTION GetFluxesName
 
     PURE FUNCTION FluxesInitialized(this) RESULT(i)
         IMPLICIT NONE
-          !------------------------------------------------------------------------!
-          TYPE(Fluxes_TYP), INTENT(IN) :: this
-          LOGICAL :: i
-          !------------------------------------------------------------------------!
-          i = Initialized_common(this%fltype)
+        !----------------------------------------------------------------------!
+        TYPE(Fluxes_TYP), INTENT(IN) :: this
+        LOGICAL :: i
+        !----------------------------------------------------------------------!
+        i = Initialized_common(this%fltype)
     END FUNCTION FluxesInitialized
     
-
-
-End Module fluxes_type
+END MODULE fluxes_type
