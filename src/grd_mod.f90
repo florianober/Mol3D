@@ -634,8 +634,8 @@ CONTAINS
             sf = grid%sf+0.01
             dx = model%r_ou * (sf-1.0_r2)/ (sf**((grid%n(1)-1)*0.5) - 1.0_r2)
             do i_x=1, int(grid%n(1)*0.5)
-                grid%co_mx_a(int((grid%n(1)-1)*0.5+i_z+1)) =            dx * (sf**i_z - 1.0_r2) / (sf-1.0_r2)
-                grid%co_mx_a(int((grid%n(1)-1)*0.5-i_z)) =  -1.0_r2 * dx * (sf**i_z - 1.0_r2) / (sf-1.0_r2)
+                grid%co_mx_a(int((grid%n(1)-1)*0.5+i_x+1)) =            dx * (sf**i_x - 1.0_r2) / (sf-1.0_r2)
+                grid%co_mx_a(int((grid%n(1)-1)*0.5-i_x)) =  -1.0_r2 * dx * (sf**i_x - 1.0_r2) / (sf-1.0_r2)
             end do
             grid%co_mx_a(int((grid%n(1)-1)*0.5)) = -1.0_r2/3.0_r2 * dx 
             grid%co_mx_a(int((grid%n(1)-1)*0.5+1)) = 1.0_r2/3.0_r2 * dx
@@ -651,8 +651,8 @@ CONTAINS
             sf = grid%sf+0.01
             dy = model%r_ou * (sf-1.0_r2)/ (sf**((grid%n(2)-1)*0.5) - 1.0_r2)
             do i_y=1, int(grid%n(2)*0.5)
-                grid%co_mx_b(int((grid%n(2)-1)*0.5+i_z+1)) =            dy * (sf**i_z - 1.0_r2) / (sf-1.0_r2)
-                grid%co_mx_b(int((grid%n(2)-1)*0.5-i_z)) =  -1.0_r2 * dy * (sf**i_z - 1.0_r2) / (sf-1.0_r2)
+                grid%co_mx_b(int((grid%n(2)-1)*0.5+i_y+1)) =            dy * (sf**i_y - 1.0_r2) / (sf-1.0_r2)
+                grid%co_mx_b(int((grid%n(2)-1)*0.5-i_y)) =  -1.0_r2 * dy * (sf**i_y - 1.0_r2) / (sf-1.0_r2)
             end do
             grid%co_mx_b(int((grid%n(2)-1)*0.5)) = -1.0_r2/3.0_r2 * dy 
             grid%co_mx_b(int((grid%n(2)-1)*0.5+1)) = 1.0_r2/3.0_r2 * dy 
