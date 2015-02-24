@@ -47,12 +47,13 @@ TEXT_SIZE = mpl.rcParams['font.size'] -6
 
 def make_velo_int_plot(data, dvelo=1, cmap=plt.cm.nipy_spectral,
                        interpol='None', extent=[-1, 1, -1, 1],
-                       label='flux [Jy/px * m/s]',conv=1,snr=-1):
+                       label=r'flux [Jy/as$^2$ * km/s]',conv=1,snr=-1):
     """ make velocity integrated intensity map """
     # show velocity integrated map
     fig = plt.figure('velocity integrated map')
     ax1 = axes_grid1.host_axes([0.09, 0.11, 0.8, 0.8])
     extent_conv = [extent[0], 0.5* extent[0],0, 0.5*extent[1], extent[1]]
+    dvelo /= 1000
     if extent != [-1, 1, -1, 1]:
         ax1.set_ylabel('["]')
         ax1.set_xlabel('["]')
@@ -81,7 +82,7 @@ def make_velo_int_plot(data, dvelo=1, cmap=plt.cm.nipy_spectral,
     
 def make_velo_ch_plot(data, vch, N1=3, N2=5, snr='', cmap=plt.cm.nipy_spectral,
                       interpol='None', extent=[-1, 1, -1, 1], unit='["]',
-                      label='flux density [mJy/px]', fig_label=''):
+                      label=r'flux density [Jy/as$^2$]', fig_label=''):
     """
     create velocity channel overview map
     """
@@ -104,18 +105,17 @@ def make_velo_ch_plot(data, vch, N1=3, N2=5, snr='', cmap=plt.cm.nipy_spectral,
                     cbar_pad=0.02,
                     aspect="auto"
                    )
-    
     vmin = 0
     if snr == '':
         sensitivity = 1
     else:
         sensitivity = snr
         #~ vmin = snr
-    vmax = np.max(data[int(len(vch)/2.), :, :]/sensitivity*1000)
+    vmax = np.max(data[int(len(vch)/2.), :, :]/sensitivity)
 
     text_pos = [-0.9*extent[1], -0.8*extent[1]]
     for t in range(N1*N2):
-        im = grid[t].imshow(data[t, :, :]/sensitivity*1000, vmin=vmin, vmax=vmax,
+        im = grid[t].imshow(data[t, :, :]/sensitivity, vmin=vmin, vmax=vmax,
                             cmap=cmap,
                             origin='lower', interpolation=interpol,
                             extent=extent, aspect="auto")
@@ -134,7 +134,7 @@ def make_velo_ch_plot(data, vch, N1=3, N2=5, snr='', cmap=plt.cm.nipy_spectral,
     if snr == '':
         grid[0].cax.colorbar(im).set_label_text(label)
     else:
-        grid[0].cax.colorbar(im).set_label_text('SNR')
+        grid[0].cax.colorbar(im).set_label_text(r'Flux density [$\sigma$]')
 
     grid[0].cax.toggle_label(True)
     if extent != [-1, 1, -1, 1]:
@@ -157,6 +157,7 @@ def make_spectra(path_results, pname):
     vch = project.vch
     r_ou = project.attr['r_ou']# * project.attr['sf']
     arcs = r_ou/project.attr['distance']
+    
     conv = project.attr['distance']
     extent = [-arcs, arcs, -arcs, arcs]
 
@@ -169,10 +170,17 @@ def make_spectra(path_results, pname):
     plt.xlabel('velocity [m/s]')
     plt.ylabel('intensity [Jy]')
 
+    if map_in.shape[1] % 2:
+        px_size_as = arcs/((map_in.shape[1]-1)/2.)
+    else:
+        px_size_as = arcs/((map_in.shape[1])/2.)
+
+    map_in *= 1.0/px_size_as**2
+
     # make intensity map
     fig = make_velo_int_plot(map_in, project.attr['dvelo'], extent=extent,
                              conv=conv)
-    fig.savefig(pname +'_intensity_map.pdf',bbox_inches='tight')
+    #~ fig.savefig(pname +'_intensity_map.pdf',bbox_inches='tight')
 
     # make velocity channel overview map
     mid = project.attr['i_vel_chan']
@@ -183,7 +191,7 @@ def make_spectra(path_results, pname):
     fig = make_velo_ch_plot(map_in[mid-(incr*offset): mid + (incr*offset+1): incr],
                             vch[mid-(incr*offset): mid + (incr*offset+1): incr],
                             N1, N2, extent=extent, interpol='spline36')
-    fig.savefig(pname + '_velo_ch_map.pdf',bbox_inches='tight')
+    #~ fig.savefig(pname + '_velo_ch_map.pdf',bbox_inches='tight')
 
 def make_spectra_fits(fits_file):
     fits = pf.open(fits_file)
