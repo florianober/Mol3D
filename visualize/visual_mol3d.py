@@ -19,6 +19,8 @@ import glob
 import sys
 import show_model as sm
 import make_spectrum as mkspec
+import make_continuum  as cont
+import glob
 
 import mol3d_routines as l
 
@@ -57,14 +59,20 @@ def main():
         # present the model
         sm.show_maps(PATH_RESULTS, P_NAME)
 
-        # present temperature in x midplane
-
-        one_dim(PATH_RESULTS+P_NAME+'_temp_x.dat', i=0)
-
+        # present temperature in x midplane for all dust species
+        temp_paths = glob.glob(PATH_RESULTS+P_NAME+'_temp_x_??.dat')
+        n_dust = len(temp_paths)
+        for i in range(n_dust):
+            one_dim(temp_paths[i], i=0)
 
     # present line spectrum, intensity map and velocity channel maps
 
     mkspec.make_spectra(PATH_RESULTS, P_NAME)
+
+    # present continuum maps, sed's
+    # tbd. Roman?
+    cont.make_continuum_all(PATH_RESULTS, P_NAME)
+    
 
 def one_dim(file_path, i=0):
     """ 1D ploting routine """
@@ -72,16 +80,16 @@ def one_dim(file_path, i=0):
     plt.figure(file_path)
 
     if i == 0:
-        plt.xlabel('distance r [AU]')
-        plt.ylabel('temperature [K]')
+        plt.xlabel('Distance [AU]')
+        plt.ylabel('Temperature [K]')
         plt.xlim(0, np.max(pic[:, 0]))
         title = 'midplane temperature distribution'
         maxi = 1
     elif i == 1:
         plt.ylim(0, 1.1*np.max(pic[:, 1]))
         plt.xlim(np.min(pic[:, 0]), np.max(pic[:, 0]))
-        plt.xlabel('velocity [m/s]')
-        plt.ylabel('normalized intensity')
+        plt.xlabel('Velocity [m/s]')
+        plt.ylabel('Normalized intensity')
         title = 'velocity spectrum'
         #~ maxi = np.max(pic[:, 1])
         maxi = 1

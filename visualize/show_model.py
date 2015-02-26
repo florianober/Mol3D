@@ -127,48 +127,87 @@ def show_maps(path_results, p_name):
 
     project = m.mol3d(p_name, path_results)
     # show xz-plane
-    present_plane(path_results+p_name+'_visual_xz.dat')
+    present_plane(path_results+p_name, 'xz')
 
-    # show xz-plane
-    present_plane(path_results+p_name+'_visual_xy.dat')
+    # show xy-plane
+    #~ present_plane(path_results+p_name, 'xy')
 
     # show yz-plane
-    present_plane(path_results+p_name+'_visual_yz.dat')
+    #~ present_plane(path_results+p_name, 'yz')
 
-def present_plane(file_path):
+
+def present_plane(file_in, plane):
     """ open visualisation file and make desired plots of that plane """
 
-    map_in = open(file_path)
-    row = map_in.readline().split()
-    map_size = int(row[0])
-    row = map_in.readline()     # empty row
+    if os.path.isfile(file_in + '_visual_' + plane + '.fits.gz'):
+        file_path = file_in + '_visual_' + plane + '.fits.gz' 
+        fits = pf.open(file_path)
+        data_in = fits[0].data
+        n_dust = fits[0].header['N_DUST']
+        pix = fits[0].header['NAXIS1']
+        r_ou = (pix-1)/2 * fits[0].header['CDELT1']
+        xlab = 'distance [%s]' %(fits[0].header['CUNIT1'])
+        ylab = xlab
 
-    for j in range(map_size):
-        for k in range(map_size):
-            row = map_in.readline().split()
-            if j == 0 and j == 0:
-                len_pic = len(row)
-                pic = np.zeros((map_size, map_size, len_pic-2))
+        
+        fits.close()
 
-            if j == 0 and k == 0:
-                j_min = float(row[0])
-                k_min = float(row[1])
-            elif j == map_size-1 and k == map_size-1:
-                j_max = float(row[0])
-                k_max = float(row[1])
+        pic = np.zeros((pix, pix, 8+2*n_dust))
+        for i in range(8+2*n_dust):
+            pic[:, :, i] = data_in[i, :, :]
+        
+        ext = file_path[-7: -5]+'-plane'
+        m_range = [-r_ou,r_ou,-r_ou,r_ou]
+       
+    else:
+        file_path = file_in + '_visual_' + plane + '.dat' 
+        map_in = open(file_path)
+        row = map_in.readline().split()
+        map_size = int(row[0])
+        row = map_in.readline()     # empty row
+        n_dust = 1 # fixed value here
 
-            for l in range(2, len_pic):
-                if row[l] == 'NaN':
-                    pic[k, j, l-2] = 0
-                else:
-                    pic[k, j, l-2] = row[l]
+        for j in range(map_size):
+            for k in range(map_size):
+                row = map_in.readline().split()
+                if j == 0 and j == 0:
+                    len_pic = len(row)
+                    pic = np.zeros((map_size, map_size, len_pic-2))
 
-    m_range = [k_min, k_max, j_min, j_max]
+                if j == 0 and k == 0:
+                    j_min = float(row[0])
+                    k_min = float(row[1])
+                elif j == map_size-1 and k == map_size-1:
+                    j_max = float(row[0])
+                    k_max = float(row[1])
+
+                for l in range(2, len_pic):
+                    if row[l] == 'NaN':
+                        pic[k, j, l-2] = 0
+                    else:
+                        pic[k, j, l-2] = row[l]
+
+        m_range = [k_min, k_max, j_min, j_max]
+        ext = file_path[-6: -4]+'-plane'
+        
+        
     pic += 1e-250
-    xlab = 'distance [AU]'
-    ylab = xlab
-    ext = file_path[-6: -4]+'-plane'
-
+    #-------------------------------------------------
+    #  Dust Temp
+    for i in range(n_dust):
+        plt.figure('Dust %2.0d Temperature, %s' %(i+1, ext))
+        plt.title('Dust %2.0d Temperature, %s' %(i+1, ext))
+        plt.xlabel(xlab)
+        plt.ylabel(ylab)
+        cont = [10, 20, 25, 30, 35, 40] * 2
+        data = pic[:, :, 4+n_dust+i]
+        CS = plt.contour(data, cont, linewidths=1,
+                         colors='k', extent=m_range)
+        plt.clabel(CS, inline=1, fmt='%2.1f', fontsize=10)
+        plt.imshow(data, extent=m_range, origin='lower',
+                   interpolation='None', cmap=plt.cm.jet)
+        plt.clim(0, 350)
+        plt.colorbar().set_label('Temperature [K]')
     #-------------------------------------------------
     #  Gas Temp
 
@@ -177,86 +216,70 @@ def present_plane(file_path):
     plt.xlabel(xlab)
     plt.ylabel(ylab)
     cont = [10, 20, 25, 30, 35, 40] * 2
-
-    CS = plt.contour(pic[:, :, 6], cont, linewidths=1,
+    data = pic[:, :, 4+2*n_dust]
+    CS = plt.contour(data, cont, linewidths=1,
                      colors='k', extent=m_range)
     plt.clabel(CS, inline=1, fmt='%2.1f', fontsize=10)
-    plt.imshow(pic[:, :, 6], extent=m_range, origin='lower',
+    plt.imshow(data, extent=m_range, origin='lower',
                interpolation='None', cmap=plt.cm.jet)
     plt.clim(0, 350)
     plt.colorbar().set_label('Temperature [K]')
 
     #-------------------------------------------------
     #  Velocity
-    #~ plt.figure('abs(Velocity), ' + ext)
-    #~ plt.title('abs(Velocity), ' + ext)
-    #~ plt.xlabel(xlab)
-    #~ plt.ylabel(ylab)
-    #~ if pic.shape[2] > 9:
-        #~ data = np.sqrt(pic[:, :, 7]**2 + pic[:, :, 8]**2 + pic[:, :, 9]**2)
-    #~ else:
-        #~ data = pic[:, :, 7]
-    #~ CS = plt.contour(data, linewidths=1, colors='k', extent=m_range)
-    #~ plt.clabel(CS, inline=1, fmt='%2.1f', fontsize=10)
-    #~ plt.imshow(data, extent=m_range, origin='lower',
-               #~ interpolation='None', cmap=plt.cm.jet)
-    #~ plt.colorbar().set_label('Velocity [m/s]')
-
-    #~ plt.figure('abs(Velocity) cut, ' + ext)
-    #~ plt.title('abs(Velocity) cut, ' + ext)
-    #~ plt.plot(data[(data.shape[0]-1)/2, :, 7])
-
-    #~ if pic.shape[2] > 9:
-        #~ plt.figure('Velocity V_z, ' + ext)
-        #~ plt.title('Velocity V_z, ' + ext)
-        #~ plt.xlabel(xlab)
-        #~ plt.ylabel(ylab)
-        #~ data = pic[:, :, 9]
-        #~ CS = plt.contour(data, linewidths=1, colors='k', extent=m_range)
-        #~ plt.clabel(CS, inline=1, fmt='%2.1f', fontsize=10)
-        #~ plt.imshow(data, extent=m_range, origin='lower',
-                   #~ interpolation='None', cmap=plt.cm.jet)
-        #~ plt.clim(-400, 400)
-        #~ plt.colorbar().set_label('Velocity [m/s]')
+    plt.figure('abs(Velocity), ' + ext)
+    plt.title('abs(Velocity), ' + ext)
+    plt.xlabel(xlab)
+    plt.ylabel(ylab)
+    if pic.shape[2] > 9:
+        data = np.sqrt(pic[:, :, 5+2*n_dust]**2 +
+                       pic[:, :, 6+2*n_dust]**2 +
+                       pic[:, :, 7+2*n_dust]**2)
+    else:
+        data = pic[:, :, 5+2*n_dust]
+    CS = plt.contour(data, linewidths=1, colors='k', extent=m_range)
+    plt.clabel(CS, inline=1, fmt='%2.1f', fontsize=10)
+    plt.imshow(data, extent=m_range, origin='lower',
+               interpolation='None', cmap=plt.cm.jet)
+    plt.colorbar().set_label('Velocity [m/s]')
 
     #-------------------------------------------------
     #  molecule density
 
-    #~ data = np.log10(pic[:, :, 1] * 1e-6)
-    #~ plt.figure('Molecule number density distribution, ' + ext)
-    #~ plt.title('Molecule number density distribution, ' + ext)
-    #~ plt.xlabel(xlab)
-    #~ plt.ylabel(ylab)
-    #~ cont = np.round(np.linspace(0, 7, 10))
-#~ 
-    #~ CS = plt.contour(data, cont, linewidths=1, colors='k', extent=m_range)
-    #~ plt.clabel(CS, inline=1, fmt='%2.1f', fontsize=10)
-    #~ plt.imshow(data, extent=m_range, origin='lower',
-               #~ interpolation='None', cmap=plt.cm.jet)
-    #~ plt.clim(2, 8)
-    #~ plt.colorbar().set_label('molecule density lg [cm^-3]')
+    data = np.log10(pic[:, :, 0+n_dust] * 1e-6)
+    plt.figure('Molecule number density distribution, ' + ext)
+    plt.title('Molecule number density distribution, ' + ext)
+    plt.xlabel(xlab)
+    plt.ylabel(ylab)
+    cont = np.round(np.linspace(0, 7, 10))
+    CS = plt.contour(data, cont, linewidths=1, colors='k', extent=m_range)
+    plt.clabel(CS, inline=1, fmt='%2.1f', fontsize=10)
+    plt.imshow(data, extent=m_range, origin='lower',
+               interpolation='None', cmap=plt.cm.jet)
+    plt.clim(2, 8)
+    plt.colorbar().set_label('molecule density lg [cm^-3]')
 
     #-------------------------------------------------
-    #  dust density
+    #  dust density 
+    for i in range(n_dust):
+        data = np.log10(pic[:, :, i] * 1e-6)
+        plt.figure('Dust %2.0d number density distribution, %s' %(i+1,ext))
+        plt.title('Dust %2.0d number density distribution, %s' %(i+1,ext))
+        plt.xlabel(xlab)
+        plt.ylabel(ylab)
+        cont = np.round(np.linspace(-5, 0, 10))
 
-    #~ data = np.log10(pic[:, :, 0] * 1e-6)
-    #~ plt.figure('Dust number density distribution, ' + ext)
-    #~ plt.title('Dust number density distribution, ' + ext)
-    #~ plt.xlabel(xlab)
-    #~ plt.ylabel(ylab)
-    #~ cont = np.round(np.linspace(-5, 0, 10))
-
-    #~ CS = plt.contour(data, cont, linewidths=1, colors='k', extent=m_range)
-    #~ plt.clabel(CS, inline=1, fmt='%2.1f', fontsize=10)
-    #~ plt.imshow(data, extent=m_range, origin='lower',
-               #~ interpolation='None', cmap=plt.cm.jet)
-    #~ plt.clim(-5, 0)
-    #~ plt.colorbar().set_label('dust density lg [cm^-3]')
+        CS = plt.contour(data, cont, linewidths=1, colors='k', extent=m_range)
+        plt.clabel(CS, inline=1, fmt='%2.1f', fontsize=10)
+        plt.imshow(data, extent=m_range, origin='lower',
+                   interpolation='None', cmap=plt.cm.jet)
+        plt.clim(-5, 0)
+        plt.colorbar().set_label('dust density lg [cm^-3]')
 
     #-------------------------------------------------
     #  H2 density
 
-    data = np.log10(pic[:, :, 2] * 1e-6)
+    data = np.log10(pic[:, :, 1+n_dust] * 1e-6)
     plt.figure('H2 number density distribution, ' + ext)
     #~ plt.title('H2 number density distribution, ' + ext)
     plt.xlabel(xlab)

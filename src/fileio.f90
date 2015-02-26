@@ -16,7 +16,7 @@ MODULE fileio
         CHARACTER(len=30), PARAMETER :: file_b  = "input/grid/b_boundaries.dat"
         CHARACTER(len=30), PARAMETER :: file_c  = "input/grid/c_boundaries.dat"
     !--------------------------------------------------------------------------!
-    PUBLIC :: vis_plane, save_ch_map, sv_temp, save_input,                     &
+    PUBLIC :: vis_plane, vis_plane_fits, save_ch_map, sv_temp, save_input,     &
               save_model, save_boundaries, read_boundaries, read_no_cells,     &
               save_continuum_map, read_model
     !--------------------------------------------------------------------------!
@@ -400,7 +400,8 @@ CONTAINS
         call ftfiou(u, sta)
     END SUBROUTINE save_model
 
-    SUBROUTINE vis_plane(grid, basics, model, plane, pix) 
+    SUBROUTINE vis_plane(grid, basics, model, plane, pix)
+        !old one, has been replaced by the fits version
 
         IMPLICIT NONE
         !----------------------------------------------------------------------!
@@ -551,18 +552,154 @@ CONTAINS
                 END DO
             END DO     
         END IF
-
         close(unit=1)
-        
-        
+
     END SUBROUTINE vis_plane
+    
+    SUBROUTINE vis_plane_fits(grid, basics, model, plane, pix) 
+
+        IMPLICIT NONE
+        !----------------------------------------------------------------------!
+        TYPE(Grid_TYP), INTENT(IN)                   :: grid
+        TYPE(Basic_TYP), INTENT(IN)                  :: basics
+        TYPE(Model_TYP), INTENT(IN)                  :: model
+        !----------------------------------------------------------------------!
+        INTEGER                                      :: plane
+        INTEGER                                      :: pix
+        
+        REAL(kind=r2),DIMENSION(1:3)                 :: caco
+        REAL(kind=r2)                                :: dxyz
+        REAL(kind=r2), DIMENSION(:,:,:), ALLOCATABLE :: map_out
+                
+        CHARACTER(len=256)                           :: filename
+        CHARACTER(len=5)                             :: fileext
+        CHARACTER(len=256)                           :: outname
+        
+        INTEGER                                      :: i_cell, i_entry
+        INTEGER                                      :: start
+        INTEGER                                      :: i_x, i_y
+
+        INTEGER                                      :: k
+        INTEGER                                      :: entries
+        INTEGER                                      :: sta, u
+        !----------------------------------------------------------------------!
+        ! save the hole model (after temperature calculation)
+        k = grid%n_cell/100
+        sta = 0
+        entries = 8 + 2*grid%nh_n_dust
+
+        ALLOCATE( map_out(0:pix-1,0:pix-1,1:entries))
+        ! generate the output map
+        dxyz = 2.0*model%r_ou/pix
+        DO i_y=0, pix-1
+            DO i_x=0,pix-1
+                IF (plane == 1) THEN
+                    caco(1) = -model%r_ou+(0.5 + i_x) * dxyz
+                    caco(2) =  0.0_r2
+                    caco(3) = -model%r_ou+(0.5 + i_y) * dxyz
+                ELSE IF (plane == 2) THEN
+                    caco(1) = -model%r_ou+(0.5 + i_x) * dxyz
+                    caco(2) = -model%r_ou+(0.5 + i_y) * dxyz
+                    caco(3) = 0.0_r2
+                ELSE IF (plane == 3) THEN
+                    caco(1) = 0.0_r2
+                    caco(2) = -model%r_ou+(0.5 + i_x) * dxyz
+                    caco(3) = -model%r_ou+(0.5 + i_y) * dxyz
+                END IF
+                IF ( check_inside(caco, grid, model) ) THEN
+                    i_cell = get_cell_nr(grid, caco)
+                    map_out(i_x,i_y,:) = (/grid%grd_dust_density(i_cell,:),&
+                                grid%grd_mol_density(i_cell),              &
+                                grid%grd_col_density(i_cell,1:3),          &
+                                REAL(grid%t_dust(i_cell,:), kind=r2),      &
+                                REAL(grid%t_gas(i_cell), kind=r2),         &
+                                REAL(grid%velo(i_cell,:), kind=r2)/)
+                ELSE
+                    map_out(i_x,i_y,:) = 0.0_r2
+                END IF
+            END DO
+        END DO
+
+        ! now save the map
+        fileext = '.fits'
+
+        IF ( plane ==  1) THEN                                       !view xz-plane
+            filename = TRIM(basics%path_results)//Getproname(basics)//'_visual_xz'
+            
+        ELSE IF ( plane == 2) THEN                                   !view xy-plane
+            filename = TRIM(basics%path_results)//Getproname(basics)//'_visual_xy'
+            
+        ELSE IF ( plane == 3) THEN                                   !view yz-plane
+            filename = TRIM(basics%path_results)//Getproname(basics)//'_visual_yz'
+        ELSE 
+            print *, 'plane not specified'
+            RETURN
+        END IF
+
+        outname = TRIM(filename)//fileext//'.gz'
+        ! get a new u(nit) number
+        call ftgiou(u, sta)
+        
+        ! init fits file
+        call ftinit(u,'!'//outname,1,sta)
+
+        ! write header
+        call ftphpr(u,.true.,-64,3,(/pix, pix, entries/),0,1,.true.,sta)
+        ! write array to fits file
+        DO i_entry = 1, entries
+            start = 1 + (i_entry-1) * pix**2
+            call ftpprd(u,1, start, pix**2,   &
+                    (/map_out(:, :, i_entry)/),sta)
+        END DO
+        ! add essential keywords
+        CALL add_essential_fits_keys(u, grid%nh_n_dust, pix, model%r_ou,&
+                                     GetModelName(model))
+        ! close the fits file
+        call ftclos(u, sta)
+        ! free the (u)nit number
+        call ftfiou(u, sta)
+
+        DEALLOCATE(map_out)
+    END SUBROUTINE vis_plane_fits
+
+    SUBROUTINE add_essential_fits_keys(u, n_dust, pix, r_max, ref_u_str)
+        IMPLICIT NONE
+        !----------------------------------------------------------------------!
+
+        INTEGER, INTENT(IN)                          :: u
+        INTEGER, INTENT(IN)                          :: n_dust
+        INTEGER, INTENT(IN)                          :: pix
+
+        REAL(kind=r2), INTENT(IN)                    :: r_max
+        
+        CHARACTER(len=*), INTENT(IN)                 :: ref_u_str
+
+        INTEGER                                      :: sta
+        !----------------------------------------------------------------------!
+        sta = 0
+
+        ! add the keys
+        CALL ftpkyj(u,'N_DUST', n_dust, 'Number of dust species', sta)
+        CALL ftpkys(u,'CTYPE1', 'LINEAR', 'Unit 1 type', sta)
+        CALL ftpkyd(u,'CRVAL1', 0.0, 1, 'Value 1', sta)
+        CALL ftpkyj(u,'CRPIX1', int((pix-1)/2)+1, 'Pixel where CRVAL1 is defined', sta)
+        CALL ftpkyd(u,'CDELT1', r_max*2/pix, 1, 'Delta 1', sta)
+        CALL ftpkys(u,'CUNIT1', TRIM(ref_u_str), 'Unit 1', sta)
+
+        CALL ftpkys(u,'CTYPE2', 'LINEAR', 'Unit 2 type', sta)
+        CALL ftpkyd(u,'CRVAL2', 0.0, 1, 'Value 1', sta)
+        CALL ftpkyj(u,'CRPIX2', int((pix-1)/2)+1, 'Pixel where CRVAL2 is defined', sta)
+        CALL ftpkyd(u,'CDELT2', r_max*2/pix, 1, 'Delta 2', sta)
+        CALL ftpkys(u,'CUNIT2', TRIM(ref_u_str), 'Unit 2', sta)
+
+    END SUBROUTINE add_essential_fits_keys
     
     SUBROUTINE sv_temp(basics, grid)
         IMPLICIT NONE
-        !--------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         TYPE(Basic_TYP), INTENT(IN)                  :: basics
         TYPE(Grid_TYP), INTENT(IN)                   :: grid
-        !--------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
     
         CALL sv_temp_x(basics, grid)
 
@@ -683,6 +820,7 @@ CONTAINS
         INTEGER                                        :: i_map
         REAL(kind=r2)                                  :: unit_value
         CHARACTER(len=100)                             :: outname
+        CHARACTER(len=256)                             :: fits_name
         REAL(kind=r2),DIMENSION(:,:,:,:), ALLOCATABLE  :: map_out
         REAL(kind=r2),DIMENSION(1:dust%n_lam, 1:4)     :: sed
         LOGICAL, INTENT(IN)                            :: peel_off
@@ -721,7 +859,6 @@ CONTAINS
         ELSEIF  (mode .eq. 2) THEN
             ! monochromatic RT results
             outname = '_mono'
-
             DO i_map = 1, model%n_map
                 DO i_lam = 1, dust%n_lam
                     unit_value =  dust%lam(i_lam)**2/con_c/     &
@@ -748,30 +885,31 @@ CONTAINS
             DEALLOCATE(map_out)
             RETURN
         END IF
+        u = 0
+        sta = 0
+        ! get a new u(nit) number
+        CALL ftgiou(u,sta)
+        ! init fits file
+        fits_name = TRIM(basics%path_results)//Getproname(basics)//          &
+                    '_continuum_map'//TRIM(outname)//'.fits.gz'
+        CALL ftinit(u,'!'//fits_name,1,sta)
+        ! write header
+        CALL ftphpr(u,.true.,-32,4,(/2*model%n_bin_map+1,                  &
+                                    2*model%n_bin_map+1,                   &
+                                    dust%n_lam, 4/),                       &
+                    0,1,.true.,sta)
+        ! write array to fits file
+        CALL ftpprd(u,1,1,(2*model%n_bin_map+1)**2*dust%n_lam*4, map_out(:,:,:,:), sta)
         
-        IF (mode /= 1) THEN
-            sta = 0
-            ! get a new u(nit) number
-            CALL ftgiou(u,sta)
-            ! init fits file
-            CALL ftinit(u,'!'//TRIM(basics%path_results)//Getproname(basics)// &
-                        '_continuum_map'//TRIM(outname)//'.fits.gz',1,sta)
-            ! write header
-            CALL ftphpr(u,.true.,-32,4,(/2*model%n_bin_map+1,                  &
-                                        2*model%n_bin_map+1,                   &
-                                        dust%n_lam, 4/),                       &
-                        0,1,.true.,sta)
-            ! write array to fits file
-            CALL ftpprd(u,1,1,(2*model%n_bin_map+1)**2*dust%n_lam*4, map_out(:,:,:,:), sta)
-            ! add other header keywords 
-!~             CALL ftpkyj(u,'EXPOSURE',1500,'Total Exposure Time',sta) ! for example
-            ! close the fits file
-            CALL ftclos(u, sta)
-            ! free the (u)nit number
-            CALL ftfiou(u, sta)
-        END IF
+        ! add other header keywords 
+        CALL add_essential_fits_keys(u, dust%n_dust,                           &
+                                     2*model%n_bin_map+1, model%r_ou,          &
+                                     GetModelName(model))
+        ! close the fits file
+        CALL ftclos(u, sta)
+        ! free the (u)nit number
+        CALL ftfiou(u, sta)
         DEALLOCATE(map_out)
-        
         !write sed in ascii format
         DO i_stokes = 1, 4
             OPEN(unit=2, file=TRIM(basics%path_results)// Getproname(basics)// &
@@ -789,7 +927,7 @@ CONTAINS
 
     END SUBROUTINE save_continuum_map
 
-    SUBROUTINE save_ch_map(model, basics, gas, fluxes)
+    SUBROUTINE save_ch_map(model, basics, gas, fluxes, n_dust)
         
         IMPLICIT NONE
         !----------------------------------------------------------------------!
@@ -797,6 +935,7 @@ CONTAINS
         TYPE(Basic_TYP), INTENT(IN)                  :: basics
         TYPE(Gas_TYP), INTENT(IN)                    :: gas
         TYPE(Fluxes_TYP), INTENT(IN)                 :: fluxes
+        INTEGER, INTENT(IN)                          :: n_dust
         !----------------------------------------------------------------------!
         INTEGER                                      :: vch, u, sta
         !----------------------------------------------------------------------!
@@ -812,8 +951,11 @@ CONTAINS
         call ftphpr(u,.true.,-32,3,(/2*model%n_bin_map+1,2*model%n_bin_map+1,gas%i_vel_chan*2+1/),0,1,.true.,sta)
         ! write array to fits file
         call ftpprd(u,1,1,(2*model%n_bin_map+1)**2*(gas%i_vel_chan*2+1),fluxes%channel_map(:,:,:,1),sta)
-        ! add other header keywords
-!~         call ftpkyj(u,'EXPOSURE',1500,'Total Exposure Time',sta)
+        ! add other header keywords 
+        CALL add_essential_fits_keys(u, n_dust,                                &
+                                     2*model%n_bin_map+1, model%r_ou,          &
+                                     GetModelName(model))
+
         ! close the fits file
         call ftclos(u, sta)
         ! free the (u)nit number

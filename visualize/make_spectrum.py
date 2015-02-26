@@ -154,44 +154,45 @@ def make_spectra(path_results, pname):
     project = l.mol3d(pname, path_results)
 
     map_in = project.velo_ch_map
-    vch = project.vch
-    r_ou = project.attr['r_ou']# * project.attr['sf']
-    arcs = r_ou/project.attr['distance']
-    
-    conv = project.attr['distance']
-    extent = [-arcs, arcs, -arcs, arcs]
+    if map_in != []:
+        vch = project.vch
+        r_ou = project.attr['r_ou']# * project.attr['sf']
+        arcs = r_ou/project.attr['distance']
+        
+        conv = project.attr['distance']
+        extent = [-arcs, arcs, -arcs, arcs]
 
-    # make line spectrum
-    plt.figure('line spectrum')
-    y_arr = map_in.sum(axis=1).sum(axis=1)
-    plt.plot(vch, y_arr)
-    plt.ylim(0, 1.1*np.max(y_arr))
-    plt.xlim(np.min(vch), np.max(vch))
-    plt.xlabel('velocity [m/s]')
-    plt.ylabel('intensity [Jy]')
+        # make line spectrum
+        plt.figure('line spectrum')
+        y_arr = map_in.sum(axis=1).sum(axis=1)
+        plt.plot(vch, y_arr)
+        plt.ylim(0, 1.1*np.max(y_arr))
+        plt.xlim(np.min(vch), np.max(vch))
+        plt.xlabel('velocity [m/s]')
+        plt.ylabel('intensity [Jy]')
 
-    if map_in.shape[1] % 2:
-        px_size_as = arcs/((map_in.shape[1]-1)/2.)
-    else:
-        px_size_as = arcs/((map_in.shape[1])/2.)
+        if map_in.shape[1] % 2:
+            px_size_as = arcs/((map_in.shape[1]-1)/2.)
+        else:
+            px_size_as = arcs/((map_in.shape[1])/2.)
 
-    map_in *= 1.0/px_size_as**2
+        map_in *= 1.0/px_size_as**2
 
-    # make intensity map
-    fig = make_velo_int_plot(map_in, project.attr['dvelo'], extent=extent,
-                             conv=conv)
-    #~ fig.savefig(pname +'_intensity_map.pdf',bbox_inches='tight')
+        # make intensity map
+        fig = make_velo_int_plot(map_in, project.attr['dvelo'], extent=extent,
+                                 conv=conv)
+        #~ fig.savefig(pname +'_intensity_map.pdf',bbox_inches='tight')
 
-    # make velocity channel overview map
-    mid = project.attr['i_vel_chan']
-    incr = 2
-    N1 = 3
-    N2 = 5
-    offset = int((N1*N2-1)/2.)
-    fig = make_velo_ch_plot(map_in[mid-(incr*offset): mid + (incr*offset+1): incr],
+        # make velocity channel overview map
+        mid = project.attr['i_vel_chan']
+        incr = 2
+        N1 = 3
+        N2 = 5
+        offset = int((N1*N2-1)/2.)
+        fig = make_velo_ch_plot(map_in[mid-(incr*offset): mid + (incr*offset+1): incr],
                             vch[mid-(incr*offset): mid + (incr*offset+1): incr],
                             N1, N2, extent=extent, interpol='spline36')
-    #~ fig.savefig(pname + '_velo_ch_map.pdf',bbox_inches='tight')
+        #~ fig.savefig(pname + '_velo_ch_map.pdf',bbox_inches='tight')
 
 def make_spectra_fits(fits_file):
     fits = pf.open(fits_file)

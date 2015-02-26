@@ -68,7 +68,7 @@ CONTAINS
                     mass_dust, t_eff, r_star,M_star, n_map, distance, &
                     no_photon,th_map,ph_map,zoom_map,al_map,n_bin_map)
         IMPLICIT NONE
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         TYPE(Model_TYP)       :: this
         
         INTEGER               :: ut
@@ -94,12 +94,12 @@ CONTAINS
         REAL(kind=r2),DIMENSION(1:n_map)         :: zoom_map
 
         
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         INTENT(IN)          ::  ut,un,ref_u, r_in, r_ou, &
                                 mass_dust, t_eff, r_star, M_star, n_map, distance, &
                                 th_map,ph_map,zoom_map,al_map,n_bin_map,no_photon
         INTENT(INOUT)       :: this
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         CALL InitCommon(this%modltype,ut,un)
         
         this%ref_unit = ref_u
@@ -164,9 +164,9 @@ CONTAINS
 
     SUBROUTINE CloseModel(this)
         IMPLICIT NONE
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         TYPE(Model_TYP), INTENT(INOUT) :: this
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         CALL CloseCommon(this%modltype)
         DEALLOCATE( this%th_map, &
                     this%ph_map, &
@@ -184,29 +184,29 @@ CONTAINS
 
     PURE FUNCTION GetModelType(this) RESULT(ut)
         IMPLICIT NONE
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         TYPE(Model_TYP), INTENT(IN) :: this
         INTEGER :: ut
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         ut = GetType_common(this%modltype)
     END FUNCTION GetModelType
 
 
     PURE FUNCTION GetModelName(this) RESULT(un)
         IMPLICIT NONE
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         TYPE(Model_TYP), INTENT(IN) :: this
         CHARACTER(LEN=32) :: un
-        !------------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         un = GetName_common(this%modltype)
     END FUNCTION GetModelName
 
     PURE FUNCTION ModelInitialized(this) RESULT(i)
         IMPLICIT NONE
-          !------------------------------------------------------------------------!
+          !--------------------------------------------------------------------!
           TYPE(Model_TYP), INTENT(IN) :: this
           LOGICAL :: i
-          !------------------------------------------------------------------------!
+          !--------------------------------------------------------------------!
           i = Initialized_common(this%modltype)
     END FUNCTION ModelInitialized
     
