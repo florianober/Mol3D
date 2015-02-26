@@ -45,13 +45,15 @@ def make_sed(wavelength, data,
     """
     plot sed
     """
-    plt.figure(fig_label)
+    if fig_label == '':
+        plt.figure()
+    else:
+        plt.figure(fig_label)
     plt.title(fig_title)
     plt.plot(wavelength*1e6, data, 'd--')
     plt.xscale('log')
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
-
 
 def make_continuum_maps():
     """
