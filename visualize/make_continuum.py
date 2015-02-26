@@ -73,11 +73,11 @@ def make_continuum_all(path_results, pname):
     # load from file
     stokes = '_I'
     method = '_bin'
-    sed_txt = np.genfromtxt(path_results+pname+'_continuum_sed' +
-                         method + stokes+'.dat', skiprows=0,
+    file_in = path_results+pname+'_continuum_sed'+ method + stokes+'.dat'
+    sed_txt = np.genfromtxt(file_in, skiprows=0,
                          filling_values="0")
 
-    make_sed(sed_txt[:, 0], sed_txt[:, 1])
+    make_sed(sed_txt[:, 0], sed_txt[:, 1], fig_title=file_in)
 
     # Maps
 
