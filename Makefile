@@ -163,8 +163,8 @@ MODULE_SRC = 	basic_type.f90 \
 		model_type.f90 \
 		grid_type.f90 \
 		gas_type.f90 \
-		dust_type.f90 \
 		photon_type.f90 \
+		dust_type.f90 \
 		interact_mod.f90 \
 		immediate_mod.f90 \
 		scatter_mod.f90 \

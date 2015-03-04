@@ -150,7 +150,7 @@ CONTAINS
         final_col_para = calc_collision_parameter(grid,gas,i_cell)
         CALL create_matrix(gas, J_mid, A, c, final_col_para)
 
-        CALL solvestateq(A,gas%egy_lvl,c,new_pop)
+        CALL solve_eq(A,gas%egy_lvl,c,new_pop)
 
         ! verify the result (sum over all populations should be 1)
 
@@ -251,7 +251,7 @@ CONTAINS
 
             CALL create_matrix(gas, J_mid, A, c, final_col_para)
             
-            CALL solvestateq(A, gas%egy_lvl, c, new_pop)
+            CALL solve_eq(A, gas%egy_lvl, c, new_pop)
             
             ! verify the result (sum over all populations should be 1)
 

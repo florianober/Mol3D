@@ -1,7 +1,7 @@
 #####################################################################################
-#                            mol3d input file                                       #
+#                            Mol3D input file                                       #
 #                                                                                   #
-# All parameters that can be changed without recompiling mol3d are listed here.     #
+# All parameters that can be changed without recompiling Mol3D are listed here.     #
 # Please be aware that some parameters are not intended to be changeable.           #
 # They are note listed here, but accessable via the src/initiate.f90 source file.   #
 #                                                                                   #
@@ -9,7 +9,7 @@
 #                                                                                   #
 # author: Florian Ober                                                              #
 # email : fober@astrophysik.uni-kiel.de                                             #
-# date  : Feb 2015                                                                  #
+# date  : Mar 2015                                                                  #
 #####################################################################################
 
                                           (+) working, (o) testing, (-) not working
@@ -26,11 +26,14 @@ do_MC_temperature = {T}                   calculate dust temperature (+)
                                           used, see src/temp_mod.f90 -> "Get_temp" function
                                           In addition Sed's and maps are generated on the fly
                                           (see peel off)
+
+do_continuum_mono = {F}                   make monochromatic continuum !scattering! maps and seds
+                                          using a Monte Carlo method (+)
+
 do_peel_off = {T}                         peel of photons for high signal to noise sed's and maps
-                                          while temperature calculation. If False the
-                                          escaping photons are used only, which is much faster (o)
-do_continuum_mono = {F}                   make monochromatic continuum scattering maps and seds
-                                          using a Monte Carlo method (o)
+                                          while temperature calculation while temperature
+                                          calculation or for the monochromatic transfer (+)
+
 do_continuum_raytrace = {F}               make continuum maps and sed's using a raytracer (+)
 
 do_velo_ch_map = {F}                      make velocity-channel maps and spectra (+)

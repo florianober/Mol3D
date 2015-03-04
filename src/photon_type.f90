@@ -59,6 +59,9 @@ MODULE photon_type
         GetPhotonName, &
         PhotonInitialized, &
         vecmat
+    INTERFACE vecmat
+        MODULE PROCEDURE vecmat_angle, vecmat_dir
+    END INTERFACE
     !--------------------------------------------------------------------------!
 CONTAINS
 
@@ -150,13 +153,14 @@ CONTAINS
           !--------------------------------------------------------------------!
           i = Initialized_common(this%mtype)
     END FUNCTION PhotonInitialized
-    
-    SUBROUTINE vecmat(this)
+
+    SUBROUTINE vecmat_angle(this)
         IMPLICIT NONE
         !--------------------------------------------------------------------!
         TYPE(PHOTON_TYP), INTENT(INOUT)                     :: this
         
         real(kind=r2), dimension(1:3,1:3)                   :: D_help
+        real(kind=r2), dimension(1:3)                       :: dir_help
         REAL(kind=r2)                                       :: R,L,P
         !--------------------------------------------------------------------!
 
@@ -164,9 +168,9 @@ CONTAINS
         L =  this%SINTHE * this%COSPHI
         P =  this%COSTHE
 
-        this%dir_xyz(2) = -( this%D(1,1) * R  +  this%D(1,2) * L  +  this%D(1,3) * P )
-        this%dir_xyz(1) =    this%D(2,1) * R  +  this%D(2,2) * L  +  this%D(2,3) * P
-        this%dir_xyz(3) =    this%D(3,1) * R  +  this%D(3,2) * L  +  this%D(3,3) * P
+        this%dir_xyz(2) = -(this%D(1,1) * R  +  this%D(1,2) * L  +  this%D(1,3) * P)
+        this%dir_xyz(1) =  this%D(2,1) * R  +  this%D(2,2) * L  +  this%D(2,3) * P
+        this%dir_xyz(3) =  this%D(3,1) * R  +  this%D(3,2) * L  +  this%D(3,3) * P
 
         D_help(1,1) =   this%COSPHI
         D_help(2,1) =   this%SINPHI
@@ -178,7 +182,63 @@ CONTAINS
         D_help(2,3) =   this%COSPHI*this%SINTHE
         D_help(3,3) =   this%COSTHE
 
-        this%D = matmul(this%D,D_help)
-    END SUBROUTINE vecmat
+        this%D = matmul(this%D, D_help)
+    END SUBROUTINE vecmat_angle
+
+    SUBROUTINE vecmat_dir(this, d_ang)
+        USE math_mod, ONLY : atan3, solve_eq
+
+        IMPLICIT NONE
+        !--------------------------------------------------------------------!
+        TYPE(PHOTON_TYP), INTENT(INOUT)                     :: this
+        
+        real(kind=r2), dimension(1:3,1:3)                   :: D_help
+        real(kind=r1), dimension(1:3,1:3)                   :: A
+        REAL(kind=r1), dimension(1:3)                       :: x
+        REAL(kind=r1), dimension(1:3)                       :: dir_help
+        REAL(kind=r2)                                       :: theta, phi
+        REAL(kind=r2)                                       :: d_ang
+        !--------------------------------------------------------------------!
+
+        ! the direction is given, now we need to calculate the theta and phi
+        ! angle
+        x = 0.0_r2
+        dir_help(2) = this%dir_xyz(1)
+        dir_help(1) = this%dir_xyz(2)
+        dir_help(3) = this%dir_xyz(3)
+        A = this%D
+
+        ! solve linear equation (Ax = c; here D*x = dir_help)
+        CALL solve_eq(A, 3, dir_help, x)
+        ! calculate the phi and theta angle
+        ! with x we can calculate phi & theta via
+        ! x(1) = - sin(theta) * sin(phi)
+        ! x(2) =   sin(theta) * cos(phi)
+        ! x(3) =   cos(theta)
+        
+        phi = atan3(-REAL(x(1), kind=r2), REAL(x(2), kind=r2))
+        theta = acos(x(3))
+        ! now we can calculate the remaining values
+        this%SINTHE = sin(theta)
+        this%COSTHE = cos(theta)
+        this%SINPHI = sin(phi)
+        this%COSPHI = cos(phi)
+        this%SIN2PH = 2.0_r2 * this%SINPHI * this%COSPHI
+        this%COS2PH = 1.0_r2 - 2.0_r2 * this%SINPHI**2
+        this%lot_th = int(theta / d_ang) + 1
+
+        D_help(1,1) =   this%COSPHI
+        D_help(2,1) =   this%SINPHI
+        D_help(3,1) =   0.0_r2
+        D_help(1,2) = - this%SINPHI*this%COSTHE
+        D_help(2,2) =   this%COSPHI*this%COSTHE
+        D_help(3,2) = - this%SINTHE
+        D_help(1,3) = - this%SINPHI*this%SINTHE
+        D_help(2,3) =   this%COSPHI*this%SINTHE
+        D_help(3,3) =   this%COSTHE
+
+        this%D = matmul(this%D, D_help)
+
+    END SUBROUTINE vecmat_dir
 
 End Module photon_type

@@ -45,7 +45,7 @@ contains
     integer                                          :: i_source
     REAL(kind=r2)                                    :: rndx
     !--------------------------------------------------------------------------!
-
+    i_lam = 1
     IF (basics%concept_ps == 1) THEN
         ! concept_ps==1: point source, isotropic emission
         ! 1. direction (isotropic)

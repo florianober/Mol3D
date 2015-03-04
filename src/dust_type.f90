@@ -8,6 +8,7 @@ MODULE Dust_type
     USE gas_type
     USE basic_type
     USE model_type
+    USE photon_type
     USE var_global
     USE math_mod
     USE common_type, &
@@ -72,7 +73,8 @@ MODULE Dust_type
         CloseDust, &
         GetDustType, &
         GetDustName, &
-        DustInitialized
+        DustInitialized, &
+        dust_select
     !--------------------------------------------------------------------------!
 CONTAINS
 
@@ -172,7 +174,6 @@ CONTAINS
         this%r_dust(:)          = 0.0_r2
         this%sidi(:)            = 0.0_r2
         this%sidi_par(:,:)      = 0.0_r2
-
         this%lam(:)             = 0.0_r2
         this%d_lam(:)           = 0.0_r2
         this%dust_single( :,: ) = ''
@@ -331,7 +332,7 @@ CONTAINS
 
                     this%SME(2,2, i_dust,i_lam, i_scatt_th) =  this%SME(1,1, i_dust,i_lam, i_scatt_th)
                     this%SME(2,1, i_dust,i_lam, i_scatt_th) =  this%SME(1,2, i_dust,i_lam, i_scatt_th)
-                    this%SME(4,3, i_dust,i_lam, i_scatt_th) = -this%SME(3,4, i_dust,i_lam, i_scatt_th) 
+                    this%SME(4,3, i_dust,i_lam, i_scatt_th) = -this%SME(3,4, i_dust,i_lam, i_scatt_th)
                     this%SME(4,4, i_dust,i_lam, i_scatt_th) =  this%SME(3,3, i_dust,i_lam, i_scatt_th)
                 end do
           
@@ -577,6 +578,54 @@ CONTAINS
         
     END SUBROUTINE CloseDust
 
+    ! ##########################################################################
+    ! select this species in current cell
+    ! ---
+    
+    FUNCTION dust_select(grid, this, rand_nr, photon) RESULT(i_dust_action)
+        USE randgen_type
+        USE grid_type
+        IMPLICIT NONE
+        !----------------------------------------------------------------------!
+        TYPE(Dust_TYP),INTENT(IN)                        :: this
+        
+        TYPE(Randgen_TYP),INTENT(INOUT)                  :: rand_nr
+        TYPE(Grid_TYP),INTENT(IN)                        :: grid
+        
+        TYPE(PHOTON_TYP),INTENT(IN)                      :: photon
+        !----------------------------------------------------------------------!
+        INTEGER                                          :: i_dust_action
+        REAL(kind=r2),DIMENSION(1:this%n_dust)           :: prob_action
+        REAL(kind=r2)                                    :: rndx
+        real(kind=r2) :: hd1, hd2
+        !----------------------------------------------------------------------!
+        
+        ! ---
+        IF (this%n_dust==1) THEN
+           i_dust_action = 1
+        ELSE
+           ! approach: probability of interaction of the radiation with a this 
+           !           grain species is in direct proportion to the
+           !           a) the number density of these this grains in the cell
+           !      and  b) the extinction cross section of that species
+           prob_action(:) = grid%grd_dust_density(photon%nr_cell,:) *          &
+                                 this%C_ext(:,photon%nr_lam)
+
+           CALL RAN2(rand_nr, rndx)    
+           hd1 = rndx * sum( prob_action(:) )
+
+           i_dust_action = 1
+           hd2           = prob_action(i_dust_action)  +  hd1 * epsilon(1.0_r2)
+           DO
+              IF (hd2 >= hd1 ) THEN
+                 EXIT
+              ELSE
+                 i_dust_action = i_dust_action + 1
+                 hd2           = hd2           + prob_action(i_dust_action)
+              END IF
+           END DO
+        END IF
+    END FUNCTION dust_select
 
     PURE FUNCTION GetDustType(this) RESULT(ut)
         IMPLICIT NONE

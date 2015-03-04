@@ -206,6 +206,9 @@ class mol3d:
 
             elif self.__attr['gas_cat_name'] == 'cs@lique.dat':
                 self.__attr['tr_freq'] = (hlp.CS_lines_freq[self.__attr['line']-1])
+
+            elif self.__attr['gas_cat_name'] == '13co.dat':
+                self.__attr['tr_freq'] = (hlp._13CO_lines_freq[self.__attr['line']-1])
             else:
                 print("ERROR, gas type unknown")
                 self.__attr['tr_freq'] = 1.0

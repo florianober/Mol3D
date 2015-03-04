@@ -138,7 +138,7 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
 
     ref_u      = con_AU           ! AU at the moment for  protoplanetary disks
 
-    ref_u_str  = "[AU]"           ! referece unit
+    ref_u_str  = "AU"             ! reference unit
     concept_ps = 1                !Emission concept (1) Point-like, isotropic
 
     ! set further parameters 
@@ -183,9 +183,9 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
     WRITE(help,fmt='(I4,A,I2.2,A,I2.2,A,I2.2,A,I2.2)') dtime(1),'-', dtime(2),'-',dtime(3),' / ', dtime(5),':', dtime(6)
 
     WRITE(unit=3,fmt='(A)')  '##################################################################################'
-    WRITE(unit=3,fmt='(A)')  '#                            mol3d input file                                    #'
+    WRITE(unit=3,fmt='(A)')  '#                            Mol3D input file                                    #'
     WRITE(unit=3,fmt='(A)')  '#                                                                                #'
-    WRITE(unit=3,fmt='(A)')  '# All parameters that can be changed without recompiling mol3d are listed here.  #'
+    WRITE(unit=3,fmt='(A)')  '# All parameters that can be changed without recompiling Mol3D are listed here.  #'
     WRITE(unit=3,fmt='(A)')  '# Please be aware that some parameters are not intended to be changeable yet.    #'
     WRITE(unit=3,fmt='(A)')  '# They are note listed here, but accessable via the                              #'
     WRITE(unit=3,fmt='(A)')  '# "src/initiate.f90" source file.                                                #'
@@ -426,7 +426,7 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
     '}           dust catalog name (in input/dust) (in mc3d style)'
     WRITE(unit=3,fmt='(A)') ''
 
-!~     dust_cat(2) = 'mrnbigv4'
+    !dust_cat(2) = 'mrn---v4'
 
     CALL InitDust(dust, basics, gas, model, 1, 'mrn', n_dust, dens_dust,       &
                   sizexp, aniso, dust_cat, n_scatt_th, nrndpt)

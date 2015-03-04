@@ -156,7 +156,7 @@ def present_plane(file_in, plane):
         for i in range(8+2*n_dust):
             pic[:, :, i] = data_in[i, :, :]
         
-        ext = file_path[-7: -5]+'-plane'
+        ext = file_path[-10: -8]+'-plane'
         m_range = [-r_ou,r_ou,-r_ou,r_ou]
        
     else:

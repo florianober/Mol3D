@@ -10,7 +10,7 @@ MODULE math_mod
     PRIVATE
     PUBLIC ::   planck, planckhz, integ1, rad2grad, grad2rad, atan3, atanx,    &
                 norm,cy2ca, sp2ca, ca2sp, ipol1, ipol2,                        &
-                arcdis, dasico, gauss_arr, solvestateq, binary_search,         &
+                arcdis, dasico, gauss_arr, solve_eq, binary_search,         &
                 get_expo,get_opa,dB_dT_l,                                      &
                 generate_rotation_matrix, Vector3d
 
@@ -601,22 +601,21 @@ CONTAINS
         !----------------------------------------------------------------------!
 
         gaussian_result = lscale/a * exp( -(velo/a)**2 )
-      
 
     END FUNCTION gauss_arr
-    
-    PURE SUBROUTINE solvestateq(A,lenA,c,x)
+
+    PURE SUBROUTINE solve_eq(A, lenA, c, x)
         !
         ! copyright Gisela Engeln-Muellges: Numerik-Algorithmen, P.147
         !
         ! solve the linear equation Ax = c
         IMPLICIT NONE
         !----------------------------------------------------------------------!
-        INTEGER, INTENT(IN)                                       :: lenA   
+        INTEGER, INTENT(IN)                                       :: lenA
         INTEGER, DIMENSION(1:lenA)                                :: p
         
         REAL(kind=r1), DIMENSION(1:lenA,1:lenA) , INTENT(INOUT)   :: A
-        REAL(kind=r1), DIMENSION(1:lenA) , INTENT(INOUT)          :: c
+        REAL(kind=r1), DIMENSION(1:lenA) , INTENT(IN)             :: c
         REAL(kind=r1), DIMENSION(1:lenA) , INTENT(INOUT)          :: x
      
 
@@ -624,23 +623,22 @@ CONTAINS
         REAL(kind=r2), DIMENSION(1:lenA)                          :: r_vec
         REAL(kind=r2), DIMENSION(1:lenA)                          :: help
         
-        INTEGER                                                    :: i,j,k
-        INTEGER                                                    :: i_0, t
-        
+        INTEGER                                                   :: i, j, k
+        INTEGER                                                   :: i_0, t
         !----------------------------------------------------------------------!
         DO i = 1 , lenA
             P(i) = i
         END DO
         DO j = 1,lenA-1
-        
+
             ! find i_0 (pivot element)
             i_0 = int(maxloc(abs(A(j:lenA,j)),1)+(j-1))
-            
+
             ! set pivot vector
             t = p(i_0)
             p(i_0) = p(j)
             p(j) = t
-            
+
             ! change lines in A
             help = A(i_0,:)
             A(i_0,:) = A(j,:)
@@ -651,22 +649,21 @@ CONTAINS
                 DO k = j+1,lenA
                     A(i,k) = A(i,k) - A(j,k)*A(i,j)
                 END DO
-                
             END DO
         END DO
-        
+
         ! forward solving Lr = a
         r_vec(1) = c(p(1))
         DO i = 2, lenA
             r_vec(i) = c(p(i)) - sum(A(i,1:i-1)*r_vec(1:i-1))
         END DO
         x(lenA) = r_vec(lenA)/A(lenA,lenA)
-        
+
         ! backward solving Rx = r
         DO i = lenA-1,1,-1
             x(i) = 1.0_r2/A(i,i)*(r_vec(i)-sum(A(i,i+1:lenA)*x(i+1:lenA)))
         END DO
-    END SUBROUTINE solvestateq
+    END SUBROUTINE solve_eq
     
     PURE FUNCTION binary_search_r1(var_in, array_in) RESULT (int_result)
     

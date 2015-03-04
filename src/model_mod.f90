@@ -114,9 +114,6 @@ contains
         ! END: DEFINITION DENSITY DISTRIBUTION
         ! **********************************************************************
         
-        ! DO NEVER REMOVE THIS LINE
-        
-        density = density *model%mass !old relict from mc3d, tbd: can be removed
         
     END FUNCTION get_den
   

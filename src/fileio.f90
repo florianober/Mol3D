@@ -330,19 +330,14 @@ CONTAINS
                 print *,i_cell
                 stop
             END IF
-!~             print *, '1'
-!~             print *, line
-!~             print *,  line(4:3+n_dust)
             grid%grd_dust_density(i_cell, 1:n_dust) = line(4:3+n_dust)
-!~             print *, '2'
+
             grid%grd_col_density(i_cell,1:3) = line(n_dust+5:n_dust+7)
-!~             print *, '3'
+
             ! set temperature
             grid%t_dust(i_cell,:) = line(n_dust+8:2*n_dust+7)
             grid%t_gas(i_cell)    = line(2*n_dust + 9)
-!~             print *, '4'
             ! set velocity
-            
             grid%velo(i_cell,:) = line(2*n_dust+9:2*n_dust+11)
         END DO
         ! close the fits file
@@ -828,7 +823,6 @@ CONTAINS
         sed(:, :) = 0.0_r2
         ALLOCATE(map_out(0:2*model%n_bin_map,                                  &
                          0:2*model%n_bin_map, 1:dust%n_lam, 1:4))
-
         map_out = fluxes%continuum_map
         IF (mode .eq. 1) THEN
             ! finite wavelength/frequency bin
@@ -861,9 +855,16 @@ CONTAINS
             outname = '_mono'
             DO i_map = 1, model%n_map
                 DO i_lam = 1, dust%n_lam
-                    unit_value =  dust%lam(i_lam)**2/con_c/     &
+                    IF (peel_off) THEN
+                        unit_value =  dust%lam(i_lam)**2/con_c/                &
                                  (4.0_r2 * PI *(model%distance*con_pc)**2)     &
                                  *1.0e26_r2
+                    ELSE
+                        unit_value =  dust%lam(i_lam)**2/con_c/                &
+                                 ((1.0_r2-model%al_map(i_map))*(PI*2.0_r2)) /  &
+                                 ((model%distance*con_pc)**2) *                &
+                                 1.0e26_r2
+                    END IF
                     map_out(:, :, i_lam, :) =                                  &
                              map_out(:, :, i_lam, :) * unit_value
                     DO i_stokes = 1, 4
