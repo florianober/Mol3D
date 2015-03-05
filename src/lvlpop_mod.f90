@@ -98,7 +98,7 @@ CONTAINS
             grid%lvl_pop(:,i_cell) = 0.0
         ELSE
             grid%lvl_pop(:,i_cell) =  gas%g_level(:)/gas%g_level(1) *          &
-                                      exp(-con_h/(con_k*grid%t_dust(i_cell,1))*&
+                                      exp(-con_h/(con_k*grid%t_gas(i_cell))*&
                                       (gas%energylevel(:))*con_c*100.0_r2)
                                     
             grid%lvl_pop(:,i_cell) = grid%lvl_pop(:,i_cell) /                  &
