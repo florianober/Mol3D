@@ -11,8 +11,12 @@ MODULE parser_mod
     PUBLIC :: parse
     !--------------------------------------------------------------------------!
     INTERFACE parse
-        MODULE PROCEDURE parse_int_i1, parse_int_i2,                           &
-                         parse_real, parse_str, parse_log
+        MODULE PROCEDURE parse_int_i1,                                         &
+                         parse_int_i2,                                         &
+                         parse_real_r1,                                        &
+                         parse_real_r2,                                        &
+                         parse_str,                                            &
+                         parse_log
     END INTERFACE
     !--------------------------------------------------------------------------!
     
@@ -63,9 +67,9 @@ MODULE parser_mod
             STOP
         END IF
     END SUBROUTINE parse_int_i2
-    
-    
-    SUBROUTINE parse_real(keyword,var,data_file)
+
+
+    SUBROUTINE parse_real_r2(keyword, var, data_file)
 
         IMPLICIT NONE
         ! 
@@ -86,11 +90,35 @@ MODULE parser_mod
             PRINT '(2A)','ERROR in input file ('//TRIM(data_file)//') with keyword: ', keyword
             STOP
         END IF
+        
+    END SUBROUTINE parse_real_r2
 
 
-    END SUBROUTINE parse_real
-    
-    
+    SUBROUTINE parse_real_r1(keyword, var, data_file)
+
+        IMPLICIT NONE
+        ! 
+        !
+        !----------------------------------------------------------------------!
+        CHARACTER(len=*),INTENT(IN) :: keyword 
+        CHARACTER(len=*),INTENT(IN) :: data_file
+        REAL(kind=r1),INTENT(INOUT) :: var
+        
+        CHARACTER(len=256)          :: val_st
+        INTEGER                     :: iost
+        !----------------------------------------------------------------------!
+        CALL get_value(keyword, data_file, val_st, iost)
+        IF ( iost == 0 ) THEN
+            READ(val_st, fmt=*, IOSTAT=iost) var
+        END IF
+        IF ( iost /= 0 ) THEN
+            PRINT '(2A)','ERROR in input file ('//TRIM(data_file)//') with keyword: ', keyword
+            STOP
+        END IF
+        
+    END SUBROUTINE parse_real_r1
+
+
     SUBROUTINE parse_str(keyword,var,data_file)
 
         IMPLICIT NONE
