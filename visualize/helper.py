@@ -201,7 +201,6 @@ def create_CASA_fits(map_in, out_name='standard.fits',
     generate a fits file, which can be used in casa
     """
     from numpy import zeros
-
     header = pf.Header()
     map_size = map_in.shape
     if len(map_size) == 4:
@@ -577,3 +576,23 @@ def intrp1D(x1, y1, x2, y2, xcoord):
                 (float(xcoord) - float(x1)) * float(y2)) / \
                 (float(x2) - float(x1))
     return interpinx
+
+def poldegang(I, Q, U):
+    # for getting polarisation angle and degree at same time
+    # operates on entire arrays -> much faster
+    # based on P. Scicluna, 2015 routine
+
+    poldeg = np.zeros_like(I)
+    gamma = np.zeros_like(I)
+    
+    ind = np.where(I > 0.)
+    poldeg[ind] = (np.sqrt(Q[ind]*Q[ind] + U[ind]*U[ind]))/I[ind]
+
+    ind = np.where(poldeg > 0.)
+    gamma[ind] = 0.5*np.arctan2(U[ind], Q[ind])
+    
+    return poldeg, gamma
+
+def shrink(data, rows, cols):
+    return data.reshape(rows, data.shape[0]/rows,
+                        cols, data.shape[1]/cols).sum(axis=1).sum(axis=2)

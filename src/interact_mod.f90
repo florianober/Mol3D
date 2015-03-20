@@ -118,8 +118,7 @@ CONTAINS
         CALL RAN2(rand_nr, rndx)
         
         IF ( rndx < dust%albedo(i_dust, photon%nr_lam) ) THEN
-            photon%last_interaction_type = 'S'
-
+            
             ! 2.1 scattering
             CALL scatter( basics, rand_nr, dust, photon, i_dust )
             ! apply rotation matrix -> get new direction of the photon package
@@ -129,16 +128,17 @@ CONTAINS
             ! update the stokes vektor to consider the correct polarization
             ! state (testing phase)
             CALL trafo(dust, photon, i_dust)
-
+            photon%last_interaction_type = 'S'
         ELSE
-            photon%last_interaction_type = 'E'
             ! 2.1 immediate re-emission B&W
+            
             CALL immediate(basics, rand_nr, grid, dust, photon, i_dust)
             CALL start_grain(basics, rand_nr, photon)
+            photon%last_interaction_type = 'E'
         END IF
 
     END SUBROUTINE interact_temp
-        ! ##########################################################################
+    ! ##########################################################################
     ! Scattering causes a change of stokes vector (I,Q,U,V).  This
     ! transformation occurs in two steps. 
     ! At first, stokes vector is transformed into the new r,l-plane
@@ -156,15 +156,14 @@ CONTAINS
         REAL(kind=r2)                                       :: QHELP, i_1
         !----------------------------------------------------------------------!
         ! ---
-        
         i_1       = photon%stokes(1)
         ! scattering
         ! Mathematical positive rotation of r,l-plane around
         !              p-axis by the angle PHI
-        QHELP     =  photon%COS2PH * photon%stokes(2) -                        &
+        QHELP     =  photon%COS2PH * photon%stokes(2) +                        &
                      photon%SIN2PH * photon%stokes(3)
-        photon%stokes(3) =  photon%SIN2PH * photon%stokes(2) +                 &
-                            photon%COS2PH * photon%stokes(3)
+        photon%stokes(3) =  - photon%SIN2PH * photon%stokes(2) +               &
+                              photon%COS2PH * photon%stokes(3)
         photon%stokes(2) =  QHELP
         ! Mathematical negative rotation around r-axis by THETA transformes
         ! the Stokes vector (I,Q,U,V) with the scattering matrix.

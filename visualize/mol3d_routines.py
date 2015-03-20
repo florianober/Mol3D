@@ -20,15 +20,7 @@ try:
 except:
     PATH_RESULTS = './'
 
-MOL3D_FILES = array(['_cell_boundaries.dat', '_input_file.dat',
-                     '_model.dat', '_temp_x.dat',
-                     '_velo_ch_map.dat', '_velo_ch_mapint.dat',
-                     '_velo_ch_mapsum.dat',
-                     '_visual_xy.dat', '_visual_xz.dat',
-                     '_visual_yz.dat', '_velo_ch_map.fits.gz'])
-
 # some routines to read mol3d results from file
-
 
 def load_mol3d_zerovchmap(file_path, ch=-1):
     map_in = open(file_path)
@@ -81,43 +73,18 @@ def load_mol3d_fullvchmap(file_path, return_all=False):
     else:
         return pic
 
-def load_mol3d_vchmap(file_path, return_all=False):
+def load_from_fits(file_path, return_all=False):
+    """" load a map from a fits file"""
     fits = pf.open(file_path)
 
     data = fits[0].data
     header = fits[0].header
 
     fits.close()
-
     if return_all:
         return data, header
     else:
         return data
-
-def load_mol3d_continuum_map(file_path, return_all=False):
-    map_in = open(file_path)
-    row = map_in.readline().split()
-    n_lam = int(row[0])
-    n_lam = 100
-    row = map_in.readline().split()
-    map_size = int(row[0])
-
-    pic = zeros((n_lam, map_size, map_size))
-    wlen = zeros(n_lam)
-
-    row = map_in.readline()	#empty row
-    for k in range(n_lam):
-        row = map_in.readline()	#empty row
-        row = map_in.readline().split()
-        wlen[k] = float(row[0])
-        row = map_in.readline()	#empty row
-        for j in range(map_size**2):
-            row = map_in.readline().split()
-            pic[k, int(row[1]), int(row[0])] = row[2]
-    if return_all:
-        return pic, wlen
-    else:
-        return pic
 
 def load_mol3d_map(file_path):
 
@@ -139,7 +106,6 @@ def load_mol3d_map(file_path):
     return pic
 
 # mol3d class definition
-
 class mol3d:
     """A class to handle mol3d objects"""
 
@@ -147,17 +113,16 @@ class mol3d:
         self.__pname = pname
         self.__attr = {}
         self.__velochmap = []
+        self.__continuum_maps_mono = []
+        self.__continuum_maps_bin = []
+        self.__continuum_maps_raytrace = []
         self.__vch = []
-        self.__files = []
         self.__path_results = path_results
-        for item in MOL3D_FILES:
-            # search for files for this pname
-            self.__files.append(os.path.isfile(self.__path_results +
-                                               pname + item))
+
         # search for key in input_file and add to dictionary
         # this has to be extended
-
-        if self.__files[1]:
+        
+        if os.path.isfile(self.__path_results + pname + '_input_file.dat'):
             self.__attr['r_path'] = self.get_attr_from_file('r_path')
             self.__attr['r_ou'] = float(self.get_attr_from_file('r_ou'))
             self.__attr['r_in'] = float(self.get_attr_from_file('r_in'))
@@ -168,14 +133,6 @@ class mol3d:
             self.__attr['n_bin_map'] = int(self.get_attr_from_file('n_bin_map'))
 
             self.__attr['gas_cat_name'] = self.get_attr_from_file('gas_cat_name')
-            #~ if 'CO10' or 'CS10' in pname:
-                #~ #dirty hack for a (now corrected) in older simulations output
-                #~ self.__attr['line'] = 10
-            #~ elif 'CS13' in pname:
-                #~ self.__attr['line'] = 13
-            #~ elif 'CS14' in pname:
-                #~ self.__attr['line'] = 14
-            #~ else:
             self.__attr['line'] = int(self.get_attr_from_file('line'))
             
             self.__attr['i_vel_chan'] = int(self.get_attr_from_file('i_vel_chan'))
@@ -216,28 +173,59 @@ class mol3d:
             self.__attr['dtr_freq'] = (self.__attr['tr_freq'] /
                                        hlp.c*self.__attr['dvelo'])
         else:
-            print('ERROR: Could not find results')
+            print('ERROR: Could not find results (input file)')
 
     def return_velo_ch_map(self):
         if self.__velochmap == []:
-            # load map into memory, first try open the fits file (much faster)
-            if self.__files[10]:
-                self.__velochmap = load_mol3d_vchmap(self.__path_results +
-                                                     self.__pname +
-                                                     MOL3D_FILES[10])
-            # if the fits file is not available try open the ascii file
-            # (older versions/results)
-            elif self.__files[4]:
-                self.__velochmap = load_mol3d_fullvchmap(self.__path_results +
-                                                         self.__pname +
-                                                         MOL3D_FILES[4])
-            else:
-                print('ERROR: could not find velocity channel maps')
+            # load map into memory, try open the fits file
+            file_name = self.__path_results + self.__pname + '_velo_ch_map.fits.gz'
+            if os.path.isfile(file_name):
+                self.__velochmap = load_from_fits(file_name)
         else:
             pass
         return self.__velochmap
 
     velo_ch_map = property(return_velo_ch_map)
+
+    def return_continuum_maps_mono(self):
+        if self.__continuum_maps_mono == []:
+            # load maps into memory
+            file_name = self.__path_results + self.__pname +                   \
+                        '_continuum_map_mono.fits.gz'
+            if os.path.isfile(file_name):
+                self.__continuum_maps_mono = load_from_fits(file_name)
+        else:
+            pass
+        return self.__continuum_maps_mono
+
+    continuum_maps_mono = property(return_continuum_maps_mono)
+
+    def return_continuum_maps_bin(self):
+        if self.__continuum_maps_bin == []:
+            # load maps into memory
+            file_name = self.__path_results + self.__pname +                   \
+                        '_continuum_map_bin.fits.gz'
+            if os.path.isfile(file_name):
+                self.__continuum_maps_bin = load_from_fits(file_name)
+        else:
+            pass
+        return self.__continuum_maps_bin
+
+    continuum_maps_bin = property(return_continuum_maps_bin)
+
+    def return_continuum_maps_raytrace(self):
+        if self.__continuum_maps_raytrace == []:
+            # load maps into memory
+            file_name = self.__path_results + self.__pname +                   \
+                        '_continuum_map_raytrace.fits.gz'
+            if os.path.isfile(file_name):
+                self.__continuum_maps_raytrace = load_from_fits(file_name)
+        else:
+            pass
+        return self.__continuum_maps_raytrace
+
+    continuum_maps_raytrace = property(return_continuum_maps_raytrace)
+
 
     def return_vch_array(self):
         if self.__vch == []:

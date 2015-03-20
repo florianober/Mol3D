@@ -24,6 +24,7 @@ MODULE source_type
         REAL(kind=r2),DIMENSION(:),ALLOCATABLE               :: wave_pdf
         REAL(kind=r2),DIMENSION(:),ALLOCATABLE               :: wave_cdf
         INTEGER                                              :: s_type
+        INTEGER                                              :: emission_concept
 
     END TYPE SOURCE_TYP
 
@@ -147,7 +148,7 @@ CONTAINS
                     return
                 END IF
             END IF
-
+            this%source(i_source)%emission_concept = 1 ! (isotropic)
         ELSE IF (s_type == 2) THEN
             ! source is a point source, but given is the luminosity and Temperature
             !
@@ -172,6 +173,7 @@ CONTAINS
                 print *,'ERROR: star luminosity not given'
                 return
             END IF
+            this%source(i_source)%emission_concept = 1 ! (isotropic)
         ELSE
             print *, 'ERROR: source type not implemented'
             stop

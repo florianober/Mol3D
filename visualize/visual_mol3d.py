@@ -66,7 +66,7 @@ def main():
             one_dim(temp_paths[i], i=0)
 
     # present line spectrum, intensity map and velocity channel maps
-
+    
     mkspec.make_spectra(PATH_RESULTS, P_NAME)
 
     # present continuum maps, sed's

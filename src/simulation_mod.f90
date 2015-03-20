@@ -81,9 +81,6 @@ CONTAINS
     ! now, provide some extra visualisation output 
     ! 1: xz plane, 2: xy plane, 3: yz plane
     print *, "| generate visualisation output"
-!~     CALL vis_plane(grid, basics, model, 1, 401)
-!~     CALL vis_plane(grid, basics, model, 2, 401)
-!~     CALL vis_plane(grid, basics, model, 3, 401)
     CALL vis_plane_fits(grid, basics, model, 1, 401)
     CALL vis_plane_fits(grid, basics, model, 2, 401)
     CALL vis_plane_fits(grid, basics, model, 3, 401)

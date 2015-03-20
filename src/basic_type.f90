@@ -31,7 +31,6 @@ MODULE basic_type
         TYPE(Common_TYP) :: mtype                       ! -----------------    !
         !----------------------------------------------------------------------!
         INTEGER          :: pnamelen
-        INTEGER          :: concept_ps
         INTEGER          :: num_core
         
         REAL(kind=r2)    :: PIx2
@@ -86,7 +85,7 @@ MODULE basic_type
     !--------------------------------------------------------------------------!
 CONTAINS
 
-    SUBROUTINE InitBasic(this, ut, un, pname, presult, concept,                &
+    SUBROUTINE InitBasic(this, ut, un, pname, presult,                         &
                          do_MC_temperature, old_pname, old_model,              &
                          do_continuum_raytrace, do_continuum_mc,               &
                          do_velo_ch_map, do_peel_off,                          &
@@ -98,7 +97,6 @@ CONTAINS
         TYPE(Basic_TYP)       :: this
         
         INTEGER               :: ut
-        INTEGER               :: concept
         INTEGER               :: n_tem
         INTEGER               :: num_core
         
@@ -121,7 +119,7 @@ CONTAINS
         LOGICAL               :: do_peel_off
 
         !----------------------------------------------------------------------!
-        INTENT(IN)          :: ut, un, presult, pname, concept, num_core,      &
+        INTENT(IN)          :: ut, un, presult, pname, num_core,               &
                                n_tem, t_dust_max, t_dust_min,                  &
                                do_MC_temperature, old_model, old_pname,        &
                                pluto_data, do_continuum_raytrace,              &
@@ -199,7 +197,6 @@ CONTAINS
         this%pronam_old = old_pname    
         this%path_results = presult
         this%pnamelen = LEN_TRIM(pname)
-        this%concept_ps = concept
         this%input_file = input_file
         this%new_input_file = new_input_file
         

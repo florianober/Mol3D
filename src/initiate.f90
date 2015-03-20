@@ -139,7 +139,6 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
     ref_u      = con_AU           ! AU at the moment for  protoplanetary disks
 
     ref_u_str  = "AU"             ! reference unit
-    concept_ps = 1                !Emission concept (1) Point-like, isotropic
 
     ! set further parameters 
 
@@ -231,17 +230,16 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
         CALL parse('do_peel_off',peel_off,new_input_file) 
         WRITE(help,fmt='(L1)') peel_off
         WRITE(unit=3,fmt='(A)') 'do_peel_off = {'//TRIM(help)//&
-        '}              calculate temperature (with monte carlo method)'
+        '}                    use peel-off technique'
     ELSE
         do_MC_temperature = .False.
         peel_off = .False.
     END IF
 
     CALL parse('do_continuum_mono', do_continuum_mc, new_input_file) 
-    
     WRITE(help,fmt='(L1)') do_continuum_mc
-    WRITE(unit=3,fmt='(A)') 'do_contiuum_mc = {'//TRIM(help)//&
-    '}                 make full Monte Carlo contiuum maps and seds'
+    WRITE(unit=3,fmt='(A)') 'do_continuum_mono = {'//TRIM(help)//&
+    '}              make full Monte Carlo continuum maps and seds'
 
 
     CALL parse('do_continuum_raytrace', do_continuum_raytrace, new_input_file)
@@ -259,19 +257,20 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
 
     
     CALL InitBasic(basics,photon_type,'Reemission map', proname, r_path,       &
-                   concept_ps, do_MC_temperature, old_proname,                 &
+                   do_MC_temperature, old_proname,                             &
                    old_model, do_continuum_raytrace,                           &
-                   do_continuum_mc, do_velo_ch_map, peel_off,               &
+                   do_continuum_mc, do_velo_ch_map, peel_off,                  &
                    n_tem, t_dust_min, t_dust_max, num_core, pluto_data,        &
                    input_file, new_input_file)
 
     !------------------------------  Init Model  ------------------------------!
      
     
-    CALL parse('r_in',r_in,input_file)
-    WRITE(help,fmt='(ES15.6)') r_in
-    WRITE(unit=3,fmt='(A)') 'r_in = {'//TRIM(help)//&
-    '}             inner radius'
+!~     CALL parse('r_in',r_in,input_file)
+!~     
+!~     WRITE(help,fmt='(ES15.6)') r_in
+!~     WRITE(unit=3,fmt='(A)') 'r_in = {'//TRIM(help)//&
+!~     '}             inner radius'
 
     CALL parse('r_ou',r_ou,input_file)
     WRITE(help,fmt='(ES15.6)') r_ou    
@@ -294,10 +293,10 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
     WRITE(unit=3,fmt='(A)') 'R_star = {'//TRIM(help)//&
     '}           radius of star'
     
-    CALL parse('M_star',M_star,new_input_file)
     WRITE(help,fmt='(ES15.6)') M_star
     WRITE(unit=3,fmt='(A)') 'M_star = {'//TRIM(help)//&
     '}           stellar mass'
+
     
     WRITE(unit=3,fmt='(A)') ''
     n_map     = 1                          !numper of maps to calculate
@@ -340,8 +339,7 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
     '}                  factor to zoom inside the model >= 1 !'
     WRITE(unit=3,fmt='(A)') ''
 
-
-    al_map(1)   = 5.0
+    al_map(1)   = MIN(5.0_r2, MAX(th_map(1), 1.0_r2))
 
     CALL InitModel(model,1, ref_u_str, ref_u, r_in, r_ou, mass_dust, t_eff,    &
                    R_star, M_star, n_map, distance, &
@@ -441,15 +439,15 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
     ! -------------------------------------
     ! Mode 1: give R_star and T_star, e.g., 
     !   CALL AddSources(sources_in,1,(/0.0_r2,0.0_r2,0.0_r2/),                 &
-    !                   R_star=model%r_star, T_star=model%t_star)
+    !                   T_star=model%t_star, R_star=model%r_star)
     ! Mode 2: give T_star and Luminosity, e.g., 
     !   CALL AddSources(sources_in,2,(/0.0_r2,0.0_r2,0.0_r2/),                 &
     !                   T_star=model%T_star, L_star=REAL(L_sun*1.9,kind=r1))
     ! -------------------------------------
     
     ! 1 source (used as the primary source, defined in the input file)
-    CALL AddSources(sources_in,1,(/0.0_r2,0.0_r2,0.0_r2/), R_star=model%r_star,&
-                    T_star=model%t_star)
+    CALL AddSources(sources_in,1,(/0.0_r2,0.0_r2,0.0_r2/),                     &
+                    T_star=model%t_star, R_star=model%r_star)
     ! 2 source (added by hand, could be an embedded planet or whatever)
     ! CALL AddSources(sources_in,2,(/sf*4.95_r2,-sf*0.72_r2,0.0_r2/),          &
     !                 T_star=1000.0, L_star=REAL(1e-4*L_sun,kind=r1))

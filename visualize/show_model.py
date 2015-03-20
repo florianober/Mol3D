@@ -189,7 +189,8 @@ def present_plane(file_in, plane):
 
         m_range = [k_min, k_max, j_min, j_max]
         ext = file_path[-6: -4]+'-plane'
-        
+        xlab = 'distance [AU]'
+        ylab = xlab
         
     pic += 1e-250
     #-------------------------------------------------

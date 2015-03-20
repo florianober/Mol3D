@@ -176,7 +176,6 @@ CONTAINS
         TYPE(SOURCES),INTENT(IN)                         :: sources_in
         !----------------------------------------------------------------------!
         INTEGER                                          :: i_dust
-        INTEGER                                          :: i_tem
         INTEGER                                          :: i_lam
         !----------------------------------------------------------------------!
         ! reset maps
@@ -187,7 +186,7 @@ CONTAINS
         END DO
         !TbD: better adjustment of the wavelength table
 !~         DO i_lam = 41, 41!dust%n_lam
-        DO i_lam = 18, 18!dust%n_lam
+        DO i_lam = 22, 22!dust%n_lam
             ! First we calculate the scattered light from the source
             WRITE (*,'(A,F6.3, A)') " | | | - wavelength : ",                  &
                                 dust%lam(i_lam)*1e6, " micron"

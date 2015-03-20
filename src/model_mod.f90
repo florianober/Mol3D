@@ -8,29 +8,11 @@ module model_mod
     use datatype
     use var_global
     implicit none
-    public :: get_den!, get_n_den_par 
+    public :: get_den
 contains
 
-  ! ################################################################################################
-  ! return: number of user-defined parameters required to describe the density distribution
-  !         given in 'subroutine dustden' below
-  ! ---
-  !subroutine get_n_den_par
-  !  use var_global
-    ! ---
 
-    ! **********************************************************************************************
-    ! BEGIN: Number of parameters
-    ! ---
-    !n_den_par = 0
-    ! ---
-    ! END  : Number of parameters
-    ! **********************************************************************************************
-
-  !end subroutine get_n_den_par
-
-
-  ! ################################################################################################
+  ! ############################################################################
   ! return: particle number density [ 1 / m^3 ]
   ! ---
   ! RULES: HOW TO DEFINE YOUR DENSITY DISRTRIBUTION
@@ -113,8 +95,7 @@ contains
 
         ! END: DEFINITION DENSITY DISTRIBUTION
         ! **********************************************************************
-        
-        
+
     END FUNCTION get_den
   
 end module model_mod

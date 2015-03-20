@@ -46,9 +46,13 @@ contains
     REAL(kind=r2)                                    :: rndx
     !--------------------------------------------------------------------------!
     i_lam = 1
-    IF (basics%concept_ps == 1) THEN
-        ! concept_ps==1: point source, isotropic emission
-        ! 1. direction (isotropic)
+    ! 1. get new source to start from
+    CALL RAN2(rand_nr,rndx)
+    i_source = GetNewSource(sources_in,rndx)
+    
+    ! 2. direction
+    IF ( sources_in%source(i_source)%emission_concept == 1) THEN
+        ! (isotropic)
         CALL RAN2(rand_nr, rndx)
 
         photon%SINPHI = sin( rndx * basics%PIx2 )
@@ -61,37 +65,33 @@ contains
         photon%SINTHE = sqrt(4.0_r2 * (rndx - rndx**2))
         photon%COSTHE = 1.0_r2 - 2.0_r2*rndx
 
-        ! 2. get new source
-        CALL RAN2(rand_nr,rndx)
-        i_source = GetNewSource(sources_in,rndx)
-        ! 3. get new wavelength
-        IF (.not. photon%fixed_lam) THEN
-            DO
-                CALL RAN2(rand_nr,rndx)
-                IF (rndx .le. 1.0e-300_r2) CYCLE
-                IF (rndx .gt. maxval(sources_in%source(i_source)%wave_cdf) ) THEN
-                    i_lam = -1
-                    photon%kill = .True.
-                    photon%inside  = .False.
-                ELSE
-                    i_lam = GetNewLam(sources_in,i_source,rndx)
-                    photon%kill = .False.
-                    photon%inside  = .True.
-                END IF
-                exit
-            END DO
-        END IF
-        ! 4. starting point = location of source
-        photon%pos_xyz(:) = sources_in%source(i_source)%pos_xyz
-
-        ! 5. star is located in inner dust-free region
-        photon%nr_cell = get_cell_nr(grid,photon%pos_xyz(:))
-
     ELSE
-           print *, "Type of emission concept for primary source not known [concept_ps]"
-           print *, "in subroutine start_prim in primary_temp."
-           stop
+        print *, "Type of emission concept for the source not known"
+        stop
     END IF
+
+    ! 3. get new wavelength
+    IF (.not. photon%fixed_lam) THEN
+        DO
+            CALL RAN2(rand_nr,rndx)
+            IF (rndx .le. 1.0e-300_r2) CYCLE
+            IF (rndx .gt. maxval(sources_in%source(i_source)%wave_cdf) ) THEN
+                i_lam = -1
+                photon%kill = .True.
+                photon%inside  = .False.
+            ELSE
+                i_lam = GetNewLam(sources_in,i_source,rndx)
+                photon%kill = .False.
+                photon%inside  = .True.
+            END IF
+            EXIT
+        END DO
+    END IF
+    ! 4. starting point = location of source
+    photon%pos_xyz(:) = sources_in%source(i_source)%pos_xyz
+
+    ! 5. set corresponding cell number
+    photon%nr_cell = get_cell_nr(grid,photon%pos_xyz(:))
 
     ! ---
     ! [B] initialize new photon parameters
@@ -100,7 +100,6 @@ contains
     photon%stokes(:) = (/1.0_r2, 0.0_r2, 0.0_r2, 0.0_r2/)
     photon%last_interaction_type = 'N'
 
-    
     IF (photon%fixed_lam) THEN
         photon%energy = sources_in%source(i_source)%wave_pdf(photon%nr_lam) *  &
                         sources_in%source(i_source)%Luminosity/                &
@@ -111,15 +110,16 @@ contains
         ! set energy of photon package   
         photon%energy         = sources_in%L_total /                           &
                                 model%no_photon
-!~         photon%energy_scale = sources_in%source(i_source)%energy_scale
     END IF
     ! photon inside model space
-    photon%D(:,:)         = basics%mat_ident3(:,:)  ! initialize rotation matrix
+
+    photon%D_2global(:,:)         = basics%mat_ident3(:,:)  ! initialize rotation matrix
 
     ! ---
     ! [C] apply rotation matrix
     CALL vecmat(photon)
-
+!~     print *, photon%D_2global
+!~     stop
     ! ---
     ! last point of interaction = start position
 
@@ -147,6 +147,7 @@ contains
     ! current position
 
     ! 2. direction of emission
+    ! (isotropic)
     CALL RAN2(rand_nr, rndx)
     photon%SINPHI = sin( rndx * basics%PIx2 )
     photon%COSPHI = cos( rndx * basics%PIx2 )
@@ -166,12 +167,13 @@ contains
     photon%inside    = .true.
 
     ! initialize rotation matrix
-    photon%D(:,:)    = basics%mat_ident3(:,:)
- 
+    !photon%D(:,:)    = basics%mat_ident3(:,:)
+    photon%D_2global(:,:)    = basics%mat_ident3(:,:)
+
     ! ---
     ! [C] apply rotation matrix
     CALL vecmat(photon)
-
+    
   END SUBROUTINE start_grain
 
 end module start_mod

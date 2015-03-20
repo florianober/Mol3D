@@ -41,6 +41,7 @@ MODULE model_type
         REAL(kind=r2),DIMENSION(:,:),ALLOCATABLE       :: dir_xyz
         REAL(kind=r2),DIMENSION(:,:),ALLOCATABLE       :: e_x
         REAL(kind=r2),DIMENSION(:,:),ALLOCATABLE       :: e_y
+        REAL(kind=r2),DIMENSION(:,:,:),ALLOCATABLE     :: D_2obs 
         
         
         INTEGER               :: n_map
@@ -120,7 +121,8 @@ CONTAINS
                     this%px_model_length_y(1:n_map), &
                     this%dir_xyz(1:3,1:n_map), &
                     this%e_x(1:3,1:n_map), &
-                    this%e_y(1:3,1:n_map) )
+                    this%e_y(1:3,1:n_map), &
+                    this%D_2obs(1:3,1:3, 1:n_map) )
                     
         this%th_map     = th_map
         this%ph_map     = ph_map
@@ -139,20 +141,38 @@ CONTAINS
             this%ph_map(i_map) = grad2rad(ph_map(i_map))
             this%al_map(i_map) = cos(grad2rad(al_map(i_map)))
             
-            this%dir_xyz(1, i_map) = sin(this%th_map(i_map)) * sin(PI/2.0_r2 - this%ph_map(i_map))
+            this%dir_xyz(1, i_map) = sin(this%th_map(i_map)) * cos(this%ph_map(i_map))
             this%dir_xyz(2, i_map) = sin(this%th_map(i_map)) * sin(this%ph_map(i_map))
-            this%dir_xyz(3, i_map) = sin(PI/2.0_r2 - this%th_map(i_map))
+            this%dir_xyz(3, i_map) = cos(this%th_map(i_map))
             ! vector marking the +x-direction in the observers map
                 
             this%e_x(1, i_map) = -sin(this%ph_map(i_map))
-            this%e_x(2, i_map) =  sin(PI/2.0_r2-this%ph_map(i_map))
+            this%e_x(2, i_map) =  cos(this%ph_map(i_map))
             this%e_x(3, i_map) =  0.0_r2
             
             ! vector marking the +y-direction in the observers map
             
-            this%e_y(1, i_map) = sin(PI/2.0_r2-this%th_map(i_map)) * (-sin(PI/2.0_r2-this%ph_map(i_map)))
-            this%e_y(2, i_map) = sin(PI/2.0_r2-this%th_map(i_map)) * (-sin(this%ph_map(i_map)))
+            this%e_y(1, i_map) = cos(this%th_map(i_map)) * (-cos(this%ph_map(i_map)))
+            this%e_y(2, i_map) = cos(this%th_map(i_map)) * (-sin(this%ph_map(i_map)))
             this%e_y(3, i_map) = sin(this%th_map(i_map))
+
+            ! Rotationsmatrix to convert a vector from the global coordinate 
+            ! system into the observers one
+!~             this%D_2obs(1, :, i_map) = this%e_x(:, i_map)
+!~             this%D_2obs(2, :, i_map) = this%e_y(:, i_map)
+!~             this%D_2obs(3, :, i_map) = this%dir_xyz(:, i_map)
+            
+            this%D_2obs(1, 1, i_map) = cos(this%ph_map(i_map))
+            this%D_2obs(2, 1, i_map) = -cos(this%th_map(i_map)) * sin(this%ph_map(i_map))
+            this%D_2obs(3, 1, i_map) = -sin(this%th_map(i_map)) * sin(this%ph_map(i_map))
+
+            this%D_2obs(1, 2, i_map) = sin(this%ph_map(i_map))
+            this%D_2obs(2, 2, i_map) = cos(this%th_map(i_map)) * cos(this%ph_map(i_map))
+            this%D_2obs(3, 2, i_map) = sin(this%th_map(i_map)) * cos(this%ph_map(i_map))
+
+            this%D_2obs(1, 3, i_map) = 0.0_r2
+            this%D_2obs(2, 3, i_map) = -sin(this%th_map(i_map))
+            this%D_2obs(3, 3, i_map) =  cos(this%th_map(i_map))
             
             !
             ! user unit, but should be fixed to [AU]
@@ -176,7 +196,8 @@ CONTAINS
                     this%px_model_length_y, &
                     this%dir_xyz, &
                     this%e_x, &
-                    this%e_y)
+                    this%e_y, &
+                    this%D_2obs)
         
         
     END SUBROUTINE CloseModel
