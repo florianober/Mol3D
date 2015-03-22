@@ -1,74 +1,62 @@
-#####################################################################################
-#                            Mol3D input file                                       #
-#                                                                                   #
-# All parameters that can be changed without recompiling Mol3D are listed here.     #
-# Please be aware that some parameters are not intended to be changeable.           #
-# They are note listed here, but accessable via the src/initiate.f90 source file.   #
-#                                                                                   #
-# If you have questions, please feel free to ask me.                                #
-#                                                                                   #
-# author: Florian Ober                                                              #
-# email : fober@astrophysik.uni-kiel.de                                             #
-# date  : Mar 2015                                                                  #
-#####################################################################################
+##################################################################################
+#                            Mol3D input file                                    #
+#                                                                                #
+# All parameters that can be changed without recompiling Mol3D are listed here.  #
+# Please be aware that some parameters are not intended to be changeable yet.    #
+# They are note listed here, but accessable via the                              #
+# "src/initiate.f90" source file.                                                #
+# If you have questions, please feel free to ask me.                             #
+#                                                                                #
+# author         : Florian Ober                                                  #
+# email          : fober@astrophysik.uni-kiel.de                                 #
+# mol3d version  : Mar 2015                                                      #
+#                                                                                #
+# execution date : 2015-03-17 / 09:58                                            #
+##################################################################################
 
-                                          (+) working, (o) testing, (-) not working
 
-proname = {example}                       project name
-r_path = {results/}                       define results path
+proname = {pol_test_nopeel_i75}        project name
+r_path = {results/}                  define results path
+old_model = {F}
+old_proname = {notdefined}           the project name of the older calculation
+num_core = {003}                     number of cores used (raytracing, temperature calculation (TbD))
 
-num_core    = {003}                       number of cores to use in parallel mode
-old_model   = {F}                         use results from earlier calculations
-old_proname = {notset}                    the project name of the older calculation 
+do_MC_temperature = {F}              calculate temperature (with monte carlo method)
+do_peel_off = {F}                    use peel of technique
+do_continuum_mono = {T}              make full Monte Carlo contiuum maps and seds
+do_continuum_raytrace = {F}
+do_velo_ch_map = {F}
 
-do_MC_temperature = {T}                   calculate dust temperature (+)
-                                          If F(alse) an analytical temperature distribution is
-                                          used, see src/temp_mod.f90 -> "Get_temp" function
-                                          In addition Sed's and maps are generated on the fly
-                                          (see peel off)
+r_in = {   5.000000E+00}             inner radius
+r_ou = {   1.200000E+02}             outer radius
+mass_dust = {   1.000000E-06}        dust mass
+t_eff = {   4.000000E+03}            effective Temperature
+R_star = {   2.000000E+00}           radius of star
+M_star = {   7.000000E-01}           stellar mass
 
-do_continuum_mono = {F}                   make monochromatic continuum !scattering! maps and seds
-                                          using a Monte Carlo method (+)
+distance = {   1.400000E+02}         object distance [pc]
+n_bin_map = {0200}                   half number of pixel, total pixel = 2 * n_bin_map1 + 1
+no_photon = {2.00E+10}              number of photons per wavelength
+th_map = { 75.00}                    inclination to observer
+ph_map = {  0.00}                   
 
-do_peel_off = {T}                         peel of photons for high signal to noise sed's and maps
-                                          while temperature calculation while temperature
-                                          calculation or for the monochromatic transfer (+)
+zoom_map = {  1.00}                  factor to zoom inside the model >= 1 !
 
-do_continuum_raytrace = {F}               make continuum maps and sed's using a raytracer (+)
+molratio = {   9.900000E+01}         gas-dust ratio
+abundance = {   1.000000E-04}        selected molecule number relative abundance to H2
+line_mode = {3}                      set the method to calculate the level populations,1 := LTE  2 := FEP  3 := LVG  9 := file (TbD)
+line = { 3}                          line transition no (see gas_input file)  
 
-do_velo_ch_map = {F}                      make velocity-channel maps and spectra (+)
+gas_cat_name = {co.dat}              gas catalog name (in input/mol) (Leiden database style)
+i_vel_chan = { 36}                   (half) Number of velocity channels
+vel_max = { 1500.00}                  max velocity in spectrum (in m/s)
+dust_cat_name = {mrn---v4}           dust catalog name (in input/dust) (in mc3d style)
 
-r_in   = {1.0}                            inner radius
-r_ou   = {120}                            outer radius
-mass_dust = {1e-5}                        dust mass of disk
-t_eff = {4000.0}                          effective Temperature
-R_star = {2}                              radius of star
-M_star = {0.7}                            stellar mass
+grid_name = {spherical}              possible values: spherical (OK), cylindrical (OK), cartesian (testing)
+grid_type = {1}                      default = 1. 2 and higher values for user defined grids
+n_a = { 100}                     
+n_b = { 101}                     
+n_c = {   1}                     
+sf = { 1.030000000}                  stepfactor for logarithm grid
 
-distance  = {140.0}                       object distance [pc]
-n_bin_map = {200}                         half number of pixel, total pixel = 2 * n_bin_map + 1
-no_photon = {100000}                      total number of photons (min ~10 * No of cells)
-th_map = {1.0}                            inclination to observer
-ph_map = {0.0}
-zoom_map = {1.0}
-
-molratio = {99.0}                         gas-dust mass ratio
-abundance = {1e-4}                        selected molecule number abundance relative to H2
-line_mode = {3}                           set the method to calculate the level populations
-                                          1 := LTE  2 := FEP  3 := LVG
-line = {3}                                line transition number (see gas_input file)
-i_vel_chan = {36}                         (half) Number of velocity channels
-vel_max = {1500.0}                        max velocity in spectrum (in m/s)
-
-gas_cat_name = {co.dat}                   gas catalog name (in input/mol) (Leiden database style)
-dust_cat_name = {mrn--250}                dust catalog name (in input/dust) (in mc3d style)
-grid_name = {spherical}                   possible values: spherical (+), cylindrical (+), cartesian (o)
-grid_type = {1}                           default = 1. 2 and higher values for user defined grids
-                                                    9 is reserved for a grid defined in a text file (+)
-
-n_a = {100}                               x - cartesian(o), rho - cylindrical(+), r     - spherical(+)
-n_b = {101}                               y - cartesian(o), phi - cylindrical(+), theta - spherical(+)
-n_c = {1}                                 z - cartesian(o), z   - cylindrical(+), phi   - spherical(+)
-sf = {1.03}
-
-flux_unit = {Jy_pix}                      possible values: Jy_pix, T_mb (for lines only, check results)
+flux_unit = {Jy_pix}                 possible values: Jy_pix, T_mb
