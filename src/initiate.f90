@@ -266,11 +266,11 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
     !------------------------------  Init Model  ------------------------------!
      
     
-!~     CALL parse('r_in',r_in,input_file)
-!~     
-!~     WRITE(help,fmt='(ES15.6)') r_in
-!~     WRITE(unit=3,fmt='(A)') 'r_in = {'//TRIM(help)//&
-!~     '}             inner radius'
+    CALL parse('r_in',r_in,input_file)
+    
+    WRITE(help,fmt='(ES15.6)') r_in
+    WRITE(unit=3,fmt='(A)') 'r_in = {'//TRIM(help)//&
+    '}             inner radius'
 
     CALL parse('r_ou',r_ou,input_file)
     WRITE(help,fmt='(ES15.6)') r_ou    
