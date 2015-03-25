@@ -62,7 +62,7 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
     REAL(kind=r2)                                    :: molratio
     REAL(kind=r2)                                    :: abundance
     REAL(kind=r2)                                    :: vel_max
-    REAL(kind=r2)                                    :: t_eff
+    REAL(kind=r2)                                    :: T_star
     REAL(kind=r2)                                    :: R_star
     REAL(kind=r2)                                    :: M_star
     REAL(kind=r2)                                    :: distance
@@ -283,16 +283,17 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
     WRITE(unit=3,fmt='(A)') 'mass_dust = {'//TRIM(help)//&
     '}        dust mass'
     
-    CALL parse('t_eff',t_eff,input_file)
-    WRITE(help,fmt='(ES15.6)') t_eff
-    WRITE(unit=3,fmt='(A)') 't_eff = {'//TRIM(help)//&
-    '}            effective Temperature'
+    CALL parse('T_star', T_star,input_file)
+    WRITE(help,fmt='(ES15.6)') T_star
+    WRITE(unit=3,fmt='(A)') 'T_star = {'//TRIM(help)//&
+    '}             effective star Temperature'
     
-    CALL parse('R_star',R_star,input_file)
+    CALL parse('R_star', R_star,input_file)
     WRITE(help,fmt='(ES15.6)') R_star
     WRITE(unit=3,fmt='(A)') 'R_star = {'//TRIM(help)//&
     '}           radius of star'
-    
+
+    CALL parse('M_star', M_star,input_file)
     WRITE(help,fmt='(ES15.6)') M_star
     WRITE(unit=3,fmt='(A)') 'M_star = {'//TRIM(help)//&
     '}           stellar mass'
@@ -341,7 +342,7 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
 
     al_map(1)   = MIN(5.0_r2, MAX(th_map(1), 1.0_r2))
 
-    CALL InitModel(model,1, ref_u_str, ref_u, r_in, r_ou, mass_dust, t_eff,    &
+    CALL InitModel(model,1, ref_u_str, ref_u, r_in, r_ou, mass_dust, T_star,    &
                    R_star, M_star, n_map, distance, &
                    no_photon,th_map,ph_map,zoom_map,al_map,n_bin_map)
                     
