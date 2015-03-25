@@ -233,8 +233,12 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
         '}                    use peel-off technique'
     ELSE
         do_MC_temperature = .False.
-        peel_off = .False.
     END IF
+
+    CALL parse('do_peel_off',peel_off,new_input_file) 
+    WRITE(help,fmt='(L1)') peel_off
+    WRITE(unit=3,fmt='(A)') 'do_peel_off = {'//TRIM(help)//&
+    '}                    use peel-off technique'
 
     CALL parse('do_continuum_mono', do_continuum_mc, new_input_file) 
     WRITE(help,fmt='(L1)') do_continuum_mc
