@@ -222,6 +222,7 @@ CONTAINS
         new_pop(:) = 0.0
         old_pop(:) = 0.0
         old_pop(1) = 1.0
+        new_pop(1) = 1.0
         A(:,:) = 0.0
         c = 0.0
 
@@ -268,6 +269,9 @@ CONTAINS
                 print *, J_mid
                 print *, ''
                 print *, L, R_mid
+                print *, ''
+                print *, grid%cell_gauss_a(i_cell) * grid%absvelo(i_cell)
+                print *, grid%cell_gauss_a(i_cell) , grid%absvelo(i_cell)
                 stop
             END IF
             j = MAXLOC(new_pop, 1)

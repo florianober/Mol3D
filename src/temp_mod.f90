@@ -122,15 +122,17 @@ CONTAINS
         DO i_cell = 1,grid%n_cell
 
             ! set line width in each cell (in fact the inverse value)
-            grid%cell_gauss_a(i_cell) = 1.0_r2/(sqrt(2.0_r2*con_k*grid%t_dust(i_cell,1)/ &  
-                                                (gas%mol_weight*1.0e-3_r2/con_Na) &
-                                                +100.0_r2**2)) ! 100.0 eq turb. line width TbD
+            IF (grid%t_gas(i_cell) > 1.0e-2) THEN
+                grid%cell_gauss_a(i_cell) = 1.0_r2/(sqrt(2.0_r2*con_k*grid%t_gas(i_cell)/ &  
+                                            (gas%mol_weight*1.0e-3_r2/con_Na) + &
+                                            0.0_r2**2)) ! 100.0 eq turb. line width TbD
                                                 !+grid%velo(i_cell,3)**2))   ! use i_z (as an indicator for turbolence)
                                                 !+grid%v_turb(i_cell)**2))   ! use turb array (TbD)
-                                                
+            ELSE
+                grid%cell_gauss_a(i_cell) = 0.0_r2
+            END IF                
             ! save quadratic line width value for faster calculations
             grid%cell_gauss_a2(i_cell)  =   grid%cell_gauss_a(i_cell)**2
-
         END DO
     END IF
     END SUBROUTINE set_temperature
