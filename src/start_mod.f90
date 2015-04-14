@@ -101,8 +101,10 @@ contains
     photon%last_interaction_type = 'N'
 
     IF (photon%fixed_lam) THEN
+        ! when using a fixed wavelength, we need to weightend the photons
+        ! energy with the source pdf
         photon%energy = sources_in%source(i_source)%wave_pdf(photon%nr_lam) *  &
-                        sources_in%source(i_source)%Luminosity/                &
+                        sources_in%L_total /                                   &
                         model%no_photon
     ELSE
         photon%nr_lam         = i_lam          ! initial wavelength of photon
