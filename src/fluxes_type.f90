@@ -1,7 +1,6 @@
 !----------------------------------------------------------------------------!
 ! def fluxes_TYP
 ! inspired by fosite by T. Illenseer 2011
-! Note, I'm not sure about this type, maybe we should remove it?
 !----------------------------------------------------------------------------!
 MODULE fluxes_type
 
@@ -23,7 +22,7 @@ MODULE fluxes_type
 
         REAL(kind=r2), DIMENSION(:, :, :, :), ALLOCATABLE     :: channel_map
         REAL(kind=r2), DIMENSION(:, :, :, :), ALLOCATABLE     :: continuum_map
-        
+
     END TYPE Fluxes_TYP
     SAVE
     !--------------------------------------------------------------------------!
@@ -54,7 +53,7 @@ CONTAINS
         INTENT(IN)             :: ut, un, n_bin_map, n_tr, vch, n_lam
         INTENT(INOUT)          :: this
         !----------------------------------------------------------------------!
-        CALL InitCommon(this%fltype,ut,un)
+        CALL InitCommon(this%fltype, ut, un)
 
         ! stokes parameters
         this%stokes_ext(1) = "I"
@@ -62,7 +61,7 @@ CONTAINS
         this%stokes_ext(3) = "U"
         this%stokes_ext(4) = "V"
 
-        allocate(                                                              &
+        ALLOCATE(                                                              &
                  this%channel_map(0:2*n_bin_map,                               &
                                 0:2*n_bin_map,-vch:vch,1:n_tr),                &
                  this%continuum_map(0:2*n_bin_map, 0:2*n_bin_map, 1:n_lam, 1:4))

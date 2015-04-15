@@ -227,10 +227,6 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
         '}              calculate temperature (with monte carlo method)'
         CALL parse('do_MC_temperature',do_MC_temperature,new_input_file) 
 
-        CALL parse('do_peel_off',peel_off,new_input_file) 
-        WRITE(help,fmt='(L1)') peel_off
-        WRITE(unit=3,fmt='(A)') 'do_peel_off = {'//TRIM(help)//&
-        '}                    use peel-off technique'
     ELSE
         do_MC_temperature = .False.
     END IF
@@ -253,9 +249,6 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
     WRITE(help,fmt='(L1)') do_velo_ch_map
     WRITE(unit=3,fmt='(A)') 'do_velo_ch_map = {'//TRIM(help)//'}'
 
-    
-    WRITE(unit=3,fmt='(A)') '' 
-    
 !~     pluto_data = .True.
     pluto_data = .False.
 
@@ -421,7 +414,7 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
 
     aniso  = 1                 ! Scattering 1) Anisotropic (Mie, prefered) 
                                !            2) Isotropic (not tested)
-                               !            3) henyey-greenstein (not tested)
+                               !            3) Henyey-Greenstein (not tested)
     ALLOCATE(dust_cat(1:n_dust))
 
     CALL parse('dust_cat_name',dust_cat(1), input_file)
@@ -435,7 +428,7 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
                   sizexp, aniso, dust_cat, n_scatt_th, nrndpt)
     DEALLOCATE( dens_dust, &
                 dust_cat)
-    print '(A,I3)', " Number of dust components included: ", dust%n_dust
+    print '(A,I3)', " Number of dust components included  : ", dust%n_dust
 
     !----------------------------  Init Sources  ------------------------------!
 
@@ -443,20 +436,21 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
 
     ! -------------------------------------
     ! Mode 1: give R_star and T_star, e.g., 
-    !   CALL AddSources(sources_in,1,(/0.0_r2,0.0_r2,0.0_r2/),                 &
+    !   CALL AddSources(sources_in,1 ,(/0.0_r2,0.0_r2,0.0_r2/),                &
     !                   T_star=model%t_star, R_star=model%r_star)
     ! Mode 2: give T_star and Luminosity, e.g., 
     !   CALL AddSources(sources_in,2,(/0.0_r2,0.0_r2,0.0_r2/),                 &
     !                   T_star=model%T_star, L_star=REAL(L_sun*1.9,kind=r1))
     ! -------------------------------------
-    
+
     ! 1 source (used as the primary source, defined in the input file)
-    CALL AddSources(sources_in,1,(/0.0_r2,0.0_r2,0.0_r2/),                     &
+    CALL AddSources(sources_in, 1, (/0.0_r2,0.0_r2,0.0_r2/),                   &
                     T_star=model%t_star, R_star=model%r_star)
     ! 2 source (added by hand, could be an embedded planet or whatever)
     ! CALL AddSources(sources_in,2,(/sf*4.95_r2,-sf*0.72_r2,0.0_r2/),          &
     !                 T_star=1000.0, L_star=REAL(1e-4*L_sun,kind=r1))
-    print '(A,I3)', " Number of sources included: ", sources_in%n_sources
+    print '(A,I3)', " Number of radiation sources included: ",                 &
+                      sources_in%n_sources
     print '(A,F5.2,A)'," Total Luminosity : ", sources_in%L_total /            &
                         L_sun, " L_sun"
 
@@ -582,12 +576,16 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
 
     !---------------------------  Init Fluxes  --------------------------------!
 
-    CALL parse('flux_unit',flux_unit,new_input_file)
-    WRITE(unit=3,fmt='(A)') 'flux_unit = {'//TRIM(flux_unit)// &
-    '}                 possible values: Jy_pix, T_mb'
+    !CALL parse('flux_unit', flux_unit, new_input_file)
+    
+    !WRITE(unit=3,fmt='(A)') 'flux_unit = {'//TRIM(flux_unit)// &
+    !'}                 possible values: Jy_pix, T_mb'
+    ! we allways use Jy/pixel from now on, other units can be calculated in the
+    ! post processing
+    flux_unit = 'Jy_pix'
     
     CALL InitFluxes(fluxes,1, flux_unit,                                       &
-                    model%n_bin_map,gas%n_tr, gas%i_vel_chan,dust%n_lam)
+                    model%n_bin_map,gas%n_tr, gas%i_vel_chan, dust%n_lam)
 
     print *, "Code initialization done !"
     Close(unit=3)

@@ -128,6 +128,7 @@ class mol3d:
             self.__attr['r_in'] = float(self.get_attr_from_file('r_in'))
             self.__attr['sf'] = float(self.get_attr_from_file('sf'))
             self.__attr['distance'] = float(self.get_attr_from_file('distance'))
+            
             self.__attr['th_map'] = float(self.get_attr_from_file('th_map'))
             self.__attr['ph_map'] = float(self.get_attr_from_file('ph_map'))
             self.__attr['n_bin_map'] = int(self.get_attr_from_file('n_bin_map'))
@@ -142,7 +143,12 @@ class mol3d:
             # now calculate some more properties and make some consistency tests
             #~ if self.__attr['r_path'] != path_results:
                 #~ self.__attr['r_path'] = path_results
-
+            self.__attr['arcs'] = self.__attr['r_ou']/self.__attr['distance']
+            # desired flux unit
+            # 'AS': Jy/ arcsec**2
+            # 'PX': Jy/ pixel (the unit it is stored in the fits file)
+            self.__unit = 'AS'
+            self.set_unit(self.__unit)
             self.__attr['dvelo'] = (self.__attr['vel_max'] /
                                     (self.__attr['i_vel_chan']))
 
@@ -175,15 +181,30 @@ class mol3d:
         else:
             print('ERROR: Could not find results (input file)')
 
+    def get_unit(self):
+        return self.__unit
+
+    def set_unit(self, unit):
+        if unit == 'PX':
+            self.__unit_converter = 1.0
+            self.__unit = 'PX'
+        elif unit == 'AS':
+            self.__unit_converter = (self.__attr['n_bin_map']/self.__attr['arcs'])**2
+            self.__unit = 'AS'
+        else:
+            print('Requested unit not found')
+
     def return_velo_ch_map(self):
         if self.__velochmap == []:
             # load map into memory, try open the fits file
             file_name = self.__path_results + self.__pname + '_velo_ch_map.fits.gz'
             if os.path.isfile(file_name):
                 self.__velochmap = load_from_fits(file_name)
+            else:
+                return [] 
         else:
             pass
-        return self.__velochmap
+        return self.__velochmap * self.__unit_converter
 
     velo_ch_map = property(return_velo_ch_map)
 
@@ -194,9 +215,11 @@ class mol3d:
                         '_continuum_map_mono.fits.gz'
             if os.path.isfile(file_name):
                 self.__continuum_maps_mono = load_from_fits(file_name)
+            else:
+                return []
         else:
             pass
-        return self.__continuum_maps_mono
+        return self.__continuum_maps_mono * self.__unit_converter
 
     continuum_maps_mono = property(return_continuum_maps_mono)
 
@@ -207,9 +230,11 @@ class mol3d:
                         '_continuum_map_bin.fits.gz'
             if os.path.isfile(file_name):
                 self.__continuum_maps_bin = load_from_fits(file_name)
+            else:
+                return []
         else:
             pass
-        return self.__continuum_maps_bin
+        return self.__continuum_maps_bin * self.__unit_converter
 
     continuum_maps_bin = property(return_continuum_maps_bin)
 
@@ -220,9 +245,11 @@ class mol3d:
                         '_continuum_map_raytrace.fits.gz'
             if os.path.isfile(file_name):
                 self.__continuum_maps_raytrace = load_from_fits(file_name)
+            else:
+                return [] 
         else:
             pass
-        return self.__continuum_maps_raytrace
+        return self.__continuum_maps_raytrace * self.__unit_converter
 
     continuum_maps_raytrace = property(return_continuum_maps_raytrace)
 

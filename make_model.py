@@ -37,8 +37,8 @@ GRID_NAME = 'spherical'
 #~ GRID_NAME = 'cartesian'
 
 N_A = 100              # no of coordinate a
-N_B = 101                # no of coordinate b
-N_C = 1              # no of coordinate c
+N_B = 101              # no of coordinate b
+N_C = 1                # no of coordinate c
 
 DENSITY_DISTRIBUTION = 'Disk'     # density for a disk
 #~ DENSITY_DISTRIBUTION = 'Sphere'   # density for a sphere
@@ -51,7 +51,7 @@ LINK = True # link the model and boundaries automatically
 
 def get_density_disk(pos_xyz):
     """
-    a shakura & sunayaev disk
+    a shakura & sunyaev disk
     """
     z = pos_xyz[2]
     r = math.sqrt(pos_xyz[0]**2 + pos_xyz[1]**2)

@@ -93,10 +93,11 @@ CONTAINS
 
     ! MC RT
     IF (basics%do_continuum_mc) THEN
-        PRINT *, "| Monochromatic Monte-Carlo RT to create images/sed's"
-
+        PRINT *, "| monochromatic Monte-Carlo RT to create images/sed's"
+        IF (basics%do_peel_off) PRINT *,"| | Peel-off technique enabled"
         CALL monochromatic_RT(basics, grid, model,                            &
                                dust, sources_in, fluxes)
+        print *, "| done!                 "
         PRINT *, "|"
     END IF
 

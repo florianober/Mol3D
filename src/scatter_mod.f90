@@ -50,6 +50,9 @@ CONTAINS
             CALL hgsca(rand_nr, dust, photon, i_dust_sca)
 
         END IF
+        ! update the SIN2PH and COS2PH values
+        CALL update_angle(photon)
+
     END SUBROUTINE scatter
 
     ! ##########################################################################
@@ -68,7 +71,7 @@ CONTAINS
     ! and the scattering angle theta.
     ! PHI = 0...360 degr.,  THETA = 0...180 degr.
     ! ---
-  SUBROUTINE miesca(basics, rand_nr, dust,photon, i_dust)
+  SUBROUTINE miesca(basics, rand_nr, dust, photon, i_dust)
 
         IMPLICIT NONE
         !----------------------------------------------------------------------!
@@ -160,8 +163,7 @@ CONTAINS
 
         photon%SINPHI = sin(PHI)
         photon%COSPHI = cos(PHI)
-        photon%SIN2PH = 2.0_r2 * photon%SINPHI * photon%COSPHI
-        photon%COS2PH = 1.0_r2 - 2.0_r2 * photon%SINPHI**2
+
     END SUBROUTINE miesca
 
 
@@ -175,24 +177,18 @@ CONTAINS
         TYPE(PHOTON_TYP),INTENT(INOUT)                   :: photon
         !----------------------------------------------------------------------!
         integer, intent(in)                              :: i_dust
-        REAL(kind=r2)                                    :: rndx
+        REAL(kind=r2)                                    :: rndx1, rndx2
         !----------------------------------------------------------------------!
         ! ---
-        ! theta
-        CALL RAN2(rand_nr, rndx)
-        photon%SINTHE = sqrt(4.0_r2 * (rndx - rndx**2))
-        photon%COSTHE = 1.0_r2 - 2.0_r2*rndx
+        CALL RAN2(rand_nr, rndx1)
+        CALL RAN2(rand_nr, rndx2)
+        CALL isotropic_sphere(rndx1, rndx2, photon%SINPHI, photon%COSPHI,      &
+                                            photon%SINTHE, photon%COSTHE)
         photon%lot_th = nint( rad2grad(dasico( photon%SINTHE, photon%COSTHE )) )
-        if (photon%lot_th==0) then
+        IF (photon%lot_th==0) THEN
            photon%lot_th = 1
-        end if
+        END IF
 
-        ! phi
-        CALL RAN2(rand_nr, rndx)
-        photon%SINPHI = sin( rndx * PI * 2.0_r2)
-        photon%COSPHI = cos( rndx * PI * 2.0_r2)
-        photon%SIN2PH = 2.0_r2 * photon%SINPHI * photon%COSPHI
-        photon%COS2PH = 1.0_r2 - 2.0_r2 * photon%SINPHI**2
     END SUBROUTINE isosca
 
     ! ##########################################################################
@@ -225,8 +221,7 @@ CONTAINS
         CALL RAN2(rand_nr, rndx)
         photon%SINPHI = sin( rndx * PI * 2.0_r2)
         photon%COSPHI = cos( rndx * PI * 2.0_r2)
-        photon%SIN2PH = 2.0_r2 * photon%SINPHI * photon%COSPHI
-        photon%COS2PH = 1.0_r2 - 2.0_r2 * photon%SINPHI**2
+
     END SUBROUTINE hgsca
 
 END MODULE scatter_mod

@@ -128,9 +128,9 @@ CONTAINS
                 !v_turb = grid%velo(i_cell,3)! use i_z (as an indicator for turbulence)
                 
                 grid%cell_gauss_a(i_cell) = 1.0_r2 /                           &
-                                        (sqrt(2.0_r2*con_k*grid%t_gas(i_cell)/ &
-                                        (gas%mol_weight*1.0e-3_r2/con_Na) +    &
-                                         v_turb))
+                                (sqrt(2.0_r2 * con_k * grid%t_gas(i_cell) /    &
+                                     (gas%mol_weight * 1.0e-3_r2 / con_Na) +   &
+                                      v_turb))
             ELSE
                 grid%cell_gauss_a(i_cell) = 0.0_r2
             END IF                
@@ -195,8 +195,7 @@ CONTAINS
         END DO
         ! photon transfer
         print *,'| | calculate temperature with Monte Carlo method'
-!~         print *, basics%do_peel_off
-!~         stop
+        IF (basics%do_peel_off) PRINT *,"| | Peel-off technique enabled"
         CALL MC_photon_transfer(basics, grid,model,                            &
                                 dust, sources_in, fluxes,                      &
                                 deposit_energy=.True.,                         &
@@ -247,7 +246,6 @@ CONTAINS
                      basics%d_tem 
         end do
     end do
-
 
     END SUBROUTINE temp_final
 END MODULE temp_mod

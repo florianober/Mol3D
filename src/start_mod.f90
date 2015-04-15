@@ -48,27 +48,17 @@ contains
     i_lam = 1
     ! 1. get new source to start from
     CALL RAN2(rand_nr,rndx)
-    i_source = GetNewSource(sources_in,rndx)
-    
+    i_source = GetNewSource(sources_in, rndx)
+
     ! 2. direction
-    IF ( sources_in%source(i_source)%emission_concept == 1) THEN
-        ! (isotropic)
-        CALL RAN2(rand_nr, rndx)
+    CALL emission_from_source(sources_in%source(i_source), rand_nr,            &
+                              photon%SINPHI,                                   &
+                              photon%COSPHI,                                   &
+                              photon%SINTHE,                                   &
+                              photon%COSTHE)
 
-        photon%SINPHI = sin( rndx * basics%PIx2 )
-        photon%COSPHI = cos( rndx * basics%PIx2 )
-        photon%SIN2PH = 2.0_r2 * photon%SINPHI * photon%COSPHI
-        photon%COS2PH = 1.0_r2 - 2.0_r2 * photon%SINPHI**2
-
-        CALL RAN2(rand_nr, rndx)
-        
-        photon%SINTHE = sqrt(4.0_r2 * (rndx - rndx**2))
-        photon%COSTHE = 1.0_r2 - 2.0_r2*rndx
-
-    ELSE
-        print *, "Type of emission concept for the source not known"
-        stop
-    END IF
+    ! calculate SIN2PH/COS2PH for the stokes rotation
+    CALL update_angle(photon)
 
     ! 3. get new wavelength
     IF (.not. photon%fixed_lam) THEN
@@ -80,7 +70,7 @@ contains
                 photon%kill = .True.
                 photon%inside  = .False.
             ELSE
-                i_lam = GetNewLam(sources_in,i_source,rndx)
+                i_lam = GetNewLam(sources_in, i_source, rndx)
                 photon%kill = .False.
                 photon%inside  = .True.
             END IF
@@ -91,14 +81,13 @@ contains
     photon%pos_xyz(:) = sources_in%source(i_source)%pos_xyz
 
     ! 5. set corresponding cell number
-    photon%nr_cell = get_cell_nr(grid,photon%pos_xyz(:))
+    photon%nr_cell = get_cell_nr(grid, photon%pos_xyz(:))
 
     ! ---
     ! [B] initialize new photon parameters
     ! stokes vector
     ! starting with unpolarized photon
     photon%stokes(:) = (/1.0_r2, 0.0_r2, 0.0_r2, 0.0_r2/)
-    photon%last_interaction_type = 'N'
 
     IF (photon%fixed_lam) THEN
         ! when using a fixed wavelength, we need to weightend the photons
@@ -115,18 +104,16 @@ contains
     END IF
     ! photon inside model space
 
-    photon%D_2global(:,:)         = basics%mat_ident3(:,:)  ! initialize rotation matrix
+    photon%D_2global(:,:) = basics%mat_ident3(:,:)  ! initialize rotation matrix
 
     ! ---
     ! [C] apply rotation matrix
     CALL vecmat(photon)
-!~     print *, photon%D_2global
-!~     stop
     ! ---
     ! last point of interaction = start position
 
     photon%pos_xyz_li(:) = photon%pos_xyz(:)
-
+    photon%last_interaction_type = 'N'
   END SUBROUTINE start_photon
 
 
@@ -141,7 +128,7 @@ contains
     
     TYPE(PHOTON_TYP),INTENT(INOUT)                   :: photon
     !--------------------------------------------------------------------------!
-    REAL(kind=r2)                                    :: rndx
+    REAL(kind=r2)                                    :: rndx1, rndx2
     !--------------------------------------------------------------------------!
     ! ---
     ! [A] determine starting point & direction
@@ -150,16 +137,16 @@ contains
 
     ! 2. direction of emission
     ! (isotropic)
-    CALL RAN2(rand_nr, rndx)
-    photon%SINPHI = sin( rndx * basics%PIx2 )
-    photon%COSPHI = cos( rndx * basics%PIx2 )
-    photon%SIN2PH = 2.0_r2 * photon%SINPHI * photon%COSPHI
-    photon%COS2PH = 1.0_r2 - 2.0_r2 * photon%SINPHI**2
-    
-    CALL RAN2(rand_nr, rndx)
-    photon%SINTHE = sqrt(4.0_r2 * (rndx - rndx**2))
-    photon%COSTHE = 1.0_r2 - 2.0_r2*rndx
+    CALL RAN2(rand_nr, rndx1)
+    CALL RAN2(rand_nr, rndx2)
+    CALL isotropic_sphere(rndx1, rndx2,                                        &
+                              photon%SINPHI,                                   &
+                              photon%COSPHI,                                   &
+                              photon%SINTHE,                                   &
+                              photon%COSTHE)
 
+    ! calculate SIN2PH/COS2PH for the stokes rotation
+    CALL update_angle(photon)
     ! ---
     ! [B] initialize new photon parameters
     ! unpolarized stokes vector
@@ -178,5 +165,5 @@ contains
     
   END SUBROUTINE start_grain
 
-end module start_mod
+END MODULE start_mod
 

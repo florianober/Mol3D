@@ -12,13 +12,14 @@ MODULE math_mod
                 norm,cy2ca, sp2ca, ca2sp, ipol1, ipol2,                        &
                 arcdis, dasico, gauss_arr, solve_eq, binary_search,         &
                 get_expo,get_opa,dB_dT_l,                                      &
-                generate_rotation_matrix, Vector3d
+                generate_rotation_matrix, Vector3d, isotropic_sphere
 
     INTERFACE binary_search
-        MODULE PROCEDURE binary_search_r1,binary_search_r2
+        MODULE PROCEDURE binary_search_r1, binary_search_r2
     END INTERFACE
+
     INTERFACE ipol2
-        MODULE PROCEDURE ipol2_r1,ipol2_r2
+        MODULE PROCEDURE ipol2_r1, ipol2_r2
     END INTERFACE
 
     TYPE Vector3d
@@ -806,6 +807,23 @@ CONTAINS
 
         END SELECT
     END SUBROUTINE generate_rotation_matrix
-    
-    
-end module math_mod
+
+    SUBROUTINE isotropic_sphere(rndx1, rndx2, SINPHI, COSPHI, SINTHE, COSTHE)
+        ! based on two random numbers, a random point on a unit sphere is
+        ! drawn, characterized by phi and theta angle
+        IMPLICIT NONE
+        !----------------------------------------------------------------------!
+        REAL(kind=r2), INTENT(OUT)                     :: SINPHI, COSPHI
+        REAL(kind=r2), INTENT(OUT)                     :: SINTHE, COSTHE
+        
+        REAL(kind=r2), INTENT(IN)                      :: rndx1, rndx2
+        !----------------------------------------------------------------------!
+
+        SINPHI = sin( rndx1 * PI * 2.0_r2)
+        COSPHI = cos( rndx1 * PI * 2.0_r2)
+
+        SINTHE = sqrt(4.0_r2 * (rndx2 - rndx2**2))
+        COSTHE = 1.0_r2 - 2.0_r2*rndx2
+    END SUBROUTINE isotropic_sphere
+
+END MODULE math_mod

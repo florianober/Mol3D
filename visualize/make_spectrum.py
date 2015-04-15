@@ -156,11 +156,12 @@ def make_spectra(path_results, pname):
     map_in = project.velo_ch_map
     if map_in != []:
         vch = project.vch
-        r_ou = project.attr['r_ou']# * project.attr['sf']
+        r_ou = project.attr['r_ou']
         arcs = r_ou/project.attr['distance']
         
         conv = project.attr['distance']
         extent = [-arcs, arcs, -arcs, arcs]
+        #~ extent = [-r_ou, r_ou, -r_ou, r_ou]
 
         # make line spectrum
         plt.figure('line spectrum')

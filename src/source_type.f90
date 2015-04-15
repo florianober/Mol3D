@@ -56,7 +56,8 @@ MODULE source_type
         SourcesInitialized, &
         AddSources, &
         GetNewSource, &
-        GetNewLam
+        GetNewLam, &
+        Emission_from_source
     !--------------------------------------------------------------------------!
 CONTAINS
 
@@ -75,11 +76,15 @@ CONTAINS
         !----------------------------------------------------------------------!
         CALL InitCommon(this%mtype,ut,un)
         this%n_sources = 0
+
+        ! we need to know the wavelength range
+        ! at the moment we use the range coming along with the dust proberties
+        ! we could thing about a more clever/general solution ....
+
         ALLOCATE(this%lam(1:dust%n_lam))
         ALLOCATE(this%d_lam(1:dust%n_lam))
         this%n_lam = dust%n_lam
-        
-        this%lam   = dust%lam
+        this%lam     = dust%lam
         this%d_lam   = dust%d_lam
 
     END SUBROUTINE InitSources
@@ -150,7 +155,8 @@ CONTAINS
             END IF
             this%source(i_source)%emission_concept = 1 ! (isotropic)
         ELSE IF (s_type == 2) THEN
-            ! source is a point source, but given is the luminosity and Temperature
+            ! source is a point source, but given is the Luminosity and
+            ! effective Temperature
             !
             ALLOCATE(this%source(i_source)%wave_cdf(1:this%n_lam))
             ALLOCATE(this%source(i_source)%wave_pdf(1:this%n_lam))
@@ -195,6 +201,34 @@ CONTAINS
 
     END SUBROUTINE AddSources
 
+    SUBROUTINE Emission_from_source(source, rand_nr,                           &
+                                    SINPHI, COSPHI, SINTHE, COSTHE)
+        USE randgen_type
+        IMPLICIT NONE
+        !----------------------------------------------------------------------!
+        TYPE(SOURCE_TYP), INTENT(IN)                   :: source
+        TYPE(Randgen_TYP),INTENT(INOUT)                :: rand_nr
+
+        REAL(kind=r2), INTENT(OUT)                     :: SINPHI
+        REAL(kind=r2), INTENT(OUT)                     :: COSPHI
+        REAL(kind=r2), INTENT(OUT)                     :: SINTHE
+        REAL(kind=r2), INTENT(OUT)                     :: COSTHE
+        
+        REAL(kind=r2)                                  :: rndx1, rndx2
+        !----------------------------------------------------------------------!
+        ! We need to calculate the
+        IF ( source%emission_concept == 1) THEN
+            ! (isotropic)
+            CALL RAN2(rand_nr, rndx1)
+            CALL RAN2(rand_nr, rndx2)
+            CALL isotropic_sphere(rndx1, rndx2, SINPHI, COSPHI, SINTHE, COSTHE)
+        ! TbD: more emission concepts, expanded sources, dark limb darkening,
+        !      sunspots, ....
+        ELSE
+            print *, "Type of emission concept for the selected source not known"
+            stop
+        END IF
+    END SUBROUTINE Emission_from_source
 
     SUBROUTINE CloseSources(this)
         IMPLICIT NONE

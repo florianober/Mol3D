@@ -52,7 +52,7 @@ CONTAINS
         DO i_map = 1, model%n_map  !tbd
             ! assume observer is at infinity
             !
-            angle = dot_product(photon%dir_xyz, model%dir_xyz(:, i_map))
+            angle = dot_product(photon%dir_xyz, model%D_2obs(3, :, i_map))
             IF ( angle .ge. model%al_map(i_map) ) THEN
                 !modify stokes vector according to observing direction
                 stokes(:) = photon%stokes(:)
@@ -62,7 +62,7 @@ CONTAINS
                 !     this can be achived by rotate to the global
                 !     coordinate system via the photon rotation matrix (photon%D_2global)
                 !     and then rotate to the observer with the fixed rotation
-                !     matrix of the correconding observer map (model%D_2obs)
+                !     matrix of the corresponding observer map (model%D_2obs)
                 !     The result is a matrix multiplication and the unknown
                 !     angle phi can be read from the resulting matrix
                 !
@@ -73,20 +73,28 @@ CONTAINS
                 ! Note: This is an approximation and only valid if the
                 !       propagation direction equals the direction to the
                 !       observer.
-                D_help = matmul(model%D_2obs(:, :, i_map), photon%D_2global)
 
+                D_help = matmul(model%D_2obs(:, :, i_map), photon%D_2global)
                 SINPHI = D_help(1,2)
                 COSPHI = D_help(1,1)
                 SIN2PH = 2.0_r2 * SINPHI * COSPHI
                 COS2PH = 1.0_r2 - 2.0_r2 * SINPHI**2
-
+                IF (D_help(3,3) < 0.92) THEN
+                    print *, 'observe'
+                    print *, model%D_2obs(:, :, i_map)
+                    print *, ''
+                    print *, photon%D_2global
+                    print *, ''
+                    print *, D_help
+                    print *, '============================================================'
+                END IF
                 QHELP     =  COS2PH * stokes(2)  +  SIN2PH * stokes(3)
                 stokes(3) = -SIN2PH * stokes(2)  +  COS2PH * stokes(3)
                 stokes(2) =  QHELP
 
                 CALL get_pixel_on_map(photon%pos_xyz_li,                       &
-                                      model%e_x(:, i_map),                     &
-                                      model%e_y(:, i_map),                     &
+                                      model%D_2obs(1, :, i_map),               &
+                                      model%D_2obs(2, :, i_map),               &
                                       model%px_model_length_x(i_map),          &
                                       model%px_model_length_y(i_map),          &
                                       model%n_bin_map+1, x, y)
@@ -147,7 +155,7 @@ CONTAINS
         tau = 0.0_r2
         DO i_map = 1, model%n_map !tbd
             ! direction of the new photon is the direction to the observer
-            photon_peel%dir_xyz = model%dir_xyz(:, i_map)
+            photon_peel%dir_xyz = model%D_2obs(3, :, i_map)
 
             ! we need to convert the stokes vector
             ! scattering in the observer's direction

@@ -830,7 +830,7 @@ CONTAINS
 
             DO i_map = 1, model%n_map
                 map_out(:,:,1,:) = 0.0_r2
-                DO i_lam = 1, dust%n_lam
+                DO i_lam = 2, dust%n_lam
                     IF (peel_off) THEN
                         unit_value =                                           &
                                  1.0_r2/dust%d_nu(i_lam) *                     &

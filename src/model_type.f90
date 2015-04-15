@@ -1,7 +1,7 @@
-!----------------------------------------------------------------------------!
+!------------------------------------------------------------------------------!
 ! def Model_TYP
 ! inspired by fosite by T. Illenseer 2011
-!----------------------------------------------------------------------------!
+!------------------------------------------------------------------------------!
 MODULE model_type
   
     USE datatype
@@ -18,7 +18,7 @@ MODULE model_type
     !--------------------------------------------------------------------------!
     TYPE Model_TYP
         TYPE(Common_TYP) :: modltype                    ! -----------------    !
-        !-----------------------------------------------------------------------!
+        !----------------------------------------------------------------------!
         REAL(kind=r2)        :: ref_unit
         REAL(kind=r2)        :: ref_unitn
         REAL(kind=r2)        :: r_in
@@ -141,46 +141,58 @@ CONTAINS
             this%ph_map(i_map) = grad2rad(ph_map(i_map))
             this%al_map(i_map) = cos(grad2rad(al_map(i_map)))
             
-            this%dir_xyz(1, i_map) = sin(this%th_map(i_map)) * cos(this%ph_map(i_map))
-            this%dir_xyz(2, i_map) = sin(this%th_map(i_map)) * sin(this%ph_map(i_map))
-            this%dir_xyz(3, i_map) = cos(this%th_map(i_map))
-            ! vector marking the +x-direction in the observers map
-                
-            this%e_x(1, i_map) = -sin(this%ph_map(i_map))
-            this%e_x(2, i_map) =  cos(this%ph_map(i_map))
-            this%e_x(3, i_map) =  0.0_r2
-            
-            ! vector marking the +y-direction in the observers map
-            
-            this%e_y(1, i_map) = cos(this%th_map(i_map)) * (-cos(this%ph_map(i_map)))
-            this%e_y(2, i_map) = cos(this%th_map(i_map)) * (-sin(this%ph_map(i_map)))
-            this%e_y(3, i_map) = sin(this%th_map(i_map))
+!~             this%dir_xyz(1, i_map) = sin(this%th_map(i_map)) * cos(this%ph_map(i_map))
+!~             this%dir_xyz(2, i_map) = sin(this%th_map(i_map)) * sin(this%ph_map(i_map))
+!~             this%dir_xyz(3, i_map) = cos(this%th_map(i_map))
+!~             ! vector marking the +x-direction in the observers map
+!~                 
+!~             this%e_x(1, i_map) = -sin(this%ph_map(i_map))
+!~             this%e_x(2, i_map) =  cos(this%ph_map(i_map))
+!~             this%e_x(3, i_map) =  0.0_r2
+!~             
+!~             ! vector marking the +y-direction in the observers map
+!~             
+!~             this%e_y(1, i_map) = cos(this%th_map(i_map)) * (-cos(this%ph_map(i_map)))
+!~             this%e_y(2, i_map) = cos(this%th_map(i_map)) * (-sin(this%ph_map(i_map)))
+!~             this%e_y(3, i_map) = sin(this%th_map(i_map))
 
             ! Rotationsmatrix to convert a vector from the global coordinate 
             ! system into the observers one
-!~             this%D_2obs(1, :, i_map) = this%e_x(:, i_map)
-!~             this%D_2obs(2, :, i_map) = this%e_y(:, i_map)
-!~             this%D_2obs(3, :, i_map) = this%dir_xyz(:, i_map)
-            
-            this%D_2obs(1, 1, i_map) = cos(this%ph_map(i_map))
-            this%D_2obs(2, 1, i_map) = -cos(this%th_map(i_map)) * sin(this%ph_map(i_map))
-            this%D_2obs(3, 1, i_map) = -sin(this%th_map(i_map)) * sin(this%ph_map(i_map))
 
-            this%D_2obs(1, 2, i_map) = sin(this%ph_map(i_map))
-            this%D_2obs(2, 2, i_map) = cos(this%th_map(i_map)) * cos(this%ph_map(i_map))
-            this%D_2obs(3, 2, i_map) = sin(this%th_map(i_map)) * cos(this%ph_map(i_map))
-
-            this%D_2obs(1, 3, i_map) = 0.0_r2
-            this%D_2obs(2, 3, i_map) = -sin(this%th_map(i_map))
-            this%D_2obs(3, 3, i_map) =  cos(this%th_map(i_map))
+            ! version of S. Wolf -> consistent to MC3D
             
+            ! +x-direction in the observers map
+            this%D_2obs(1, 1, i_map) = -sin(this%ph_map(i_map))
+            this%D_2obs(1, 2, i_map) =  cos(this%ph_map(i_map))
+            this%D_2obs(1, 3, i_map) =  0.0_r2
+            ! +y-direction in the observers map
+            this%D_2obs(2, 1, i_map) = cos(this%th_map(i_map)) * (-cos(this%ph_map(i_map)))
+            this%D_2obs(2, 2, i_map) = cos(this%th_map(i_map)) * (-sin(this%ph_map(i_map)))
+            this%D_2obs(2, 3, i_map) = sin(this%th_map(i_map))
+            ! +z-direction in the observers map == torwards the observer
+            this%D_2obs(3, 1, i_map) = sin(this%th_map(i_map)) * cos(this%ph_map(i_map))
+            this%D_2obs(3, 2, i_map) = sin(this%th_map(i_map)) * sin(this%ph_map(i_map))
+            this%D_2obs(3, 3, i_map) = cos(this%th_map(i_map))
+
+            ! version of O. Fischer (maybe more intuitive and comparable to other codes)
             !
+            ! this%D_2obs(1, 1, i_map) =  cos(this%ph_map(i_map))
+            ! this%D_2obs(2, 1, i_map) = -cos(this%th_map(i_map)) * sin(this%ph_map(i_map))
+            ! this%D_2obs(3, 1, i_map) = -sin(this%th_map(i_map)) * sin(this%ph_map(i_map))
+
+            ! this%D_2obs(1, 2, i_map) = sin(this%ph_map(i_map))
+            ! this%D_2obs(2, 2, i_map) = cos(this%th_map(i_map)) * cos(this%ph_map(i_map))
+            ! this%D_2obs(3, 2, i_map) = sin(this%th_map(i_map)) * cos(this%ph_map(i_map))
+
+            ! this%D_2obs(1, 3, i_map) =  0.0_r2
+            ! this%D_2obs(2, 3, i_map) = -sin(this%th_map(i_map))
+            ! this%D_2obs(3, 3, i_map) =  cos(this%th_map(i_map))
+
             ! user unit, but should be fixed to [AU]
-            this%px_model_length_x = this%r_ou/(REAL(this%n_bin_map,KIND=r2)+0.5_r2)/this%zoom_map(i_map)   
-            this%px_model_length_y = this%r_ou/(REAL(this%n_bin_map,KIND=r2)+0.5_r2)/this%zoom_map(i_map)
+            this%px_model_length_x(i_map) = this%r_ou/(REAL(this%n_bin_map,KIND=r2)+0.5_r2)/this%zoom_map(i_map)   
+            this%px_model_length_y(i_map) = this%r_ou/(REAL(this%n_bin_map,KIND=r2)+0.5_r2)/this%zoom_map(i_map)
         END DO
     END SUBROUTINE InitModel
-
 
     SUBROUTINE CloseModel(this)
         IMPLICIT NONE
@@ -198,10 +210,8 @@ CONTAINS
                     this%e_x, &
                     this%e_y, &
                     this%D_2obs)
-        
-        
-    END SUBROUTINE CloseModel
 
+    END SUBROUTINE CloseModel
 
     PURE FUNCTION GetModelType(this) RESULT(ut)
         IMPLICIT NONE
@@ -230,7 +240,5 @@ CONTAINS
           !--------------------------------------------------------------------!
           i = Initialized_common(this%modltype)
     END FUNCTION ModelInitialized
-    
 
-
-End Module model_type
+END MODULE model_type

@@ -58,7 +58,8 @@ MODULE photon_type
         GetPhotonType, &
         GetPhotonName, &
         PhotonInitialized, &
-        vecmat
+        vecmat, &
+        update_angle
     INTERFACE vecmat
         MODULE PROCEDURE vecmat_angle, vecmat_dir
     END INTERFACE
@@ -157,24 +158,25 @@ CONTAINS
 
     SUBROUTINE vecmat_angle(this)
         IMPLICIT NONE
-        
         !----------------------------------------------------------------------!
         TYPE(PHOTON_TYP), INTENT(INOUT)                     :: this
 
-
         REAL(kind=r2), DIMENSION(1:3,1:3)                   :: D_help
-        REAL(kind=r2), DIMENSION(1:3)                       :: dir_help
-
+        REAL(kind=r2), DIMENSION(1:3)                       :: dir_rlp
         !----------------------------------------------------------------------!
         
         ! old MC3D version -> not used anymore
+        ! D_test = this%D_2global
         ! R = -this%SINTHE * this%SINPHI
         ! L =  this%SINTHE * this%COSPHI
         ! P =  this%COSTHE
 
-        ! this%dir_xyz(2) = -(this%D(1,1) * R  +  this%D(1,2) * L  +  this%D(1,3) * P)
-        ! this%dir_xyz(1) =  this%D(2,1) * R  +  this%D(2,2) * L  +  this%D(2,3) * P
-        ! this%dir_xyz(3) =  this%D(3,1) * R  +  this%D(3,2) * L  +  this%D(3,3) * P
+        ! this%dir_xyz(2) = -(this%D_2global(1,1) * R  +  this%D_2global(1,2) * L  +  this%D_2global(1,3) * P)
+        ! this%dir_xyz(1) =  this%D_2global(2,1) * R  +  this%D_2global(2,2) * L  +  this%D_2global(2,3) * P
+        ! this%dir_xyz(3) =  this%D_2global(3,1) * R  +  this%D_2global(3,2) * L  +  this%D_2global(3,3) * P
+        
+        ! D_help = set_matrix(this)
+        ! D_test = matmul(D_test, D_help)
 
         ! D_help(1,1) =   this%COSPHI
         ! D_help(2,1) =   this%SINPHI
@@ -185,20 +187,16 @@ CONTAINS
         ! D_help(1,3) = - this%SINPHI*this%SINTHE
         ! D_help(2,3) =   this%COSPHI*this%SINTHE
         ! D_help(3,3) =   this%COSTHE
-        ! this%D = matmul(this%D, D_help)
 
-!~         dir_help(1) = this%SINTHE * this%COSPHI
-!~         dir_help(2) = this%SINTHE * this%SINPHI
-!~         dir_help(3) = this%COSTHE
-        dir_help(1) = - this%SINTHE * this%SINPHI
-        dir_help(2) =   this%SINTHE * this%COSPHI
-        dir_help(3) =   this%COSTHE
+        dir_rlp(1) = - this%SINTHE * this%SINPHI
+        dir_rlp(2) =   this%SINTHE * this%COSPHI
+        dir_rlp(3) =   this%COSTHE
         
-        this%dir_xyz = matmul(this%D_2global(:,:), dir_help)
-
+        this%dir_xyz = matmul(this%D_2global(:,:), dir_rlp)
         D_help = set_matrix(this)
 
         this%D_2global = matmul(this%D_2global, D_help)
+        
     END SUBROUTINE vecmat_angle
 
     SUBROUTINE vecmat_dir(this, d_ang)
@@ -221,7 +219,7 @@ CONTAINS
         ! get the direction in the photon frame
         dir_rlp = matmul(transpose(this%D_2global), this%dir_xyz)
 
-        phi = atan3(-dir_rlp(1), dir_rlp(2))
+        phi = atan3(- dir_rlp(1), dir_rlp(2))
         this%SINPHI = sin(phi)
         this%COSPHI = cos(phi)
         
@@ -250,7 +248,7 @@ CONTAINS
         REAL(kind=r2), DIMENSION(1:3,1:3)                   :: D_rot
         !----------------------------------------------------------------------!
         ! old definition
-        D_rot(1,1) =  this%COSPHI
+        D_rot(1,1) =   this%COSPHI
         D_rot(2,1) =   this%SINPHI
         D_rot(3,1) =   0.0_r2
         D_rot(1,2) = - this%SINPHI*this%COSTHE
@@ -259,19 +257,16 @@ CONTAINS
         D_rot(1,3) = - this%SINPHI*this%SINTHE
         D_rot(2,3) =   this%COSPHI*this%SINTHE
         D_rot(3,3) =   this%COSTHE
-
-
-        ! new definition
-
-!~         D_rot(1,1) =   this%COSTHE * this%COSPHI
-!~         D_rot(2,1) =   this%COSTHE * this%SINPHI
-!~         D_rot(3,1) = - this%SINTHE
-!~         D_rot(1,2) = - this%SINPHI 
-!~         D_rot(2,2) =   this%COSPHI
-!~         D_rot(3,2) =   0.0_r2
-!~         D_rot(1,3) =   this%SINTHE * this%COSPHI
-!~         D_rot(2,3) =   this%SINTHE * this%SINPHI
-!~         D_rot(3,3) =   this%COSTHE
     END FUNCTION set_matrix
+
+    PURE SUBROUTINE update_angle(this)
+        !calculate SIN2PH/COS2PH for the stokes rotation
+        IMPLICIT NONE
+        !----------------------------------------------------------------------!
+        TYPE(PHOTON_TYP), INTENT(INOUT)                        :: this
+        !----------------------------------------------------------------------!
+        this%SIN2PH = 2.0_r2 * this%SINPHI * this%COSPHI
+        this%COS2PH = 1.0_r2 - 2.0_r2 * this%SINPHI**2
+    END SUBROUTINE update_angle
 
 End Module photon_type

@@ -185,8 +185,8 @@ CONTAINS
                                                (basics%PIx4 * grid%cell_vol(:))
         END DO
         !TbD: better adjustment of the wavelength table
-!~         DO i_lam = 41, 41!dust%n_lam
-        DO i_lam = 22, 22!dust%n_lam
+
+        DO i_lam = 42, 42!dust%n_lam
             ! First we calculate the scattered light from the source
             WRITE (*,'(A,F6.3, A)') " | | | - wavelength : ",                  &
                                 dust%lam(i_lam)*1e6, " micron"

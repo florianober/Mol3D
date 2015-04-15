@@ -17,8 +17,10 @@ import os
 import sys
 from scipy.interpolate import griddata
 import matplotlib.patches as mpatches
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 from astropy.io import fits as pf
 import mol3d_routines as m
+from matplotlib.colors import LogNorm
 
 if len(sys.argv) > 1:
     P_NAME = sys.argv[1]
@@ -192,7 +194,7 @@ def present_plane(file_in, plane):
         xlab = 'distance [AU]'
         ylab = xlab
         
-    pic += 1e-250
+    #~ pic += 1e-250
     #-------------------------------------------------
     #  Dust Temp
     for i in range(n_dust):
@@ -247,51 +249,59 @@ def present_plane(file_in, plane):
     #-------------------------------------------------
     #  molecule density
 
-    data = np.log10(pic[:, :, 0+n_dust] * 1e-6)
+    data = pic[:, :, 0+n_dust] * 1e-6
     plt.figure('Molecule number density distribution, ' + ext)
     plt.title('Molecule number density distribution, ' + ext)
     plt.xlabel(xlab)
     plt.ylabel(ylab)
-    cont = np.round(np.linspace(0, 7, 10))
-    CS = plt.contour(data, cont, linewidths=1, colors='k', extent=m_range)
-    plt.clabel(CS, inline=1, fmt='%2.1f', fontsize=10)
+    vmax = np.max(data)
+    vmin = vmax*1e-6
+    cont = 10.0**np.linspace(np.log10(vmax), np.log10(vmin), 7)
+    CS = plt.contour(data, levels=cont, linewidths=1, colors='k', extent=m_range)
+    plt.clabel(CS, inline=1, fmt='%2.1e', fontsize=10)
     plt.imshow(data, extent=m_range, origin='lower',
-               interpolation='None', cmap=plt.cm.jet)
-    plt.clim(2, 8)
-    plt.colorbar().set_label('molecule density lg [cm^-3]')
+               interpolation='None', cmap=plt.cm.jet,
+               norm=LogNorm(vmin=vmin, vmax=vmax))
+
+    plt.colorbar().set_label('molecule density [cm^-3]')
 
     #-------------------------------------------------
     #  dust density 
     for i in range(n_dust):
-        data = np.log10(pic[:, :, i] * 1e-6)
+        data = pic[:, :, i] * 1e-6
         plt.figure('Dust %2.0d number density distribution, %s' %(i+1,ext))
         plt.title('Dust %2.0d number density distribution, %s' %(i+1,ext))
         plt.xlabel(xlab)
         plt.ylabel(ylab)
-        cont = np.round(np.linspace(-5, 0, 10))
-
-        CS = plt.contour(data, cont, linewidths=1, colors='k', extent=m_range)
-        plt.clabel(CS, inline=1, fmt='%2.1f', fontsize=10)
+        vmax = np.max(data)
+        vmin = vmax*1e-6
+        cont = 10.0**np.linspace(np.log10(vmax), np.log10(vmin), 7)
+    
+        CS = plt.contour(data, levels=cont, linewidths=1, colors='k', extent=m_range)
+        plt.clabel(CS, inline=1, fmt='%2.1e', fontsize=10)
         plt.imshow(data, extent=m_range, origin='lower',
-                   interpolation='None', cmap=plt.cm.jet)
-        plt.clim(-5, 0)
-        plt.colorbar().set_label('dust density lg [cm^-3]')
+                   interpolation='None', cmap=plt.cm.jet,
+                   norm=LogNorm(vmin=vmin, vmax=vmax))
+        plt.colorbar().set_label('dust density [cm^-3]')
 
     #-------------------------------------------------
     #  H2 density
 
-    data = np.log10(pic[:, :, 1+n_dust] * 1e-6)
+    data = pic[:, :, 1+n_dust] * 1e-6
     plt.figure('H2 number density distribution, ' + ext)
-    #~ plt.title('H2 number density distribution, ' + ext)
+    plt.title('H2 number density distribution, ' + ext)
     plt.xlabel(xlab)
     plt.ylabel(ylab)
-    #~ cont = np.round(np.linspace(5.0, 8.0 ,5.), 1)
-    cont = [8.0, 7.5, 7.0, 6.0, 5.5]
-
-    CS = plt.contour(data, cont, linewidths=1, colors='k', extent=m_range)
-    plt.clabel(CS, inline=1, fmt='%2.1f', fontsize=10)
+    
+    vmax = np.max(data)
+    vmin = vmax*1e-6
+    cont = 10.0**np.linspace(np.log10(vmax), np.log10(vmin), 7)
+    
+    CS = plt.contour(data, levels=cont, linewidths=1, colors='k', extent=m_range)
+    plt.clabel(CS, inline=1, fmt='%2.1e', fontsize=10)
     plt.imshow(data, extent=m_range, origin='lower',
-               interpolation='None', cmap=plt.cm.jet)
+               interpolation='None', cmap=plt.cm.jet,
+               norm=LogNorm(vmin=vmin, vmax=vmax))
     #~ plt.annotate('gap', xy=(80, 10), xycoords='data', color='white',
                  #~ xytext=(0, 80), textcoords='data',
                  #~ arrowprops=dict(width=3, facecolor='white', shrink=0.05),
@@ -302,8 +312,34 @@ def present_plane(file_in, plane):
                  #~ arrowprops=dict(width=3, facecolor='white', shrink=0.05),
                  #~ fontsize=23,
                  #~ horizontalalignment='center', verticalalignment='top',)
-    plt.clim(5, 9)
-    plt.colorbar().set_label('H2 number density lg [cm^-3]')
+    plt.colorbar().set_label('H2 number density [cm^-3]')
+    #-------------------------------------------------
+    #  N(Mol)/N(H)
+    fig = plt.figure('N(mol)/N(H), ' + ext)
+    
+    H2  = pic[:, :, 1+n_dust]
+    Mol = pic[:, :, 0+n_dust]
+    data = np.zeros_like(H2)
+    idn = np.where(H2 > 0)
+    
+    data[idn] = Mol[idn]/H2[idn]*0.5
+    plt.xlabel(xlab)
+    plt.ylabel(ylab)
+    vmax = np.max(data)
+    vmin = vmax*1e-6
+    #~ m_range = [-100,100,-40,40]
+    cont = 10.0**np.linspace(np.log10(vmax), np.log10(vmin), 7)
+    CS = plt.contour(data[:,:], levels=cont, linewidths=1, colors='k', extent=m_range)
+    plt.clabel(CS, inline=1, fmt='%2.1e', fontsize=10)
+    
+    
+    plt.imshow(data[:,:], extent=m_range, origin='lower',
+               interpolation='None', cmap=plt.cm.jet, norm=LogNorm(vmin=vmin, vmax=vmax))
+    ax = plt.gca()
+    #~ divider = make_axes_locatable(ax)
+    #~ cax = divider.append_axes("right", size="5%", pad=0.05, aspect=10)
+    #~ plt.colorbar(cax=cax).set_label(r'N(HCO$^{+}$)/N(H)')
+    plt.colorbar().set_label(r'N(HCO$^{+}$)/N(H)')
 
 if __name__ == "__main__":
     """ main routine """

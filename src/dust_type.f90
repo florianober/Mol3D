@@ -231,13 +231,16 @@ CONTAINS
                 ! handling of anisotropy: aniso == 1: anisotropic       scattering
                 !                         aniso == 2: isotropic         scattering
                 !                         aniso == 3: henyey-greenstein scattering
-                read(unit=1,fmt=*) hi1      ! scatt. matrix / henyey-greenstein
+                ! the desired handling of anisotropy is choosen in the init file
+                ! TbD: a test to check if henyey-greenstein scattering is working
 
-                if (this%aniiso==1) then    ! before: only anisotropy chosen
-                    this%aniiso = hi1       ! now specify handling of anisotropy (aniiso == 1 or aniiso == 3)
-                end if
+                read(unit=1,fmt=*) hi1      ! scatt. matrix / henyey-greenstein (obsolete)
 
-                ! wavelength/ frequqncy
+                !if (this%aniiso==1) then    ! before: only anisotropy chosen
+                !    this%aniiso = hi1       ! now specify handling of anisotropy (aniiso == 1 or aniiso == 3)
+                !end if
+
+                ! wavelength/ frequency
                 ! Tbd: this should be generalized. We should use a frequency
                 !      table and interpolate for every frequency in the MC
                 !      process. Otherwise we introduce errors due to the
@@ -444,16 +447,6 @@ CONTAINS
         ! sidi ... rel. number of dust grains with radius r_dust(i_dust)
         this%sidi(:) = ( this%r_dust(:)/this%r_dust(this%n_dust) ) ** this%sizexp
         this%sidi(:) = this%sidi(:) / sum( this%sidi(:) )
-    
-        ! some output
-!~         if (this%n_dust>1) then
-!~             do i_dust=1, this%n_dust
-!~                 print *,"   - type of dust ", i_dust, " -- radius : ", &
-!~                 real(this%r_dust(i_dust)*1.0e+6_r2), " micron"
-!~                 print *,"     rel. number of particles [%] : ", &
-!~                 real(this%sidi(i_dust)*100.0_r2)
-!~             end do
-!~         end if
 
         do i_lam_map=1, this%n_lam_map
             this%num_lam_map(i_lam_map) = i_lam_map
