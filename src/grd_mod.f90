@@ -128,13 +128,13 @@ CONTAINS
         END SELECT
 
         if ( abs(hd1-hd2)/hd1 > 0.01_r2 ) then
-            print *,"!!! Warning:in subroutine make_grid() "
+            print *,"ERROR"
             print *,"    Difference between the VOLUME OF THE MODEL SPACE"
             print *,"    and the TOTAL VOLUME OF THE SINGLE ESCs is larger than 1% :"
             print *,"    - volume( model space)        : ", hd2, " AU^3"
             print *,"    - total volume of single ESCs : ", hd1, " AU^3"
             print *
-            print *,"mc3d stopped."
+            print *,"Please verify that you used a correct (odd/even) number of grid cells"
             stop
         end if
 
