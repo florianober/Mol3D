@@ -622,9 +622,17 @@ contains
                 i_r = i_r + 1
             END IF
         ELSE IF (hi1 == 3) THEN
-            i_ph = i_ph - 1
+            IF (i_ph > 1) THEN
+                i_ph = i_ph - 1
+            ELSE
+                i_ph = grid%n(2)
+            END IF
         ELSE IF (hi1 == 4) THEN
-            i_ph = i_ph + 1
+            IF (i_ph < grid%n(2)) THEN
+                i_ph = i_ph + 1
+            ELSE
+                i_ph = 1
+            END IF
         ELSE IF (hi1 == 5) THEN
             IF (i_z > 0) THEN
                 i_z = i_z - 1
@@ -639,6 +647,13 @@ contains
             stop
         END IF
         nr_cell_new = grid%cell_idx2nr(i_r, i_ph, i_z)
+!~         IF (nr_cell_new /= get_cell_nr( grid,pos_xyz_new ) ) THEN
+!~             print *, nr_cell_new
+!~             print *, get_cell_nr( grid,pos_xyz_new )
+!~             print *, pos_xyz_new
+!~             print *, i_r, i_ph, i_z
+!~             stop
+!~         END IF
 
     END SUBROUTINE path_cy
 
