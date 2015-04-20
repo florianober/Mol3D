@@ -78,26 +78,31 @@ CONTAINS
                 do i_c=1, grid%n(3)
                     i_cell = i_cell + 1
 
-                    ! r/th/ph index => cell number
-                    grid%cell_idx2nr(i_a,i_b,i_c) = i_cell 
+                    ! a/b/c index => cell number
+                    grid%cell_idx2nr(i_a, i_b, i_c) = i_cell 
 
-                    ! cell number => r/th/ph index
-                    grid%cell_nr2idx(1,i_cell) = i_a
-                    grid%cell_nr2idx(2,i_cell) = i_b
-                    grid%cell_nr2idx(3,i_cell) = i_c
+                    ! cell number => a/b/c index
+                    grid%cell_nr2idx(1, i_cell) = i_a
+                    grid%cell_nr2idx(2, i_cell) = i_b
+                    grid%cell_nr2idx(3, i_cell) = i_c
 
                     ! find cell volume and min A cell-Wall
                     CALL calc_cell_properties(grid,model,i_a,i_b,i_c)
                     ! calculate midpoint coordinate
-                    moco(1) = ( grid%co_mx_a( i_a ) + grid%co_mx_a( i_a  -1) ) / 2.0_r2
-                    moco(2) = ( grid%co_mx_b(i_b) + grid%co_mx_b(i_b -1) ) / 2.0_r2
-                    moco(3) = ( grid%co_mx_c(i_c) + grid%co_mx_c(i_c -1) ) / 2.0_r2
+                    moco(1) = (grid%co_mx_a(i_a) + grid%co_mx_a(i_a - 1)) / 2.0_r2
+                    moco(2) = (grid%co_mx_b(i_b) + grid%co_mx_b(i_b - 1)) / 2.0_r2
+                    moco(3) = (grid%co_mx_c(i_c) + grid%co_mx_c(i_c - 1)) / 2.0_r2
 
                     ! get cartesian coordinate from moco
                     grid%cellmidcaco(i_cell,:) = mo2ca(grid, moco)
                 end do
             end do
         end do
+        
+        grid%cell_idx2nr(grid%n(1), :, :) = grid%n_cell + 1
+        grid%cell_idx2nr(:, grid%n(2), :) = grid%n_cell + 1
+        grid%cell_idx2nr(:, :, grid%n(3)) = grid%n_cell + 1
+        
         !TbD volume and area of zero cell
         grid%cell_minA(0) = model%r_in**2*PI
 

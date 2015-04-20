@@ -92,6 +92,9 @@ MODULE Grid_type
         
     END TYPE Grid_TYP
     SAVE
+    INTERFACE check_inside
+        MODULE PROCEDURE check_inside_cellno, check_inside_coord
+    END INTERFACE
     !--------------------------------------------------------------------------!
     
     PUBLIC :: &
@@ -298,8 +301,8 @@ CONTAINS
             this%velo( 0:this%n_cell,1:3 ), &
             this%cellmidcaco(0:this%n_cell,1:3), &
             this%absvelo( 0:this%n_cell), &
-            this%cell_idx2nr( 0:this%n(1), 0:this%n(2), 0:this%n(3) ), &
-            this%cell_nr2idx( 1:3, 0:this%n_cell ), &
+            this%cell_idx2nr( 0:this%n(1) +1, 0:this%n(2) + 1, 0:this%n(3) + 1), &
+            this%cell_nr2idx( 1:3, 0:this%n_cell + 1 ), &
             this%t_dust(  0:this%n_cell, 1:n_dust ), &
             this%t_gas(  0:this%n_cell), &
             this%lvl_pop( 1:egy_lvl,0:this%n_cell ) )
@@ -433,7 +436,23 @@ CONTAINS
     ! ##########################################################################
     ! check: is current position of photon stil inside the model space?
     ! ---
-    FUNCTION check_inside(caco,this,model) result(check_inside_result)
+    FUNCTION check_inside_cellno(cellno, this, model) result(check_inside_result)
+        USE math_mod, ONLY : norm
+        
+        IMPLICIT NONE
+        !----------------------------------------------------------------------!
+        TYPE(Grid_TYP), INTENT(IN)                  :: this
+        TYPE(Model_TYP), INTENT(IN)                 :: model
+        
+        INTEGER                                     :: cellno
+        
+        LOGICAL                                     :: check_inside_result   
+        !----------------------------------------------------------------------!
+
+        check_inside_result = cellno /= this%n_cell + 1 
+    END FUNCTION check_inside_cellno
+    
+    FUNCTION check_inside_coord(caco, this, model) result(check_inside_result)
         USE math_mod, ONLY : norm
         
         IMPLICIT NONE
@@ -463,7 +482,7 @@ CONTAINS
                 stop
         END SELECT
 
-    END FUNCTION check_inside
+    END FUNCTION check_inside_coord
 
     FUNCTION get_cell_nr(this, caco) RESULT(get_cell_nr_result)
         ! generic function for all geometrics

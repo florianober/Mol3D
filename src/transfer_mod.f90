@@ -65,9 +65,9 @@ contains
                                photon%pos_xyz_new,photon%nr_cell_new,d_l)
                 photon%pos_xyz = photon%pos_xyz_new
                 photon%nr_cell = photon%nr_cell_new
-                IF (.not. check_inside(photon%pos_xyz_new(:),grid, model) ) THEN
+                IF (.not. check_inside(photon%nr_cell, grid, model) ) THEN
                     photon%inside = .false.
-                    exit
+                    EXIT
                 END IF
             END IF
             
@@ -136,7 +136,7 @@ contains
                                 model%ref_unit
                     END DO
                 END IF
-                IF ( check_inside(photon%pos_xyz_new(:),grid, model) ) THEN
+                IF ( check_inside(photon%nr_cell, grid, model) ) THEN
                     ! photon still inside model space
                     ! ---
                     ! b) set new starting point; adjust optical depth
@@ -178,7 +178,7 @@ contains
         tau = 0.0_r2
         d_tau = 0.0_r2
         ! transport photon in direction to observer
-        DO WHILE (check_inside(photon%pos_xyz(:), grid, model))
+        DO WHILE (check_inside(photon%nr_cell, grid, model))
 
             ! 1. inside the dust sublimation radius: skip
             IF (photon%nr_cell == 0) THEN
@@ -187,7 +187,7 @@ contains
                                photon%pos_xyz_new, photon%nr_cell_new, d_l)
                 photon%pos_xyz = photon%pos_xyz_new
                 photon%nr_cell = photon%nr_cell_new
-                IF (.not. check_inside(photon%pos_xyz_new(:), grid, model) ) THEN
+                IF (.not. check_inside(photon%nr_cell, grid, model) ) THEN
                     photon%inside = .False.
                     photon%kill = .True.
                     EXIT
