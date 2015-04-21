@@ -22,7 +22,7 @@ import make_spectrum as mkspec
 import make_continuum  as cont
 import glob
 
-import mol3d_routines as l
+from mol3d_routines import mol3d
 
 if len(sys.argv) > 1:
     P_NAME = sys.argv[1]
@@ -47,7 +47,7 @@ if len(glob.glob(os.path.join(PATH_RESULTS, P_NAME + '*'))) < 1:
 def main():
     """ Main visualisation routine  """
 
-    project = l.mol3d(P_NAME, PATH_RESULTS)
+    project = mol3d(P_NAME, PATH_RESULTS)
     # get attributes
     attr = project.attr
 

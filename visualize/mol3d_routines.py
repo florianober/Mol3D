@@ -144,11 +144,6 @@ class mol3d:
             #~ if self.__attr['r_path'] != path_results:
                 #~ self.__attr['r_path'] = path_results
             self.__attr['arcs'] = self.__attr['r_ou']/self.__attr['distance']
-            # desired flux unit
-            # 'AS': Jy/ arcsec**2
-            # 'PX': Jy/ pixel (the unit it is stored in the fits file)
-            self.__unit = 'AS'
-            self.set_unit(self.__unit)
             self.__attr['dvelo'] = (self.__attr['vel_max'] /
                                     (self.__attr['i_vel_chan']))
 
@@ -178,23 +173,27 @@ class mol3d:
             self.__attr['tr_lam'] = hlp.c/self.__attr['tr_freq']
             self.__attr['dtr_freq'] = (self.__attr['tr_freq'] /
                                        hlp.c*self.__attr['dvelo'])
+
+            self.set_units()
         else:
             print('ERROR: Could not find results (input file)')
 
-    def get_unit(self):
-        return self.__unit
+    def set_units(self):
+        self.__unit = {}
+        self.__unit['PX'] = 1.0
+        self.__unit['AS'] = (self.__attr['n_bin_map']/self.__attr['arcs'])**2
 
-    def set_unit(self, unit):
-        if unit == 'PX':
-            self.__unit_converter = 1.0
-            self.__unit = 'PX'
-        elif unit == 'AS':
-            self.__unit_converter = (self.__attr['n_bin_map']/self.__attr['arcs'])**2
-            self.__unit = 'AS'
+    def __get_unit_value(self, unit):
+
+        if unit in self.__unit:
+            unit_value = self.__unit[unit]
         else:
-            print('Requested unit not found')
+            print('Desired unit "%s" not found' %(unit))
+            print('Fallback to Jy/pixel')
+            unit_value = self.__unit['PX']
+        return unit_value
 
-    def return_velo_ch_map(self):
+    def return_velo_ch_map(self, unit='PX'):
         if self.__velochmap == []:
             # load map into memory, try open the fits file
             file_name = self.__path_results + self.__pname + '_velo_ch_map.fits.gz'
@@ -204,11 +203,11 @@ class mol3d:
                 return [] 
         else:
             pass
-        return self.__velochmap * self.__unit_converter
+        return self.__velochmap * self.__get_unit_value(unit)
 
     velo_ch_map = property(return_velo_ch_map)
 
-    def return_continuum_maps_mono(self):
+    def return_continuum_maps_mono(self, unit='PX'):
         if self.__continuum_maps_mono == []:
             # load maps into memory
             file_name = self.__path_results + self.__pname +                   \
@@ -219,11 +218,11 @@ class mol3d:
                 return []
         else:
             pass
-        return self.__continuum_maps_mono * self.__unit_converter
+        return self.__continuum_maps_mono * self.__get_unit_value(unit)
 
     continuum_maps_mono = property(return_continuum_maps_mono)
 
-    def return_continuum_maps_bin(self):
+    def return_continuum_maps_bin(self, unit='PX'):
         if self.__continuum_maps_bin == []:
             # load maps into memory
             file_name = self.__path_results + self.__pname +                   \
@@ -234,11 +233,11 @@ class mol3d:
                 return []
         else:
             pass
-        return self.__continuum_maps_bin * self.__unit_converter
+        return self.__continuum_maps_bin * self.__get_unit_value(unit)
 
     continuum_maps_bin = property(return_continuum_maps_bin)
 
-    def return_continuum_maps_raytrace(self):
+    def return_continuum_maps_raytrace(self, unit='PX'):
         if self.__continuum_maps_raytrace == []:
             # load maps into memory
             file_name = self.__path_results + self.__pname +                   \
@@ -249,7 +248,7 @@ class mol3d:
                 return [] 
         else:
             pass
-        return self.__continuum_maps_raytrace * self.__unit_converter
+        return self.__continuum_maps_raytrace * self.__get_unit_value(unit)
 
     continuum_maps_raytrace = property(return_continuum_maps_raytrace)
 

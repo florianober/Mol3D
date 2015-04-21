@@ -2,11 +2,9 @@
 # -*- coding: utf-8 -*-
 """
 show the model set up
-ver.: 0.2
-routines marked with 'XX' belong to older versions and are not
-used at the moment.
+ver.: 0.3
 
-date   : 12/09/2014
+date   : 16/04/2015
 author : F. Ober
 email  : fober@astrophysik.uni-kiel.de
 """
@@ -15,11 +13,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 import sys
-from scipy.interpolate import griddata
-import matplotlib.patches as mpatches
-from mpl_toolkits.axes_grid1 import make_axes_locatable
+
 from astropy.io import fits as pf
-import mol3d_routines as m
 from matplotlib.colors import LogNorm
 
 if len(sys.argv) > 1:
@@ -34,109 +29,17 @@ else:
     PATH_RESULTS = FILE_IN.readline().split()[0]
     FILE_IN.close()
 
-def make_model(path_results, p_name):
-    """ make plot from model file XX  """
-
-    #open model file for the given p_name
-
-    model = pf.open(path_results + p_name+'_model.fits')[0].data
-    # tbd: assuming rotational symmetry
-    x = (model[:, 0]**2+model[:, 1]**2)**0.5 * \
-        np.sign(model[:, 0]) * np.sign(model[:, 1])
-    y = model[:, 2]
-
-    # gas Temperature
-
-    z = model[:, 9]
-    create_plot(x, y, z, 'Gas Temperature')
-
-    # dust distribution
-
-    z = model[:, 3]
-    create_plot(x, y, np.log10(z*1e-6), 'Dust number density distribution')
-
-    # H2 distribution
-    z = model[:, 5]
-    create_plot(x, y, np.log10(z*1e-6), 'H2 number density distribution')
-
-    # molecule distribution
-    z = model[:, 4]
-    create_plot(x, y, np.log10(z*1e-6), 'Molecule number density distribution')
-
-    # molecule distribution in relation to H2
-    z = model[:, 4]/model[:, 5]
-    create_plot(x, y, z, 'Molecule/H2 density distribution')
-
-    #~ # velocity distribution
-    z = model[:, 10] / 1000
-    create_plot(x, y, z, 'Velocity distribution')
-
-def create_plot(x, y, z, name):
-    """ make a plot from arbitary spaced values using griddata XX """
-    N = 501
-    xi = np.linspace(np.max(x), np.min(x), N)
-    yi = np.linspace(np.max(y), np.min(y), N)
-
-    zi = griddata((x, y), z, (xi[None, :], yi[:, None]), method='linear')
-
-    plt.figure(name)
-    #cont = [30, 35, 40, 45, 50]
-    bar = True
-    colors = 151
-    if 'Temperature' in name:
-        ext = ' [K]'
-        cont = [10, 20, 25, 30, 35, 40]
-        #~ cont = 1
-        #~ colors = 151
-        colors = np.round(np.linspace(0, 100, 151))
-    elif 'density' in name:
-        ext = ' lg [cm^-3]'
-        cont = np.round(np.linspace(-5, np.nanmax(zi), 10))
-        colors = np.round(np.linspace(-12, np.nanmax(zi), 151))
-        if 'H2' in name:
-            ext = ' lg [cm^-3]'
-            cont = np.round(np.linspace(-5, np.nanmax(zi), 10))
-            cont = [5, 5.5, 6, 6.5, 7, 7.5, 8]
-            colors = np.round(np.linspace(-12, np.nanmax(zi), 151))
-    elif 'Velocity' in name:
-        ext = ' [km/s]'
-        #~ cont = [zi[,1.5, 2, 3, 5]
-        cont = [1, 1.5, 2, 3, 5]
-        #~ colors = np.round(np.linspace(0, 16, 151), 2)
-    if 'Molecule/H2' in name:
-        colors = 1
-        bar = False
-
-    if not 'Molecule/H2' in name:
-
-        CS = plt.contour(xi, yi, zi, cont, linewidths=1, colors='k')
-        plt.clabel(CS, inline=1, fmt='%2.1f', fontsize=10)
-
-    CS = plt.contourf(xi, yi, zi, colors, cmap=plt.cm.jet)
-
-    plt.xlim(np.min(x), np.max(x))
-    plt.ylim(np.min(y), np.max(y))
-
-    plt.title(name)
-    plt.xlabel('d [AU]')
-    plt.ylabel('d [AU]')
-    if bar:
-        plt.colorbar().set_label(name + ext)
-
-
 def show_maps(path_results, p_name):
     """ search visualisation file for different planes """
 
-    project = m.mol3d(p_name, path_results)
     # show xz-plane
     present_plane(path_results+p_name, 'xz')
 
     # show xy-plane
-    #~ present_plane(path_results+p_name, 'xy')
+    present_plane(path_results+p_name, 'xy')
 
     # show yz-plane
     #~ present_plane(path_results+p_name, 'yz')
-
 
 def present_plane(file_in, plane):
     """ open visualisation file and make desired plots of that plane """
@@ -237,21 +140,21 @@ def present_plane(file_in, plane):
     if pic.shape[2] > 9:
         data = np.sqrt(pic[:, :, 5+2*n_dust]**2 +
                        pic[:, :, 6+2*n_dust]**2 +
-                       pic[:, :, 7+2*n_dust]**2)
+                       pic[:, :, 7+2*n_dust]**2)/1000
     else:
         data = pic[:, :, 5+2*n_dust]
     CS = plt.contour(data, linewidths=1, colors='k', extent=m_range)
     plt.clabel(CS, inline=1, fmt='%2.1f', fontsize=10)
     plt.imshow(data, extent=m_range, origin='lower',
                interpolation='None', cmap=plt.cm.jet)
-    plt.colorbar().set_label('Velocity [m/s]')
+    plt.colorbar().set_label('Velocity [km/s]')
 
     #-------------------------------------------------
     #  molecule density
 
     data = pic[:, :, 0+n_dust] * 1e-6
-    plt.figure('Molecule number density distribution, ' + ext)
-    plt.title('Molecule number density distribution, ' + ext)
+    plt.figure('Molecule distribution, ' + ext)
+    plt.title('Molecule distribution, ' + ext)
     plt.xlabel(xlab)
     plt.ylabel(ylab)
     vmax = np.max(data)
@@ -269,8 +172,8 @@ def present_plane(file_in, plane):
     #  dust density 
     for i in range(n_dust):
         data = pic[:, :, i] * 1e-6
-        plt.figure('Dust %2.0d number density distribution, %s' %(i+1,ext))
-        plt.title('Dust %2.0d number density distribution, %s' %(i+1,ext))
+        plt.figure('Dust %2.0d distribution, %s' %(i+1,ext))
+        plt.title('Dust %2.0d distribution, %s' %(i+1,ext))
         plt.xlabel(xlab)
         plt.ylabel(ylab)
         vmax = np.max(data)
@@ -288,8 +191,8 @@ def present_plane(file_in, plane):
     #  H2 density
 
     data = pic[:, :, 1+n_dust] * 1e-6
-    plt.figure('H2 number density distribution, ' + ext)
-    plt.title('H2 number density distribution, ' + ext)
+    plt.figure('H2 distribution, ' + ext)
+    plt.title('H2 distribution, ' + ext)
     plt.xlabel(xlab)
     plt.ylabel(ylab)
     
@@ -302,16 +205,7 @@ def present_plane(file_in, plane):
     plt.imshow(data, extent=m_range, origin='lower',
                interpolation='None', cmap=plt.cm.jet,
                norm=LogNorm(vmin=vmin, vmax=vmax))
-    #~ plt.annotate('gap', xy=(80, 10), xycoords='data', color='white',
-                 #~ xytext=(0, 80), textcoords='data',
-                 #~ arrowprops=dict(width=3, facecolor='white', shrink=0.05),
-                 #~ fontsize=24,
-                 #~ horizontalalignment='center', verticalalignment='top',)
-    #~ plt.annotate('gap', xy=(-80, 10), xycoords='data',
-                 #~ xytext=(0, 80), textcoords='data', color='white',
-                 #~ arrowprops=dict(width=3, facecolor='white', shrink=0.05),
-                 #~ fontsize=23,
-                 #~ horizontalalignment='center', verticalalignment='top',)
+
     plt.colorbar().set_label('H2 number density [cm^-3]')
     #-------------------------------------------------
     #  N(Mol)/N(H)
@@ -335,10 +229,6 @@ def present_plane(file_in, plane):
     
     plt.imshow(data[:,:], extent=m_range, origin='lower',
                interpolation='None', cmap=plt.cm.jet, norm=LogNorm(vmin=vmin, vmax=vmax))
-    ax = plt.gca()
-    #~ divider = make_axes_locatable(ax)
-    #~ cax = divider.append_axes("right", size="5%", pad=0.05, aspect=10)
-    #~ plt.colorbar(cax=cax).set_label(r'N(HCO$^{+}$)/N(H)')
     plt.colorbar().set_label(r'N(HCO$^{+}$)/N(H)')
 
 if __name__ == "__main__":

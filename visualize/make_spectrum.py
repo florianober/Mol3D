@@ -15,10 +15,9 @@ email: fober@astrophysik.uni-kiel.de
 import sys
 import matplotlib.pyplot as plt
 import numpy as np
-import mol3d_routines as l
-from mpl_toolkits.axes_grid1 import AxesGrid
+from mol3d_routines import mol3d
+from mpl_toolkits.axes_grid1 import AxesGrid, host_axes
 import matplotlib as mpl
-import mpl_toolkits.axes_grid1 as axes_grid1
 from astropy.io import fits as pf
 import helper as hlp
 
@@ -47,11 +46,12 @@ TEXT_SIZE = mpl.rcParams['font.size'] -6
 
 def make_velo_int_plot(data, dvelo=1, cmap=plt.cm.nipy_spectral,
                        interpol='None', extent=[-1, 1, -1, 1],
-                       label=r'flux [Jy/as$^2$ * km/s]',conv=1,snr=-1):
+                       label=r'flux [Jy/as$^2$ * km/s]',
+                       conv=1, snr=-1):
     """ make velocity integrated intensity map """
     # show velocity integrated map
     fig = plt.figure('velocity integrated map')
-    ax1 = axes_grid1.host_axes([0.09, 0.11, 0.8, 0.8])
+    ax1 = host_axes([0.09, 0.11, 0.8, 0.8])
     extent_conv = [extent[0], 0.5* extent[0],0, 0.5*extent[1], extent[1]]
     dvelo /= 1000
     if extent != [-1, 1, -1, 1]:
@@ -148,22 +148,25 @@ def make_velo_ch_plot(data, vch, N1=3, N2=5, snr='', cmap=plt.cm.nipy_spectral,
     plt.setp(grid.axes_llc.xaxis.get_majorticklabels(), rotation=70)
     return fig
 
-def make_spectra(path_results, pname):
+def make_spectra(path_results, pname, unit='AS'):
     """  present the spectral results of the project """
 
-    project = l.mol3d(pname, path_results)
+    project = mol3d(pname, path_results)
 
-    map_in = project.velo_ch_map
+    map_in = project.return_velo_ch_map('PX')
     if map_in != []:
+        
         vch = project.vch
         r_ou = project.attr['r_ou']
-        arcs = r_ou/project.attr['distance']
+        arcs = project.attr['arcs']
         
-        conv = project.attr['distance']
-        extent = [-arcs, arcs, -arcs, arcs]
-        #~ extent = [-r_ou, r_ou, -r_ou, r_ou]
+        if unit == 'PX':
+            extent = [-r_ou, r_ou, -r_ou, r_ou]
+        else:
+            extent = [-arcs, arcs, -arcs, arcs]
 
         # make line spectrum
+        
         plt.figure('line spectrum')
         y_arr = map_in.sum(axis=1).sum(axis=1)
         plt.plot(vch, y_arr)
@@ -172,16 +175,11 @@ def make_spectra(path_results, pname):
         plt.xlabel('velocity [m/s]')
         plt.ylabel('intensity [Jy]')
 
-        if map_in.shape[1] % 2:
-            px_size_as = arcs/((map_in.shape[1]-1)/2.)
-        else:
-            px_size_as = arcs/((map_in.shape[1])/2.)
-
-        map_in *= 1.0/px_size_as**2
-
         # make intensity map
-        fig = make_velo_int_plot(map_in, project.attr['dvelo'], extent=extent,
-                                 conv=conv)
+        map_in = project.return_velo_ch_map(unit)
+        fig = make_velo_int_plot(map_in, project.attr['dvelo'],
+                                 extent=[-arcs, arcs, -arcs, arcs],
+                                 conv=project.attr['distance'])
         #~ fig.savefig(pname +'_intensity_map.pdf',bbox_inches='tight')
 
         # make velocity channel overview map
