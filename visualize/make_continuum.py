@@ -15,7 +15,7 @@ email: fober@astrophysik.uni-kiel.de
 import sys
 import matplotlib.pyplot as plt
 import numpy as np
-import mol3d_routines as l
+from mol3d_routines import mol3d
 from astropy.io import fits as pf
 import helper as hlp
 import os
@@ -216,16 +216,19 @@ def make_continuum_maps(wlen, map_in, fig_label='', cmap='Set1',
         plt.xlabel(ylab)
         plt.tight_layout()
 
-def make_continuum_all(path_results, pname):
+def make_continuum_all(path_results, pname, unit='PX'):
     """
     prepare continuum data and pass them to the corresponding
     routines
     """
 
-    project = l.mol3d(pname, path_results)
+    project = mol3d(pname, path_results)
     r_ou = project.attr['r_ou']
     arcs = r_ou/project.attr['distance']
-    extent = [-arcs, arcs, -arcs, arcs]
+    if unit == 'PX':
+        extent = [-r_ou, r_ou, -r_ou, r_ou]
+    elif unit == 'AS':
+        extent = [-arcs, arcs, -arcs, arcs]
     
     # First temperature calculation sed/maps
 
@@ -240,7 +243,7 @@ def make_continuum_all(path_results, pname):
             make_sed(sed_txt[:, 0], sed_txt[:, 1], fig_title=file_in)
             
             # Maps
-            map_in = getattr(project, 'continuum_maps'+method)
+            map_in = getattr(project, 'return_continuum_maps'+method) (unit)
             wlen = sed_txt[:, 0]
             make_continuum_maps(wlen, map_in, extent=extent)
 
