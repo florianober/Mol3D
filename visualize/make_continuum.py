@@ -223,8 +223,8 @@ def make_continuum_all(path_results, pname, unit='PX'):
     """
 
     project = mol3d(pname, path_results)
-    r_ou = project.attr['r_ou']
-    arcs = r_ou/project.attr['distance']
+    r_ou = project.attr['image_r_ou']
+    arcs = project.attr['image_arcs']
     if unit == 'PX':
         extent = [-r_ou, r_ou, -r_ou, r_ou]
     elif unit == 'AS':

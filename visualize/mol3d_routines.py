@@ -144,6 +144,9 @@ class mol3d:
             #~ if self.__attr['r_path'] != path_results:
                 #~ self.__attr['r_path'] = path_results
             self.__attr['arcs'] = self.__attr['r_ou']/self.__attr['distance']
+            self.__attr['image_arcs'] = self.__attr['arcs']/self.__attr['zoom_map']
+            self.__attr['image_r_ou'] = self.__attr['r_ou']/self.__attr['zoom_map']
+            
             self.__attr['dvelo'] = (self.__attr['vel_max'] /
                                     (self.__attr['i_vel_chan']))
 
