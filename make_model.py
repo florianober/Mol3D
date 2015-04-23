@@ -17,6 +17,7 @@ import sys
 sys.path.append('./visualize/')
 import time
 import math
+from scipy.interpolate import griddata
 
 import numpy as np
 import helper as hlp
@@ -28,13 +29,13 @@ PATH_INPUT_GRID = 'input/grid/'
 
 #-------------------------------------------------------------------------------
 # global model definitions
-MODEL_NAME = 'example' # must not be the same name as for the Mol3D run
+MODEL_NAME = 'example' # must not be the Mol3D project name
 R_IN = 1.0
-R_OU = 120.0
+R_OU = 100.0
 
-GRID_NAME = 'spherical'
-#~ GRID_NAME = 'cylindrical'
-#~ GRID_NAME = 'cartesian'
+GRID_NAME = 'spherical'                             # a = r,   b = th, c = ph
+#~ GRID_NAME = 'cylindrical'                           # a = rho, b = ph, c = z
+#~ GRID_NAME = 'cartesian'                             # a = x,   b = y,  c = z
 
 N_A = 100              # no of coordinate a
 N_B = 101              # no of coordinate b
@@ -43,6 +44,21 @@ N_C = 1                # no of coordinate c
 DENSITY_DISTRIBUTION = 'Disk'     # density for a disk
 #~ DENSITY_DISTRIBUTION = 'Sphere'   # density for a sphere
 #~ DENSITY_DISTRIBUTION = 'User'     # density for user input
+#~ DENSITY_DISTRIBUTION = 'Fosite'     # density for user input
+
+FOSITE_FILE = 'bindisk_alphavis_cooling_0010.bin'
+if DENSITY_DISTRIBUTION == 'Fosite':
+    f = hlp.read_fosite(FOSITE_FILE)
+    # make sure, if the units are correct
+    # assumption here: we need to convert from 'm' to 'AU'
+    #
+    X1 = (f['/mesh/bary_centers'][:,:,0]/hlp.AU).flatten()
+    Y1 = (f['/mesh/bary_centers'][:,:,1]/hlp.AU).flatten()
+
+    density1 = f['/timedisc/density'].flatten()
+
+    height1 = f['/sources/grav/height'].flatten()/hlp.AU
+
 
 LINK = True # link the model and boundaries automatically
 
@@ -53,16 +69,19 @@ def get_density_disk(pos_xyz):
     """
     a shakura & sunyaev disk
     """
-    z = pos_xyz[2]
-    r = math.sqrt(pos_xyz[0]**2 + pos_xyz[1]**2)
+    z = pos_xyz[2,:]
+    r = np.sqrt(pos_xyz[0,:]**2 + pos_xyz[1,:]**2)
     scale_h = 10.0
     alpha = -2.625
     beta = 1.125
-    if  (r >= R_IN) and (r < R_OU):
-        h = scale_h * (r/100.0)**beta
-        density = (r/100.0)**(alpha)  *  np.exp(-0.5 * (z/h)**2, dtype=np.float64)
-    else:
-        density = 0.0
+
+    density = np.zeros_like(r)
+    ind = (r >= R_IN) & (r < R_OU)
+
+    h = scale_h * (r/100.0)**beta
+    
+    density[ind] = (r[ind]/100.0)**(alpha) * np.exp(-0.5 * (z[ind]/h[ind])**2, dtype=np.float64)
+    
 
     return density
 
@@ -72,13 +91,29 @@ def get_density_sphere(pos_xyz):
     density
     """
 
-    r = math.sqrt(pos_xyz[0]**2 +
-                  pos_xyz[1]**2 +
-                  pos_xyz[2]**2)
-    if  (r >= R_IN) and (r < R_OU):
-        density = 1.0
-    else:
-        density = 0.0
+    r = np.sqrt(pos_xyz[0, :]**2 +
+                pos_xyz[1, :]**2 +
+                pos_xyz[2, :]**2)
+    density = np.zeros_like(r)
+    ind = (r >= R_IN) & (r < R_OU)
+    density[ind] = 1.0
+    return density
+
+def get_density_fosite(pos_xyz):
+    """
+    a very(!) simple but working Fosite interface 
+    """
+    r = np.sqrt(pos_xyz[0, :]**2 + pos_xyz[1, :]**2)
+    z = pos_xyz[2,:]
+    density = np.zeros_like(r)
+    ind = (r >= R_IN) & (r < R_OU)
+    xi = pos_xyz[0, :]
+    yi = pos_xyz[1, :]
+    h = griddata((X1, Y1), height1, (xi[ind], yi[ind]), method='linear')
+    
+    density[ind] = griddata((X1, Y1), density1, (xi[ind], yi[ind]), method='linear') * \
+                   np.exp(-0.5 * (z[ind]/h)**2, dtype=np.float64)
+
 
     return density
 
@@ -106,6 +141,12 @@ def get_density(pos_xyz):
         if FIRST_CALL and GRID_NAME != 'spherical':
             print("Warning, a %s grid might not be the best solution for a sphere" %(GRID_NAME))
         density = get_density_sphere(pos_xyz)
+
+    elif DENSITY_DISTRIBUTION == 'Fosite':
+        #TbD
+        if FIRST_CALL:
+            print('Loading the density from Fosite')
+        density = get_density_fosite(pos_xyz)
 
     elif DENSITY_DISTRIBUTION == 'User':
         #TbD
@@ -264,36 +305,38 @@ def main():
     data = np.zeros((N_Cells, 2), dtype=np.float64)
 
     # create density distribution:
-    print("Setting up density distribution for %d cells" %N_Cells)
+    print("Calculating the mitpoint coordinates for %d cells" %N_Cells)
     i_cell = 0
+    mid_point_coord = np.zeros((3, N_Cells), dtype=np.float64)
+    mid_point_cart = np.zeros((3, N_Cells), dtype=np.float64)
     for i_a in range(N_A):
         for i_b in range(N_B):
             for i_c in range(N_C):
                 data[i_cell, 0] = i_cell+1 # Mol3D/Fortran counts from 1
 
                 # first get the cell midpoint coordinate
-                mid_point_coord = np.zeros(3, dtype=np.float64)
-                mid_point_coord[0] = (a_bounds[i_a] + a_bounds[i_a+1])/2.0
-                mid_point_coord[1] = (b_bounds[i_b] + b_bounds[i_b+1])/2.0
-                mid_point_coord[2] = (c_bounds[i_c] + c_bounds[i_c+1])/2.0
+
+                mid_point_coord[0, i_cell] = (a_bounds[i_a] + a_bounds[i_a+1])/2.0
+                mid_point_coord[1, i_cell] = (b_bounds[i_b] + b_bounds[i_b+1])/2.0
+                mid_point_coord[2, i_cell] = (c_bounds[i_c] + c_bounds[i_c+1])/2.0
 
                 # convert to cartesian
                 if GRID_NAME == 'spherical':
-                    mid_point_cart = hlp.sp2ca(mid_point_coord)
+                    mid_point_cart[:, i_cell] = hlp.sp2ca(mid_point_coord[:, i_cell])
 
                 elif GRID_NAME == 'cylindrical':
-                    mid_point_cart = hlp.cy2ca(mid_point_coord)
+                    mid_point_cart[:, i_cell] = hlp.cy2ca(mid_point_coord[:, i_cell])
 
                 elif GRID_NAME == 'cartesian':
-                    mid_point_cart = mid_point_coord
-
-                # now get the density for this cell coordinate
-                data[i_cell, 1] = get_density(mid_point_cart)
+                    mid_point_cart[:, i_cell] = 1.0* mid_point_coord[:, i_cell]
 
                 # increase the cell counter
                 i_cell += 1
-
+    print("Calculating the density distribution")
+    data[:, 1] = get_density(mid_point_cart)
+    
     # save results
+    print("Saving the model for the use with Mol3D")
     model_file = open(PATH_INPUT_GRID + MODEL_NAME +  '_' +
                                         DENSITY_DISTRIBUTION + '_' +
                                         GRID_NAME + '_model.dat', 'w')

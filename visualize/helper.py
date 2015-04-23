@@ -15,6 +15,9 @@ from astropy.io import fits as pf
 from astropy.coordinates import SkyCoord
 from numpy.linalg import norm
 from os.path import dirname
+from os import SEEK_CUR
+from glob import iglob
+from struct import unpack
 
 from datetime import datetime, timedelta
 
@@ -25,7 +28,7 @@ c = 299792458.
 k = 1.3806488e-23
 sigma = 5.6704e-8
 
-const_AU = 1.496e+11
+AU = 1.496e+11
 R_sun = 0.6960e+9        # Radius of the sun
 L_sun = 3.85e+26
 M_sun = 1.9891e+30
@@ -72,7 +75,7 @@ def get_sensitivity_from_table(mol, instrument='ALMA'):
     
     # read all stored sensitivities from file
     if instrument == 'ALMA':
-        file_in = open(dirname(__file__)+'/sensitivities_ALMA.dat','r')
+        file_in = open(dirname(__file__)+'/sensitivities_ALMA_neu.dat','r')
     else:
         print('Sensitivities for this (%s) instrument not found' %(instrument))
         return sensitivity
@@ -85,6 +88,38 @@ def get_sensitivity_from_table(mol, instrument='ALMA'):
             sensitivity = float(entry.rsplit()[1])
             break
     return sensitivity
+    
+def get_sensitivity_from_table_adjust(mol, instrument='ALMA'):
+    """
+    get the sensitivity from for a given mol(ecule) and transition
+    identifier
+    """
+    sensitivity = 0
+    
+    # read all stored sensitivities from file
+    if instrument == 'ALMA':
+        file_in_old = open(dirname(__file__)+'/sensitivities_ALMA.dat','r')
+        file_in_neu = open(dirname(__file__)+'/sensitivities_ALMA_neu.dat','r')
+    else:
+        print('Sensitivities for this (%s) instrument not found' %(instrument))
+        return sensitivity
+
+    sensi_old = file_in_old.readlines()
+    file_in_old.close
+    
+    sensi_neu = file_in_neu.readlines()
+    file_in_neu.close
+
+    for entry in sensi_old:
+        if mol == entry.rsplit()[0]:
+            sensitivity_old = float(entry.rsplit()[1])
+            break
+    for entry in sensi_neu:
+        if mol == entry.rsplit()[0]:
+            sensitivity_neu = float(entry.rsplit()[1])
+            break
+    
+    return sensitivity_neu/sensitivity_old
 
 def ca2sp(p_vec):
     """ convert cartesian to spherical coordinates """
@@ -596,3 +631,124 @@ def poldegang(I, Q, U):
 def shrink(data, rows, cols):
     return data.reshape(rows, data.shape[0]/rows,
                         cols, data.shape[1]/cols).sum(axis=1).sum(axis=2)
+
+'''
+class to read Fosite results
+-> converted to Python 3
+developed by M. Jung as a part of the Fosite package
+'''
+
+class read_fosite(object):
+  def __init__(self, filename):
+    self.filetemplate = self._getFiletemplate(filename)
+    self.filename = filename
+    if self.isTemplate:
+      self.setRange()
+      self.frame = self.range[0]
+    else:
+      self.frame = -1
+    self.last = None
+
+    def readArray(f,l,d):
+      dims = np.array(unpack('%s%ii' % (self.endian,d),f.read(d*self.intsize)))[::-1]
+      return np.fromfile(f, dtype='%sf%s' % (self.endian,self.realsize), count=dims.prod()).reshape(dims).T
+    
+    self.types = { \
+      1 : lambda f,l: unpack('%si' % self.endian,f.read(l))[0],
+      2 : lambda f,l: unpack('%sd' % self.endian,f.read(l))[0],
+      3 : lambda f,l: f.read(l),
+      4 : lambda f,l: unpack('%si' % self.endian,f.read(l))[0],
+      5 : lambda f,l: np.fromfile(f, dtype='%sf%s' % (self.endian,self.realsize) , count=l/self.realsize),
+      6 : lambda f,l: readArray(f,l,2),
+      7 : lambda f,l: readArray(f,l,3),
+      8 : lambda f,l: readArray(f,l,4),
+      9 : lambda f,l: np.fromfile(f, dtype='%si%s' % (self.endian,self.intsize), count=l/self.intsize)}
+    
+    self._ReadHeader()
+    
+  def __iter__(self):
+    self.index = self.range[0]
+    self.select(self.index)
+    return self
+
+  def next(self):
+    if(self.index>self.range[1]):
+      raise StopIteration
+    self.select(self.index)
+    self.index += 1
+    return self
+
+  def setRange(self):
+    if(self.isTemplate):
+      self.range = sorted([ int(j[-8:-4]) for j in iglob(self.filetemplate.replace('%04d',4*'[0-9]'))])
+      self.range = [self.range[0], self.range[-1]]
+    else:
+      self.range = None
+
+  def select(self,n):
+    if n==-1:
+      n = self.range[1]
+    if(n > self.range[1]):
+      self.setRange()
+    self.frame = max(min(n,self.range[1]),self.range[0])
+
+  def getRange(self):
+    return self.range
+
+  def __setitem__(self, key, val):
+    raise Exception("Writing not allowed")
+
+  def __getitem__(self,name):
+    try:
+      tup = self.d[name]
+      offset, t, datalen = tup
+      with open(self._getFilename(),'rb') as f:
+        f.seek(offset)
+        self.last = self.types[t](f,datalen)
+        return self.last
+    except(KeyError):
+      print ("Available keys:")
+      print ('\n'.join(self.keys()))
+      raise Exception("The key '%s' could not be found." % name)
+    except:
+      return self.last
+
+  def keys(self):
+    return sorted(self.d.keys())
+
+  def _ReadHeader(self):
+    with open(self.filename,'rb') as f:
+      self.d = dict()
+      self.magic,self.endian,self.version,self.realsize,self.intsize \
+        = f.read(6),f.read(2),f.read(1),f.read(2),f.read(2)
+      if(self.endian.decode()=='II'): self.endian = '<'
+      else: self.endian = '>'
+      
+      self.version = unpack('%sB' % self.endian,self.version)[0]
+      self.intsize = int(self.intsize)
+      self.realsize = int(self.realsize)
+      #print self.magic,self.endian,self.version,self.realsize,self.intsize
+      keylen = f.read(self.intsize)
+      while len(keylen)==4:
+        keylen, = unpack('%si' % self.endian,keylen)
+        key = f.read(keylen).decode()
+        t,datalen = self.types[1](f,self.intsize),self.types[1](f,self.intsize)
+        if datalen>0:
+          offset = f.tell()
+          self.d[key] = (offset, t, datalen)
+          f.seek(datalen,SEEK_CUR)
+        keylen = f.read(self.intsize)
+
+  def _getFiletemplate(self,filename):
+    if(filename.find('0000')==-1):
+      self.isTemplate = False
+      return filename
+    else:
+      self.isTemplate = True
+      return filename.replace('0000','%04d')
+
+  def _getFilename(self):
+    if(self.isTemplate):
+      return self.filetemplate % self.frame
+    else:
+      return self.filename
