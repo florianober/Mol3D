@@ -674,7 +674,7 @@ CONTAINS
         IF (this%n(1) == 1) THEN
             i_r = 1
         ELSE IF (spco(1) .gt. this%co_mx_a(this%n(1))) THEN
-            i_r = this%n(1)  !this should be outside the model space (check this)
+            i_r = this%n(1) + 1  !this should be outside the model space (check this)
         ELSE
             !print *, this%co_mx_a(100), spco(1)
             i_r = binary_search(spco(1),this%co_mx_a)
