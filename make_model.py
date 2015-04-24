@@ -21,6 +21,7 @@ from scipy.interpolate import griddata
 
 import numpy as np
 import helper as hlp
+import matplotlib.pyplot as plt
 
 
 #-------------------------------------------------------------------------------
@@ -31,7 +32,7 @@ PATH_INPUT_GRID = 'input/grid/'
 # global model definitions
 MODEL_NAME = 'example' # must not be the Mol3D project name
 R_IN = 1.0
-R_OU = 100.0
+R_OU = 120.0
 
 GRID_NAME = 'spherical'                             # a = r,   b = th, c = ph
 #~ GRID_NAME = 'cylindrical'                           # a = rho, b = ph, c = z
@@ -44,21 +45,64 @@ N_C = 1                # no of coordinate c
 DENSITY_DISTRIBUTION = 'Disk'     # density for a disk
 #~ DENSITY_DISTRIBUTION = 'Sphere'   # density for a sphere
 #~ DENSITY_DISTRIBUTION = 'User'     # density for user input
-#~ DENSITY_DISTRIBUTION = 'Fosite'     # density for user input
+#~ DENSITY_DISTRIBUTION = 'fosite'     # density for user input
 
-FOSITE_FILE = 'bindisk_alphavis_cooling_0010.bin'
-if DENSITY_DISTRIBUTION == 'Fosite':
+FOSITE_FILE = ''
+
+if DENSITY_DISTRIBUTION == 'fosite':
     f = hlp.read_fosite(FOSITE_FILE)
-    # make sure, if the units are correct
-    # assumption here: we need to convert from 'm' to 'AU'
+    # make sure, that the units are correct
     #
-    X1 = (f['/mesh/bary_centers'][:,:,0]/hlp.AU).flatten()
-    Y1 = (f['/mesh/bary_centers'][:,:,1]/hlp.AU).flatten()
+    print ('Fosite data:')
 
-    density1 = f['/timedisc/density'].flatten()
+    MODEL_NAME += '_' + FOSITE_FILE[-8:-4]
+    if f['/config/physics/units'] == 1:
+        print('Found SI units')
+        # SI units -> convert m to AU
+        convert_unit = hlp.AU
+        
+        R_IN = round(f['/config/mesh/xmin']/convert_unit, 2)
+        R_OU = round(f['/config/mesh/xmax']/convert_unit, 2)
+        
+        print('Rescaling the inner edge: %2.2f AU' %R_IN)
+        print('Rescaling the outer edge: %2.2f AU' %R_OU)
+        
+    elif f['/config/physics/units'] == 3:
+        print('Found geometric units')
+        # scale free -> convert maximum to R_ou in AU
+        convert_unit = f['/config/mesh/xmax']/R_OU
+        R_IN = f['/config/mesh/xmin']/ convert_unit
+        print('Rescaling the inner edge:', R_IN)
+        #~ print(R_OU, f['/config/mesh/xmax']/convert_unit)
+    else:
+        print('Units are unknown')
+        convert_unit = 1.
+    
+    X1 = (f['/mesh/bary_centers'][:,:,0]/convert_unit).flatten()
+    Y1 = (f['/mesh/bary_centers'][:,:,1]/convert_unit).flatten()
+    surface_density = f['/timedisc/density']
+    
+    # make a plot of the fosite data
+    # x_grid = f['/mesh/grid_x']/convert_unit
+    # y_grid = f['/mesh/grid_y']/convert_unit
 
-    height1 = f['/sources/grav/height'].flatten()/hlp.AU
+    # plt.pcolormesh(x_grid, y_grid, surface_density)
+    # plt.colorbar()
+    # plt.show()
 
+    if f['/config/mesh/output/volume']:
+        M_disk = (surface_density * f['/mesh/volume']).sum()/hlp.M_sun
+        print('M_disk: %2.3g M_sun' %(M_disk))
+    
+    FOSITE_DENSITY = surface_density.flatten()
+
+    if f['/config/sources/grav/output/height']:
+        height1 = f['/sources/grav/height'].flatten()/convert_unit
+        #~ print('1')
+    else:
+        height1 = []
+        #~ print('2')
+    print( '')
 
 LINK = True # link the model and boundaries automatically
 
@@ -109,10 +153,16 @@ def get_density_fosite(pos_xyz):
     ind = (r >= R_IN) & (r < R_OU)
     xi = pos_xyz[0, :]
     yi = pos_xyz[1, :]
-    h = griddata((X1, Y1), height1, (xi[ind], yi[ind]), method='linear')
+    if height1 != []:
+        h = griddata((X1, Y1), height1, (xi[ind], yi[ind]), method='linear')
+    else:
+        scale_h = 10.0
+        beta = 1.125
+        h = scale_h * (r[ind]/100.0)**beta
     
-    density[ind] = griddata((X1, Y1), density1, (xi[ind], yi[ind]), method='linear') * \
-                   np.exp(-0.5 * (z[ind]/h)**2, dtype=np.float64)
+    density[ind] = griddata((X1, Y1), FOSITE_DENSITY, (xi[ind], yi[ind]),
+                            method='linear') * \
+                            np.exp(-0.5 * (z[ind]/h)**2, dtype=np.float64)
 
 
     return density
@@ -142,7 +192,7 @@ def get_density(pos_xyz):
             print("Warning, a %s grid might not be the best solution for a sphere" %(GRID_NAME))
         density = get_density_sphere(pos_xyz)
 
-    elif DENSITY_DISTRIBUTION == 'Fosite':
+    elif DENSITY_DISTRIBUTION == 'fosite':
         #TbD
         if FIRST_CALL:
             print('Loading the density from Fosite')
@@ -305,7 +355,7 @@ def main():
     data = np.zeros((N_Cells, 2), dtype=np.float64)
 
     # create density distribution:
-    print("Calculating the mitpoint coordinates for %d cells" %N_Cells)
+    print("Calculating the midpoint coordinates for %d cells" %N_Cells)
     i_cell = 0
     mid_point_coord = np.zeros((3, N_Cells), dtype=np.float64)
     mid_point_cart = np.zeros((3, N_Cells), dtype=np.float64)
