@@ -136,7 +136,7 @@ contains
                                 model%ref_unit
                     END DO
                 END IF
-                IF ( check_inside(photon%nr_cell, grid, model) ) THEN
+                IF ( check_inside(photon%nr_cell_new, grid, model) ) THEN
                     ! photon still inside model space
                     ! ---
                     ! b) set new starting point; adjust optical depth
@@ -277,24 +277,37 @@ contains
     ! ---
     
     a = sum(dir_xyz(1:2)**2)
+    b = 0.0
+    c = 0.0
     
     IF (a .lt. 1.0e-9) THEN
-        d_l1 = grid%co_mx_a(grid%n(1))+1.1_r2
+        pos_xyz_new(:) = pos_xyz
+        pos_xyz_new(3) = grid%co_mx_c(grid%n(3)) *dir_xyz(3) *                 &
+                         (1.0_r2 + epsilon(1.0_r2))
+        
     ELSE
         b = sum(dir_xyz(1:2)*pos_xyz(1:2))
         c = sum(pos_xyz(1:2)**2)-grid%co_mx_a(0)**2
         
-        d_l1 =  -b/a + sqrt((b/a)**2-c/a)
-    END IF
-
-    d_l = d_l1
-    d_l = d_l +epsilon(1.0_r2)*1.0e6_r2*d_l
+        d_l =  -b/a + sqrt((b/a)**2-c/a)
+        d_l = d_l +epsilon(1.0_r2)*1.0e6_r2*d_l
     
-    pos_xyz_new    = pos_xyz + d_l * dir_xyz
-!~     photon%nr_cell_new = get_cell_nr( grid, pos_xyz_new)
+        pos_xyz_new    = pos_xyz + d_l * dir_xyz
+        
+    END IF
     nr_cell_new = get_cell_nr( grid, pos_xyz_new)
     
-!~     photon%pos_xyz_new = pos_xyz_new
+!~     IF (a == 0) THEN
+!~         print *, 'still zero'
+!~ 
+!~         print *, d_l
+!~         print *, pos_xyz
+!~         print *, pos_xyz_new
+!~         print *, dir_xyz
+!~         print *, nr_cell_new
+!~         print *, ''
+!~     END IF
+
   END SUBROUTINE path_skip_cy
   
   subroutine path_skip_sp( grid,pos_xyz,dir_xyz,pos_xyz_new,nr_cell_new,d_l)
@@ -454,47 +467,48 @@ contains
         
         d_l = d_l_selc(hi1) + 1.0e6_r2*epsilon(d_l)
         pos_xyz_new = d_l * dir_xyz + pos_xyz
-        ! a) use the generic routine (extensively tested)
-
-!~         nr_cell_new = get_cell_nr(grid, d_l * dir_xyz + pos_xyz)
-
-        ! b) use the cell id (tbd.)
-        IF (hi1 == 1) THEN
-            IF (i_x > 0) THEN
-                i_x = i_x - 1
-            END IF
-        ELSE IF  (hi1 == 2) THEN
-            IF (i_x < grid%n(1)) THEN
-                i_x = i_x + 1
-            END IF
-        ELSE IF (hi1 == 3) THEN
-            IF (i_y > 0) THEN
-                i_y = i_y - 1
-            END IF
-        ELSE IF (hi1 == 4) THEN
-            IF (i_y < grid%n(2)) THEN
-                i_y = i_y + 1
-            END IF
-        ELSE IF (hi1 == 5) THEN
-            IF (i_z > 0) THEN
-                i_z = i_z - 1
-            END IF
-        ELSE IF (hi1 == 6) THEN
-            IF (i_z < grid%n(3)) THEN
-                i_z = i_z + 1
-            END IF
-        ELSE
-            print *, "ERROR in path routine"
-            print *, d_l_selc
-            stop
-        END IF
-        nr_cell_new = grid%cell_idx2nr(i_x, i_y, i_z)
-
         IF (d_l < grid%d_l_min) then
            ! step width too small
             kill_photon       = .true.
             d_l = d_l+1.0e3_r2*epsilon(d_l) 
-        end if
+        END IF
+        
+        ! a) use the generic routine (extensively tested)
+
+        nr_cell_new = get_cell_nr(grid, pos_xyz_new)
+
+        ! b) use the cell id (tbd.)
+!~         IF (hi1 == 1) THEN
+!~                 i_x = i_x - 1
+!~         ELSE IF  (hi1 == 2) THEN
+!~                 i_x = i_x + 1
+!~         ELSE IF (hi1 == 3) THEN
+!~                 i_y = i_y - 1
+!~         ELSE IF (hi1 == 4) THEN
+!~                 i_y = i_y + 1
+!~         ELSE IF (hi1 == 5) THEN
+!~                 i_z = i_z - 1
+!~         ELSE IF (hi1 == 6) THEN
+!~                 i_z = i_z + 1
+!~         ELSE
+!~             print *, "ERROR in path routine"
+!~             print *, d_l_selc
+!~             stop
+!~         END IF
+!~         nr_cell_new = grid%cell_idx2nr(i_x, i_y, i_z)
+
+!~         IF (nr_cell_new /= get_cell_nr( grid,pos_xyz_new )) THEN
+!~             print *, nr_cell_new
+!~             print *, get_cell_nr( grid,pos_xyz_new )
+!~             print *, pos_xyz_new
+!~             print *, norm(pos_xyz_new)
+!~             print *, hi1
+!~             print *, d_l_selc(:)
+!~             print *, i_x, i_y, i_z
+!~             print *, grid%cell_nr2idx(:,nr_cell_new)
+!~             print *, grid%cell_nr2idx(:, nr_cell)
+!~             stop
+!~         END IF
 
     END SUBROUTINE path_ca
   
@@ -570,12 +584,11 @@ contains
         END IF
         
         ! find phi component   ! test this for more than 1 grid cell in phi direction!
-    !~     IF (grid%n(2) .gt. 1 ) THEN
         IF (d_ph .gt. epsilon(d_ph) .and. grid%n(2) .gt. 1  ) THEN
-            a = 1.0_r2/TAN(grid%co_mx_b(i_ph-1))
+            a = 1.0_r2/(TAN(grid%co_mx_b(i_ph-1)) + EPSILON(1.0_r2))
             d_l_selc(3) = (pos_xyz(1)-pos_xyz(2)*a)/(dir_xyz(2)*a-dir_xyz(1))
 
-            a = 1.0_r2/TAN(grid%co_mx_b(i_ph))
+            a = 1.0_r2/(TAN(grid%co_mx_b(i_ph)) + EPSILON(1.0_r2))
             d_l_selc(4) = (pos_xyz(1)-pos_xyz(2)*a)/(dir_xyz(2)*a-dir_xyz(1))
         ELSE
             d_l_selc(3) = -1.0_r2
@@ -607,20 +620,20 @@ contains
         IF (d_l < grid%d_l_min) then
            ! step width too small
             kill_photon       = .true.
-            d_l = d_l+1.0e3_r2*epsilon(d_l) 
+            d_l = d_l+1.0e4_r2*epsilon(d_l) 
         end if
 
         ! 4. new cell number
         ! a) use the generic routine (extensively tested)
         nr_cell_new = get_cell_nr( grid,pos_xyz_new )
 
-!~         ! b) use the cell id (tbd.)
+        ! b) use the cell id (tbd.)
 !~         IF (hi1 == 1) THEN
 !~             i_r = i_r - 1
 !~         ELSE IF  (hi1 == 2) THEN
-!~             IF (i_r < grid%n(1)) THEN
-!~                 i_r = i_r + 1
-!~             END IF
+!~ 
+!~             i_r = i_r + 1
+!~ 
 !~         ELSE IF (hi1 == 3) THEN
 !~             IF (i_ph > 1) THEN
 !~                 i_ph = i_ph - 1
@@ -634,24 +647,27 @@ contains
 !~                 i_ph = 1
 !~             END IF
 !~         ELSE IF (hi1 == 5) THEN
-!~             IF (i_z > 0) THEN
 !~                 i_z = i_z - 1
-!~             END IF
 !~         ELSE IF (hi1 == 6) THEN
-!~             IF (i_z < grid%n(3)) THEN
 !~                 i_z = i_z + 1
-!~             END IF
 !~         ELSE
 !~             print *, "ERROR in path routine"
 !~             print *, d_l_selc
 !~             stop
 !~         END IF
 !~         nr_cell_new = grid%cell_idx2nr(i_r, i_ph, i_z)
-!~         IF (nr_cell_new /= get_cell_nr( grid,pos_xyz_new ) ) THEN
+!~         IF (nr_cell_new /= get_cell_nr( grid,pos_xyz_new )) THEN
 !~             print *, nr_cell_new
 !~             print *, get_cell_nr( grid,pos_xyz_new )
 !~             print *, pos_xyz_new
+!~             print *, norm(pos_xyz_new)
+!~             print *, hi1
+!~             print *, d_l_selc(:)
 !~             print *, i_r, i_ph, i_z
+!~             print *, 1.0_r2/TAN(grid%co_mx_b(i_ph-1))
+!~             print *, 1.0_r2/TAN(grid%co_mx_b(i_ph))
+!~             print *, grid%cell_nr2idx(:,nr_cell_new)
+!~             print *, grid%cell_nr2idx(:, nr_cell)
 !~             stop
 !~         END IF
 

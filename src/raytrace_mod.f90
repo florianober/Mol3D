@@ -129,7 +129,7 @@ CONTAINS
                     pos_xyz = pos_xyz_new
                     nr_cell = nr_cell_new
                 END IF
-
+                IF (.not. check_inside(nr_cell, grid, model) ) EXIT
                 CALL path( grid, pos_xyz, pos_xyz_new, nr_cell, nr_cell_new,   &
                            d_l, kill_photon, model%D_2obs(3, :, i_map))
 
@@ -315,7 +315,7 @@ CONTAINS
                     pos_xyz = pos_xyz_new
                     nr_cell = nr_cell_new
                 END IF
-
+                IF (.not. check_inside(nr_cell, grid, model) ) EXIT
                 CALL path( grid, pos_xyz, pos_xyz_new, nr_cell, nr_cell_new,   &
                            d_l, kill_photon, model%D_2obs(3, :, i_map))
 
@@ -442,14 +442,14 @@ CONTAINS
             DO WHILE (dz_sum*(1.0_r2+epsilon(dz_sum)*1.0e3) .lt. 2.0_r2* sqrt(ray_len) )
                 IF ( nr_cell==0 ) THEN
 
-                    CALL path_skip( grid, pos_xyz,model%D_2obs(3, :, i_map), &
+                    CALL path_skip( grid, pos_xyz, model%D_2obs(3, :, i_map), &
                                    pos_xyz_new,nr_cell_new,d_l)
                     dz_sum = dz_sum + d_l
                     pos_xyz = pos_xyz_new
                     nr_cell = nr_cell_new
                     
                 END IF
-                
+                IF (.not. check_inside(nr_cell, grid, model) ) EXIT
                 CALL path( grid, pos_xyz, pos_xyz_new, nr_cell, nr_cell_new, &
                            d_l, kill_photon, model%D_2obs(3, :, i_map) )
                 

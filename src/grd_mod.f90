@@ -98,11 +98,34 @@ CONTAINS
                 end do
             end do
         end do
+
+        ! define ghost cells:
+        ! id = 0 : inner null (spherical, cylindrical)
+        ! id = n_cell + 1 : outer shell of the model
+        SELECT CASE(GetGridName(grid))
         
-        grid%cell_idx2nr(grid%n(1), :, :) = grid%n_cell + 1
-        grid%cell_idx2nr(:, grid%n(2), :) = grid%n_cell + 1
-        grid%cell_idx2nr(:, :, grid%n(3)) = grid%n_cell + 1
-        
+        CASE('spherical')
+            grid%cell_idx2nr(grid%n(1)+1, 1:, 1:) = grid%n_cell + 1
+            grid%cell_idx2nr(1:, grid%n(2)+1, 1:) = grid%n_cell + 1 ! should not appear
+            grid%cell_idx2nr(1:, 1:, grid%n(3)+1) = grid%n_cell + 1 ! should not appear
+        CASE('cylindrical')
+            grid%cell_idx2nr(grid%n(1)+1, 1:, 1:) = grid%n_cell + 1
+            grid%cell_idx2nr(1:, grid%n(2)+1, 1:) = grid%n_cell + 1 ! should not appear
+            grid%cell_idx2nr(:, :, grid%n(3)+1) = grid%n_cell + 1
+            grid%cell_idx2nr(:, :, 0) = grid%n_cell + 1
+            
+        CASE('cartesian')
+            grid%cell_idx2nr(grid%n(1)+1, :, :) = grid%n_cell + 1
+            grid%cell_idx2nr(0, :, :) = grid%n_cell + 1
+            grid%cell_idx2nr(:, grid%n(2)+1, :) = grid%n_cell + 1
+            grid%cell_idx2nr(:, 0, :) = grid%n_cell + 1
+            grid%cell_idx2nr(:, :, grid%n(3)+1) = grid%n_cell + 1
+            grid%cell_idx2nr(:, :, 0) = grid%n_cell + 1
+            
+        CASE DEFAULT
+            print *, 'selected coordinate system not found, setting ghost cells'
+            stop
+        END SELECT
         !TbD volume and area of zero cell
         grid%cell_minA(0) = model%r_in**2*PI
 
@@ -566,7 +589,7 @@ CONTAINS
                 STOP
             ELSEIF ( abs(model%r_ou - grid%co_mx_a(grid%n(1))) .gt. 1.0e3_r2*epsilon(model%r_ou) ) THEN
                 PRINT *, "ERROR: Outer rim given in input file is not consistent with the grid"
-                PRINT *, "r_ou             : ", model%r_in
+                PRINT *, "r_ou             : ", model%r_ou
                 PRINT *, "outer cell bound : ", grid%co_mx_a(grid%n(1))
                 STOP
             END IF

@@ -535,20 +535,20 @@ CONTAINS
 
         ! 1.1 get i_x
         ! --
-        IF ( caco(1) >=  this%co_mx_a(this%n(1)) ) THEN
-            i_x = this%n(1)
-        ELSEIF ( caco(1) <=  this%co_mx_a( 0 ) ) THEN
-            i_x = 1
+        IF ( caco(1) >  this%co_mx_a(this%n(1)) ) THEN
+            i_x = this%n(1) + 1
+        ELSEIF ( caco(1) <  this%co_mx_a( 0 ) ) THEN
+            i_x = this%n(1) + 1
         ELSE
             i_x = binary_search(caco(1), this%co_mx_a )
         END IF
 
         ! 1.2 get i_y
         ! --
-        IF ( caco(2) >=  this%co_mx_b(this%n(2)) ) THEN
-            i_y = this%n(2)
-        ELSEIF ( caco(2) <=  this%co_mx_b( 0 ) ) THEN
-            i_y = 1
+        IF ( caco(2) >  this%co_mx_b(this%n(2)) ) THEN
+            i_y = this%n(2) + 1
+        ELSEIF ( caco(2) <  this%co_mx_b( 0 ) ) THEN
+            i_y = this%n(2) + 1
         ELSE
             i_y = binary_search(caco(2), this%co_mx_b )
         END IF
@@ -556,10 +556,10 @@ CONTAINS
         ! 1.3 get i_z
         ! --
 
-        IF ( caco(3) >=  this%co_mx_c(this%n(3)) ) THEN
-            i_z = this%n(3)
-        ELSEIF ( caco(3) <=  this%co_mx_c( 0 ) ) THEN
-            i_z = 1
+        IF ( caco(3) >  this%co_mx_c(this%n(3)) ) THEN
+            i_z = this%n(3) + 1
+        ELSEIF ( caco(3) < this%co_mx_c( 0 ) ) THEN
+            i_z = this%n(3) + 1
         ELSE
             i_z = binary_search(caco(3),this%co_mx_c )
         END IF
@@ -595,7 +595,7 @@ CONTAINS
         ELSE IF (h_r < this%co_mx_a(0) )THEN
             i_r = 0
         ELSE IF (h_r >= this%co_mx_a(this%n(1))) THEN
-            i_r = this%n(1)  !this should be outside the model space (check this)
+            i_r = this%n(1)+1
         ELSE
             !print *, this%co_mx_a(100), spco(1)
             i_r = binary_search(h_r,this%co_mx_a)
@@ -606,7 +606,7 @@ CONTAINS
         ! 1.2 get i_ph
         ! --
         d_ph = PI*2.0_r2/this%n(2)
-        i_ph = int(h_ph/d_ph)+1      
+        i_ph = int(h_ph/d_ph)+1
         
         IF  ( h_ph .ge. PI*2.0_r2 ) THEN
             i_ph = this%n(2)
@@ -615,21 +615,14 @@ CONTAINS
 
         ! 1.3 get i_z
         ! --
-        IF ( caco(3) >=  this%co_mx_c(this%n(3)) ) THEN
-            i_z = this%n(3)
-        ELSEIF ( caco(3) <=  this%co_mx_c( 0 ) ) THEN
-            i_z = 1
+        IF ( caco(3) >  this%co_mx_c(this%n(3)) ) THEN
+            i_z = this%n(3) + 1
+        ELSEIF ( caco(3) <  this%co_mx_c( 0 ) ) THEN
+            i_z = this%n(3) + 1
         ELSE
             i_z = binary_search(caco(3),this%co_mx_c )
         END IF
 
-!~         IF ( abs(caco(3)) >=  this%co_mx_c(this%n(3)) ) THEN
-!~             i_z = this%n(3)
-!~         ELSE
-!~             i_z = binary_search(caco(3),this%co_mx_c )
-!~         END IF
-
-        
         get_cell_nr_result = this%cell_idx2nr(i_r,i_ph,i_z)
     END FUNCTION get_cell_nr_cy
     
