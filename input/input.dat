@@ -9,7 +9,7 @@
 #                                                                                   #
 # author: Florian Ober                                                              #
 # email : fober@astrophysik.uni-kiel.de                                             #
-# date  : Mar 2015                                                                  #
+# date  : Apr 2015                                                                  #
 #####################################################################################
 
                                           (+) working, (o) testing, (-) not working
@@ -30,7 +30,7 @@ do_MC_temperature = {T}                   calculate dust temperature (+)
 do_continuum_mono = {F}                   make monochromatic continuum !scattering! maps and seds
                                           using a Monte Carlo method (+)
 
-do_peel_off = {T}                         peel of photons for high signal to noise sed's and maps
+do_peel_off = {F}                         peel of photons for high signal to noise sed's and maps
                                           while temperature calculation while temperature
                                           calculation or for the monochromatic transfer (+)
 
