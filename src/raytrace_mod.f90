@@ -124,12 +124,13 @@ CONTAINS
             DO WHILE ( dz_sum*(1.0_r2+epsr2*1.0e3) .lt. 2.0_r2* sqrt(ray_len) )
                 IF ( nr_cell==0 ) THEN
                     CALL path_skip( grid, pos_xyz,model%D_2obs(3, :, i_map), &
-                                   pos_xyz_new,nr_cell_new,d_l)
+                                    pos_xyz_new, nr_cell_new, d_l)
                     dz_sum = dz_sum + d_l
                     pos_xyz = pos_xyz_new
                     nr_cell = nr_cell_new
+!~                     IF (.not. check_inside(nr_cell, grid, model) ) EXIT
                 END IF
-                IF (.not. check_inside(nr_cell, grid, model) ) EXIT
+
                 CALL path( grid, pos_xyz, pos_xyz_new, nr_cell, nr_cell_new,   &
                            d_l, kill_photon, model%D_2obs(3, :, i_map))
 
@@ -305,7 +306,7 @@ CONTAINS
 
         IF ( ray_len .gt. 0.0_r2 ) THEN
 
-            nr_cell      = get_cell_nr(grid,pos_xyz)
+            nr_cell      = get_cell_nr(grid, pos_xyz)
             DO WHILE ( dz_sum*(1.0_r2+epsr2*1.0e3) .lt. 2.0_r2* sqrt(ray_len) )
                 IF ( nr_cell==0 ) THEN
 
@@ -314,8 +315,9 @@ CONTAINS
                     dz_sum = dz_sum + d_l
                     pos_xyz = pos_xyz_new
                     nr_cell = nr_cell_new
+                    IF (.not. check_inside(nr_cell, grid, model) ) EXIT
                 END IF
-                IF (.not. check_inside(nr_cell, grid, model) ) EXIT
+                
                 CALL path( grid, pos_xyz, pos_xyz_new, nr_cell, nr_cell_new,   &
                            d_l, kill_photon, model%D_2obs(3, :, i_map))
 
@@ -435,10 +437,9 @@ CONTAINS
         dz                = EPSILON(dz)
         dz_sum            =  0.0_r2
         log_size = .False.   
-        
-        IF ( ray_len .gt. 0.0_r2 ) THEN
 
-            nr_cell      = get_cell_nr(grid,pos_xyz)
+        IF ( ray_len .gt. 0.0_r2 ) THEN
+            nr_cell  = get_cell_nr(grid, pos_xyz)
             DO WHILE (dz_sum*(1.0_r2+epsilon(dz_sum)*1.0e3) .lt. 2.0_r2* sqrt(ray_len) )
                 IF ( nr_cell==0 ) THEN
 
@@ -448,8 +449,9 @@ CONTAINS
                     pos_xyz = pos_xyz_new
                     nr_cell = nr_cell_new
                     
+                    IF (.not. check_inside(nr_cell, grid, model) ) EXIT
                 END IF
-                IF (.not. check_inside(nr_cell, grid, model) ) EXIT
+
                 CALL path( grid, pos_xyz, pos_xyz_new, nr_cell, nr_cell_new, &
                            d_l, kill_photon, model%D_2obs(3, :, i_map) )
                 
@@ -521,7 +523,7 @@ CONTAINS
             PRINT *, 'selected coordinate system not found, simulation'
             STOP
         END SELECT
-
+        ray_len = ray_len *(1.0_r2 - 1.0e6_r2*EPSILON(1.0_r2))
     END FUNCTION
 
 END MODULE raytrace_mod
