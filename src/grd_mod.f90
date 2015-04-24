@@ -1360,7 +1360,8 @@ CONTAINS
     
     PURE FUNCTION Set_velo(caco,kep_const) RESULT(velo)
     
-        ! define your velocity distribution here! velo in cartesian coordinates
+        ! define your velocity distribution here
+        ! velocity in cartesian coordinates
         !
         IMPLICIT NONE
         !----------------------------------------------------------------------!
@@ -1370,12 +1371,12 @@ CONTAINS
         REAL(kind=r1),INTENT(IN)                              :: kep_const
         !----------------------------------------------------------------------!
         ! we assume pure keplerian rotation, therefore v(r) ~ r**-0.5
-!~         konst = 26000.0_r2 
+
         konst = kep_const  !
         
         expp  = -1.5  ! is a result of keplerian rotation and
                       ! coordinate system conversion
-        r     = (caco(1)**2+caco(2)**2)**(expp*0.5)*konst
+        r     = (caco(1)**2+caco(2)**2 + EPSILON(1.0_r2))**(expp*0.5)*konst
         
         velo(1) = (-1.0) * caco(2) * r
         velo(2) =          caco(1) * r
