@@ -39,9 +39,7 @@ MODULE basic_type
         REAL(kind=r2)    :: PI2
         REAL(kind=r2)    :: PI4
         REAL(kind=r2)    :: PI2x4
-        
-        REAL(kind=r1)    :: linescale
-        
+                
         ! store all variables from file
         INTEGER          :: n_tem
         
@@ -136,7 +134,6 @@ CONTAINS
         this%PI2x4 = PI**2 * 4.0_r2
         
         this%num_core = num_core
-        this%linescale = con_h*con_c/(4.0*PI*sqrt(PI))
 
         ! identity matrix [3x3]
         this%mat_ident3(1,1) = 1.0

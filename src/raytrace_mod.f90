@@ -128,7 +128,7 @@ CONTAINS
                     dz_sum = dz_sum + d_l
                     pos_xyz = pos_xyz_new
                     nr_cell = nr_cell_new
-!~                     IF (.not. check_inside(nr_cell, grid, model) ) EXIT
+                    IF (.not. check_inside(nr_cell, grid, model) ) EXIT
                 END IF
 
                 CALL path( grid, pos_xyz, pos_xyz_new, nr_cell, nr_cell_new,   &
@@ -151,14 +151,14 @@ CONTAINS
                         j_ul =      grid%grd_mol_density(nr_cell)                     *   &
                                     grid%lvl_pop(gas%trans_upper(gas%tr_cat(tr)),nr_cell)  *   &
                                     gas%trans_einstA(gas%tr_cat(tr)) * &
-                                    basics%linescale*grid%cell_gauss_a(nr_cell)
+                                    linescale*grid%cell_gauss_a(nr_cell)
 
                         alpha_ul =  grid%grd_mol_density(nr_cell) *            &
                                     (grid%lvl_pop(gas%trans_lower(gas%tr_cat(tr)),nr_cell) *   &
                                     gas%trans_einstB_l(gas%tr_cat(tr))                 -   &
                                     grid%lvl_pop(gas%trans_upper(gas%tr_cat(tr)),nr_cell)  *   &
                                     gas%trans_einstB_u(gas%tr_cat(tr))) *      &
-                                    basics%linescale*grid%cell_gauss_a(nr_cell)
+                                    linescale*grid%cell_gauss_a(nr_cell)
 
                         DO vch = -gas%i_vel_chan, gas%i_vel_chan
                             cell_d_l = d_l
@@ -317,7 +317,7 @@ CONTAINS
                     nr_cell = nr_cell_new
                     IF (.not. check_inside(nr_cell, grid, model) ) EXIT
                 END IF
-                
+
                 CALL path( grid, pos_xyz, pos_xyz_new, nr_cell, nr_cell_new,   &
                            d_l, kill_photon, model%D_2obs(3, :, i_map))
 

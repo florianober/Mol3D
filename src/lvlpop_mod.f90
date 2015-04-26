@@ -242,7 +242,6 @@ CONTAINS
                              new_pop(gas%trans_upper(:)),                      &
                              new_pop(gas%trans_lower(:)),                      &
                              grid%cell_gauss_a(i_cell),                        &
-                             basics%linescale,                                 &
                              gas%trans_einstA(:),                              &
                              gas%trans_einstB_u(:),                            &
                              gas%trans_einstB_l(:),                            &
@@ -296,7 +295,7 @@ CONTAINS
     END SUBROUTINE pop_LVG
 
     ELEMENTAL FUNCTION elem_LVG(mol_dens, lvl_pop_u, lvl_pop_l, doppler,       &
-                                line_konst, A, B_u, B_l, L, J_ext)             &
+                                A, B_u, B_l, L, J_ext)                         &
                                 RESULT(J_mid)
         ! ---    
         IMPLICIT NONE
@@ -305,7 +304,7 @@ CONTAINS
         REAL(kind=r1),INTENT(IN)                                 :: lvl_pop_u
         REAL(kind=r1),INTENT(IN)                                 :: lvl_pop_l
         REAL(kind=r1),INTENT(IN)                                 :: doppler
-        REAL(kind=r1),INTENT(IN)                                 :: line_konst
+
         REAL(kind=r1),INTENT(IN)                                 :: A
         REAL(kind=r1),INTENT(IN)                                 :: B_u
         REAL(kind=r1),INTENT(IN)                                 :: B_l
@@ -320,8 +319,8 @@ CONTAINS
         REAL(kind=r2)                                            :: J_mid
 
         !----------------------------------------------------------------------!
-        j       =  mol_dens * lvl_pop_u * A * line_konst*doppler
-        alpha   =  mol_dens *(lvl_pop_l*B_l-lvl_pop_u*B_u)*line_konst*doppler
+        j       =  mol_dens * lvl_pop_u * A * linescale*doppler
+        alpha   =  mol_dens *(lvl_pop_l*B_l-lvl_pop_u*B_u)*linescale*doppler
 
         IF ( alpha .lt. 1e-20  ) THEN 
             S     = 0.0_r2

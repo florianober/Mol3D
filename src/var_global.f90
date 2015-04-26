@@ -33,7 +33,9 @@ module var_global
         SBK       = 5.67e-8_r2, &
         w2erg     = 1.0e+07_r2, &
         rel_err   = 1.0e-8, &   ! controls the rel error in the raytracing alg
-        abs_err   = 1.0e-20, &    ! controls the abs error in the raytracing alg
+        abs_err   = 1.0e-20     ! controls the abs error in the raytracing alg
+
+    REAL(kind=r1), PARAMETER :: &
         linescale = con_h*con_c/(4.0*PI*sqrt(PI))
     REAL(kind=r2),PARAMETER,DIMENSION(1:5)    :: &
         ! mass of collision partners (not final and needs an update)
