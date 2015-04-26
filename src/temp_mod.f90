@@ -92,8 +92,8 @@ CONTAINS
     DO i_cell = 1,grid%n_cell
         ! set correct internal cell energy
         DO i_dust = 1, dust%n_dust
-            i_tem = int((grid%t_dust(i_cell, i_dust) -         &
-                         basics%t_dust_min)/basics%d_tem)
+            i_tem = min(int((grid%t_dust(i_cell, i_dust) -         &
+                         basics%t_dust_min)/basics%d_tem), basics%n_tem)
             min_cell_energy = dust%QB(i_tem, i_dust)
             IF (grid%cell_energy(i_dust,i_cell) .lt. min_cell_energy) THEN
                 grid%cell_energy(i_dust,i_cell) = min_cell_energy
@@ -152,7 +152,7 @@ CONTAINS
             !define your temperature distribution here!
             konst = 100.0_r2
             
-            P_xy  = sqrt(caco(1)**2+caco(2)**2)
+            P_xy  = sqrt(caco(1)**2+caco(2)**2 + EPSILON(1.0))
             P_h     = 5.0_r2 * (P_xy/100.0_r2)**1.125_r2
             
            ! temps   = 500.0_r2*P_xy**(-0.5) * (2.0-exp(-0.5*(abs(caco(3))/P_h)**2))

@@ -518,7 +518,7 @@ CONTAINS
             ray_len = r_ou**2-coor_map1**2-coor_map2**2
         CASE('cartesian')
             ! not sure if this ray is sufficient...
-            ray_len = r_ou**2
+            ray_len = r_ou**2-coor_map1**2-coor_map2**2
         CASE DEFAULT
             PRINT *, 'selected coordinate system not found, simulation'
             STOP
