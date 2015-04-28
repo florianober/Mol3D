@@ -252,8 +252,8 @@ CONTAINS
         REAL(KIND=r2)                                    :: dz
         REAL(KIND=r2)                                    :: dz_new
         REAL(KIND=r2)                                    :: dz_sum
-        REAL(KIND=r1)                                    :: j_dust
-        REAL(KIND=r1)                                    :: alpha_dust
+        REAL(KIND=r2)                                    :: j_dust
+        REAL(KIND=r2)                                    :: alpha_dust
 
         REAL(KIND=r2)                                    :: d_l
         REAL(KIND=r2)                                    :: cell_d_l
@@ -266,9 +266,9 @@ CONTAINS
         REAL(KIND=r2), DIMENSION(1:dust%n_lam)           :: intensity
         REAL(KIND=r2)                                    :: intensity_new
         REAL(KIND=r2)                                    :: intensity_new2
-        REAL(KIND=r1)                                    :: j_ges
+        REAL(KIND=r2)                                    :: j_ges
 
-        REAL(KIND=r1)                                    :: alpha_ges
+        REAL(KIND=r2)                                    :: alpha_ges
 
         REAL(KIND=r2), DIMENSION(1:3)                    :: pos_xyz
         REAL(KIND=r2), DIMENSION(1:3)                    :: pos_xyz_new
@@ -320,7 +320,6 @@ CONTAINS
 
                 CALL path( grid, pos_xyz, pos_xyz_new, nr_cell, nr_cell_new,   &
                            d_l, kill_photon, model%D_2obs(3, :, i_map))
-!~                 IF ( nr_cell==0 ) print *, 'ohje'
 
                 ! At this point, we have an entrance point(pos_xyz) and exit point (pos_xyz_new) and 
                 ! the length of the cell path (d_l) 
@@ -449,7 +448,7 @@ CONTAINS
                     dz_sum = dz_sum + d_l
                     pos_xyz = pos_xyz_new
                     nr_cell = nr_cell_new
-                    ray_minA = MIN(ray_minA, grid%cell_minA(nr_cell))
+                    
                     IF (.not. check_inside(nr_cell, grid, model) ) EXIT
                 END IF
 
@@ -457,7 +456,7 @@ CONTAINS
                            d_l, kill_photon, model%D_2obs(3, :, i_map) )
                 
                 ray_minA = MIN(ray_minA, grid%cell_minA(nr_cell))
-                IF ( xxres*yyres .gt. 0.1 * ray_minA ) THEN
+                IF ( xxres*yyres .gt. 0.1*ray_minA ) THEN
                     log_size = .True.
                     EXIT
                 END IF
