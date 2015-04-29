@@ -128,6 +128,8 @@ CONTAINS
         END SELECT
         !TbD volume and area of zero cell
         grid%cell_minA(0) = model%r_in**2*PI
+        grid%cell_minA(0) = minval(grid%cell_minA(1:grid%n_cell))
+
 
         ! fill grid with disk properties,e.g. temp, density, velocity...
         CALL set_grid_properties(basics, grid, dust, gas, model)

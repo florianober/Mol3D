@@ -411,11 +411,11 @@ CONTAINS
 
         
         REAL(KIND=r2)                                    :: ray_len
-        REAL(KIND=r2)                                    :: dz
-        REAL(KIND=r2)                                    :: dz_sum
         
         REAL(KIND=r2)                                    :: d_l
-        REAL(KIND=r1)                                    :: ray_minA
+!~         REAL(KIND=r2)                                    :: d_lx
+!~         REAL(KIND=r2)                                    :: d_ly
+        REAL(KIND=r2)                                    :: ray_minA
 
         REAL(KIND=r2), DIMENSION(3)                      :: pos_xyz
         REAL(KIND=r2), DIMENSION(3)                      :: pos_xyz_new
@@ -433,30 +433,40 @@ CONTAINS
         pos_xyz(:) = -model%D_2obs(3, :, i_map) * sqrt(ray_len) +              &
                       coor_map1*model%D_2obs(1, :, i_map) +                    &
                       coor_map2*model%D_2obs(2, :, i_map)
-        ray_minA          = 20.0
-        dz                = EPSILON(dz)
-        dz_sum            =  0.0_r2
+        ray_minA = 20.0
         log_size = .False.   
 
         IF ( ray_len .gt. 0.0_r2 ) THEN
             nr_cell  = get_cell_nr(grid, pos_xyz)
-            DO WHILE (dz_sum*(1.0_r2+epsilon(dz_sum)*1.0e3) .lt. 2.0_r2* sqrt(ray_len) )
+            DO WHILE (check_inside(nr_cell, grid, model))
                 IF ( nr_cell==0 ) THEN
-
+                    ray_minA = MIN(ray_minA, grid%cell_minA(0))
                     CALL path_skip( grid, pos_xyz, model%D_2obs(3, :, i_map), &
                                    pos_xyz_new,nr_cell_new,d_l)
-                    dz_sum = dz_sum + d_l
+                    
                     pos_xyz = pos_xyz_new
                     nr_cell = nr_cell_new
                     
                     IF (.not. check_inside(nr_cell, grid, model) ) EXIT
                 END IF
+!~                 ray_minA = grid%cell_minA(0)*0.1
+!~                 CALL path( grid, pos_xyz, pos_xyz_new, nr_cell, nr_cell_new, &
+!~                            d_lx, kill_photon, model%D_2obs(1, :, i_map) )
+!~ 
+!~                 CALL path( grid, pos_xyz, pos_xyz_new, nr_cell, nr_cell_new, &
+!~                            d_ly, kill_photon, model%D_2obs(2, :, i_map) )
 
                 CALL path( grid, pos_xyz, pos_xyz_new, nr_cell, nr_cell_new, &
                            d_l, kill_photon, model%D_2obs(3, :, i_map) )
                 
+!~                 ray_minA = MINVAL((/ray_minA,d_l*d_lx*1000,d_l*d_ly*1000, d_lx*d_ly*1000/))
+!~                 ray_minA = MIN(ray_minA, d_l*1000)
                 ray_minA = MIN(ray_minA, grid%cell_minA(nr_cell))
-                IF ( xxres*yyres .gt. 0.1*ray_minA ) THEN
+!~                 IF (i == 180 .and. j == 180) THEN
+!~                     print *, xxres*yyres, ray_minA
+!~                     print *, d_l
+!~                 END IF
+                IF ( xxres*yyres .gt. ray_minA*0.1) THEN
                     log_size = .True.
                     EXIT
                 END IF
@@ -464,30 +474,28 @@ CONTAINS
                 pos_xyz = pos_xyz_new
                 nr_cell = nr_cell_new
 
-                dz_sum = dz_sum + d_l
-
             END DO !walk in z direction towards observer
 
         END IF
         IF ( log_size) THEN
             CALL        get_individual_needed_px(basics, grid, model,          &
                         i,j, xxres*0.5_r2, yyres*0.5_r2,                       &
-                        coor_map1+xxres*0.5_r2, coor_map2+yyres*0.5_r2,        &
+                        coor_map1+xxres*0.25_r2, coor_map2+yyres*0.25_r2,        &
                         i_map, pixel_list)
 
             CALL        get_individual_needed_px(basics, grid, model,          &
                         i,j, xxres*0.5_r2, yyres*0.5_r2,                       &
-                        coor_map1+xxres*0.5_r2, coor_map2-yyres*0.5_r2,        &
+                        coor_map1+xxres*0.25_r2, coor_map2-yyres*0.25_r2,        &
                         i_map, pixel_list)
                         
             CALL        get_individual_needed_px(basics, grid, model,          &
                         i,j, xxres*0.5_r2, yyres*0.5_r2,                       &
-                        coor_map1-xxres*0.5_r2, coor_map2+yyres*0.5_r2,        &
+                        coor_map1-xxres*0.25_r2, coor_map2+yyres*0.25_r2,        &
                         i_map,pixel_list )
                         
             CALL        get_individual_needed_px(basics, grid, model,          &
                         i,j, xxres*0.5_r2, yyres*0.5_r2,                       &
-                        coor_map1-xxres*0.5_r2, coor_map2-yyres*0.5_r2,        &
+                        coor_map1-xxres*0.25_r2, coor_map2-yyres*0.25_r2,        &
                         i_map, pixel_list)                                     
         ELSE
             pixel_data%pixel  =  (/i, j/)

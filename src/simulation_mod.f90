@@ -162,13 +162,13 @@ CONTAINS
                                   (REAL(i, KIND=r2) + 0.5) - model%r_ou /      &
                                   model%zoom_map(1)
                     coor_map(2) = model%px_model_length_y(i_map) *             &
-                                 (REAL(j, KIND=r2) + 0.5) - model%r_ou /       &
+                                  (REAL(j, KIND=r2) + 0.5) - model%r_ou /      &
                                   model%zoom_map(1)
                     
                     CALL get_individual_needed_px(basics, grid, model,         &
                                     i, j,                                      &
-                                    model%px_model_length_x(i_map)*0.5_r2,     &
-                                    model%px_model_length_x(i_map)*0.5_r2,     &
+                                    model%px_model_length_x(i_map),            &
+                                    model%px_model_length_y(i_map),            &
                                     coor_map(1), coor_map(2), i_map, pixel_list)
                     l = l + 1
                 END DO ! coord(2), y
@@ -228,7 +228,7 @@ CONTAINS
                     fluxes%channel_map(notopx(i,1),notopx(i,2),:,:) =          &
                              fluxes%channel_map(notopx(i,1),notopx(i,2),:,:) + &
                              unit_value * inten_px(i,:,:) *                    &
-                             (calc_px(i,3)*calc_px(i,4)*4.) /                  &
+                             (calc_px(i,3)*calc_px(i,4)) /                     &
                              (model%px_model_length_x(i_map)*                  &
                              model%px_model_length_y(i_map))
                 END DO
@@ -268,7 +268,7 @@ CONTAINS
                     fluxes%continuum_map(notopx(i,1),notopx(i,2),:, :) =       &
                              fluxes%continuum_map(notopx(i,1),notopx(i,2),:,:) + &
                              unit_value * continuum_px(i,:,:) *                &
-                             (calc_px(i,3)*calc_px(i,4)*4.) /                  &
+                             (calc_px(i,3)*calc_px(i,4)) /                     &
                              (model%px_model_length_x(i_map) *                 &
                              model%px_model_length_y(i_map))
                 END DO
