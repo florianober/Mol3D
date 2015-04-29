@@ -46,6 +46,7 @@ CONTAINS
 
     TYPE(l_list), POINTER                            :: pixel_list => null()
     TYPE(Pixel_TYP), POINTER                         :: pixel_p => null()
+    TYPE(l_list), POINTER                            :: pixel_list_bak => null()
     !--------------------------------------------------------------------------!
 
     INTEGER                       :: i_map, i_r, i, j, no_pixel, k, l
@@ -60,8 +61,8 @@ CONTAINS
 
     real(kind=r2), dimension(1:2)                :: coor_map
     REAL(kind=r2), dimension(:,:), allocatable   :: calc_px
-    REAL(kind=r2), dimension(:,:,:), allocatable :: inten_px
-    REAL(kind=r2), dimension(:,:,:), allocatable   :: continuum_px
+    REAL(kind=r2), dimension(:,:), allocatable :: inten_px
+    REAL(kind=r2), dimension(:,:,:), allocatable  :: continuum_px
 
     !--------------------------------------------------------------------------!
     print *,''                                                    
@@ -176,20 +177,20 @@ CONTAINS
 
             no_pixel = GetSize(pixel_list)
             counter = 0
-            ALLOCATE (calc_px (1:no_pixel,1:4))
-            ALLOCATE (notopx (1:no_pixel,1:2))
+!~             ALLOCATE (calc_px (1:no_pixel,1:4))
+!~             ALLOCATE (notopx (1:no_pixel,1:2))
 
-
-            DO i = 1, no_pixel
-                CALL GetLast(pixel_list,pixel_p)
-                notopx(i,:) = pixel_p%pixel
-                counter(notopx(i,1),notopx(i,2)) = counter(notopx(i,1),        &
-                                                           notopx(i,2)) +1
-                calc_px(i,1:2) = pixel_p%pos_xy
-                calc_px(i,3:4) = pixel_p%size_xy
-                CALL RemoveLast(pixel_list)
-            END DO
-            
+            !DO i = 1, no_pixel
+                !CALL GetLast(pixel_list,pixel_p)
+                !notopx(i,:) = pixel_p%pixel
+                !counter(notopx(i,1),notopx(i,2)) = counter(notopx(i,1),        &
+                !                                           notopx(i,2)) +1
+                !calc_px(i,1:2) = pixel_p%pos_xy
+                !calc_px(i,3:4) = pixel_p%size_xy
+                !CALL RemoveLast(pixel_list)
+            !END DO
+            !PRINT *, GetSize(pixel_list)
+            !PRINT *, GetSize(pixel_list_bak)
             PRINT '(A,I7,A,I7,A)', ' | | do raytrace with ',no_pixel,          &
                     ' pixel (', no_pixel-(2*model%n_bin_map +1)**2, ' subpixel)'
 
@@ -201,85 +202,102 @@ CONTAINS
                 PRINT '(A,F8.2,A)',' | | | central wavelength :', con_c /      &
                                    gas%trans_freq(gas%tr_cat(1))*1e6, ' micron'
             
-                ALLOCATE (inten_px (1:no_pixel, -gas%i_vel_chan:gas%i_vel_chan,&
+                ALLOCATE (inten_px (-gas%i_vel_chan:gas%i_vel_chan,&
                                     1:gas%n_tr))
 
                 inten_px = 0.0_r2
                 k = no_pixel/100
                 
                 !$omp parallel num_threads(basics%num_core)
-                !$omp do schedule(dynamic) private(i)
+                !$omp do schedule(dynamic) private(i, pixel_p, inten_px)
                 DO i = 1, no_pixel
+                    !$omp critical
+                    CALL GetLast(pixel_list, pixel_p)
+                    CALL RemoveLast(pixel_list)
+                    CALL AddElement(pixel_list_bak, pixel_p)
+                    !$omp end critical
+
                     IF (modulo(i,k) == 0 .or. i == no_pixel) THEN
                         WRITE (*, '(A,I3,A)') ' | | | ',                       &
                                   int(i/real(no_pixel)*100.0),' % done' //     &
                                   char(27)//'[A'
                     END IF 
                     
-                    inten_px(i,:,:) = raytrace_px(basics,                      &
-                                      grid, model, dust, gas,                  &
-                                      calc_px(i,1), calc_px(i,2), i_map)
+                    inten_px(:,:) = raytrace_px(basics,                      &
+                                    grid, model, dust, gas,                  &
+                                    pixel_p%pos_xy(1), pixel_p%pos_xy(2), i_map)
+                
+                    !$omp critical
+                    fluxes%channel_map(pixel_p%pixel(1),pixel_p%pixel(2),:,:) = &
+                        fluxes%channel_map(pixel_p%pixel(1),pixel_p%pixel(2),:,:) + &
+!~                         fluxes%channel_map(pixel_p%pixel(1),pixel_p%pixel(2),:,:) * &
+                        inten_px(:,:) *                                   &
+                        unit_value *                                      &
+                        (pixel_p%size_xy(1) * pixel_p%size_xy(2)) /       &
+                        (model%px_model_length_x(i_map)*                  &
+                        model%px_model_length_y(i_map))
+                    !$omp end critical
                 END DO
-
                 !$omp end do nowait
                 !$omp end parallel
-
-                DO i = 1, no_pixel
-                    fluxes%channel_map(notopx(i,1),notopx(i,2),:,:) =          &
-                             fluxes%channel_map(notopx(i,1),notopx(i,2),:,:) + &
-                             unit_value * inten_px(i,:,:) *                    &
-                             (calc_px(i,3)*calc_px(i,4)) /                     &
-                             (model%px_model_length_x(i_map)*                  &
-                             model%px_model_length_y(i_map))
-                END DO
-
                 DEALLOCATE(inten_px)
                 print *, '| | | saving channel maps'
 
                 CALL save_ch_map(model, basics, gas, fluxes, dust%n_dust)
                 PRINT *, '| | done!'
-
+                DO i = 1, no_pixel
+                    CALL GetLast(pixel_list_bak, pixel_p)
+                    CALL RemoveLast(pixel_list_bak)
+                    CALL AddElement(pixel_list, pixel_p)
+                END DO
             END IF
 
             IF (basics%do_continuum_raytrace ) THEN
                 !reset flux map
                 fluxes%continuum_map(:,:,:,:) = 0.0_r2
                 
-                ALLOCATE (continuum_px (1:no_pixel,1:dust%n_lam,1:4))
-                continuum_px = 0.0_r2
-                k = no_pixel/100
+                ALLOCATE (inten_px (1:dust%n_lam,1:4))
+                inten_px = 0.0_r2
+                k = int(no_pixel/100.0)
                 PRINT *, '| | calculating continuum maps'
                 !$omp parallel num_threads(basics%num_core)
-                !$omp do schedule(dynamic) private(i) 
+                !$omp do schedule(dynamic) private(i) firstprivate(pixel_p, inten_px)
                 DO i = 1, no_pixel
                     IF (modulo(i,k) == 0 .or. i == no_pixel) THEN
                         WRITE (*,'(A,I3,A)') ' | | | ',                        &
                                   int(i/real(no_pixel)*100.0),' % done' //     &
                                   char(27)//'[A'
                     END IF
-                    continuum_px(i,:,:) = raytrace_px(         &
+                    !$omp critical
+                    CALL GetLast(pixel_list, pixel_p)
+                    CALL RemoveLast(pixel_list)
+!~                     CALL AddElement(pixel_list_bak, pixel_p)
+                    !$omp end critical
+                    
+                    inten_px(:,:) = raytrace_px(                               &
                                         grid, model, dust, gas,                &
-                                        calc_px(i,1), calc_px(i,2), i_map)
+                                        pixel_p%pos_xy(1), pixel_p%pos_xy(2),  &
+                                        i_map)
+                    !$omp critical
+                    fluxes%continuum_map(pixel_p%pixel(1),pixel_p%pixel(2),:, :) =       &
+                        fluxes%continuum_map(pixel_p%pixel(1),pixel_p%pixel(2),:,:) + &
+                        inten_px(:,:) *                                   &
+                        unit_value *                                      &
+                        (pixel_p%size_xy(1) * pixel_p%size_xy(2)) /       &
+                        (model%px_model_length_x(i_map)*                  &
+                        model%px_model_length_y(i_map))
+                    !$omp end critical
                 END DO
-
                 !$omp end do nowait
                 !$omp end parallel
-                DO i = 1, no_pixel
-                    fluxes%continuum_map(notopx(i,1),notopx(i,2),:, :) =       &
-                             fluxes%continuum_map(notopx(i,1),notopx(i,2),:,:) + &
-                             unit_value * continuum_px(i,:,:) *                &
-                             (calc_px(i,3)*calc_px(i,4)) /                     &
-                             (model%px_model_length_x(i_map) *                 &
-                             model%px_model_length_y(i_map))
-                END DO
-                DEALLOCATE(continuum_px)
+                
                 print *, '| | | saving continuum maps'
 
                 CALL save_continuum_map(model, basics, dust,                   &
                                         fluxes, 3, peel_off=.False.)
+                DEALLOCATE(inten_px)
                 PRINT *, '| | done!'
             END IF
-            DEALLOCATE( calc_px, notopx)
         END DO ! orientation map.
 
         WRITE (*,"(A)") " | done! "
