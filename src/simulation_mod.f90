@@ -46,23 +46,21 @@ CONTAINS
 
     TYPE(l_list), POINTER                            :: pixel_list => null()
     TYPE(Pixel_TYP), POINTER                         :: pixel_p => null()
+    TYPE(Pixel_TYP)                                  :: pixel_data
     TYPE(l_list), POINTER                            :: pixel_list_bak => null()
     !--------------------------------------------------------------------------!
 
     INTEGER                       :: i_map, i_r, i, j, no_pixel, k, l
          
-    INTEGER,DIMENSION(0:2*model%n_bin_map, 0:2*model%n_bin_map)  :: counter
-    INTEGER,DIMENSION(:,:), ALLOCATABLE                          :: notopx
     
     REAL(kind=r2)                 :: hd_stepwidth, dz_min, hd_rmax
          
     REAL(KIND=r2)                 :: pix_res_i, pix_res_j   ! pixelsize [arcsec]
     REAL(KIND=r2)                 :: unit_value             ! unit conversion 
 
-    real(kind=r2), dimension(1:2)                :: coor_map
-    REAL(kind=r2), dimension(:,:), allocatable   :: calc_px
+    REAL(kind=r2), dimension(1:2)                :: coor_map
     REAL(kind=r2), dimension(:,:), allocatable :: inten_px
-    REAL(kind=r2), dimension(:,:,:), allocatable  :: continuum_px
+
 
     !--------------------------------------------------------------------------!
     print *,''                                                    
@@ -150,21 +148,25 @@ CONTAINS
             PRINT *,"| | check for pixel"
             k = 1
             l = 0
+            !$omp parallel num_threads(basics%num_core)
+            !$omp do schedule(dynamic) private(i,j, coor_map)
             DO i = 0, 2*model%n_bin_map
-                DO j = 0,2*model%n_bin_map
-                    IF (l == int(k*(2*model%n_bin_map)**2*0.01)) THEN
-                        WRITE (*,'(A,I3,A)') ' | | | ',int(l / real((2 *       &
-                                 model%n_bin_map)**2)*100),                    &
+!~             DO i = 126, 126
+!~                 DO j = 198, 202! 2*model%n_bin_map
+                DO j = 0, 2*model%n_bin_map
+                    IF (l == int(k*(2.0*model%n_bin_map)**2*0.01)) THEN
+                        WRITE (*,'(A,I3,A)') ' | | | ',int(l / real((2.0 *     &
+                                 model%n_bin_map)**2)*100.0),                  &
                                  ' % done'//char(27)//'[A'
                         k = k + 1
                     END IF
 
                     coor_map(1) = model%px_model_length_x(i_map) *             &
                                   (REAL(i, KIND=r2) + 0.5) - model%r_ou /      &
-                                  model%zoom_map(1)
+                                  model%zoom_map(i_map)
                     coor_map(2) = model%px_model_length_y(i_map) *             &
                                   (REAL(j, KIND=r2) + 0.5) - model%r_ou /      &
-                                  model%zoom_map(1)
+                                  model%zoom_map(i_map)
                     
                     CALL get_individual_needed_px(basics, grid, model,         &
                                     i, j,                                      &
@@ -173,26 +175,14 @@ CONTAINS
                                     coor_map(1), coor_map(2), i_map, pixel_list)
                     l = l + 1
                 END DO ! coord(2), y
-            END DO ! coord(1), x   
+            END DO ! coord(1), x
+            !$omp end do nowait
+            !$omp end parallel
 
             no_pixel = GetSize(pixel_list)
-            counter = 0
-!~             ALLOCATE (calc_px (1:no_pixel,1:4))
-!~             ALLOCATE (notopx (1:no_pixel,1:2))
-
-            !DO i = 1, no_pixel
-                !CALL GetLast(pixel_list,pixel_p)
-                !notopx(i,:) = pixel_p%pixel
-                !counter(notopx(i,1),notopx(i,2)) = counter(notopx(i,1),        &
-                !                                           notopx(i,2)) +1
-                !calc_px(i,1:2) = pixel_p%pos_xy
-                !calc_px(i,3:4) = pixel_p%size_xy
-                !CALL RemoveLast(pixel_list)
-            !END DO
-            !PRINT *, GetSize(pixel_list)
-            !PRINT *, GetSize(pixel_list_bak)
-            PRINT '(A,I7,A,I7,A)', ' | | do raytrace with ',no_pixel,          &
-                    ' pixel (', no_pixel-(2*model%n_bin_map +1)**2, ' subpixel)'
+            
+            PRINT '(A,I7,A,I7,A)', ' | | do raytrace with ',                   &
+                        no_pixel, ' (sub)-pixel '
 
 
             IF (basics%do_velo_ch_map ) THEN
@@ -209,12 +199,13 @@ CONTAINS
                 k = no_pixel/100
                 
                 !$omp parallel num_threads(basics%num_core)
-                !$omp do schedule(dynamic) private(i, pixel_p, inten_px)
+                !$omp do schedule(dynamic) private(i, pixel_data) firstprivate(inten_px)
                 DO i = 1, no_pixel
                     !$omp critical
                     CALL GetLast(pixel_list, pixel_p)
+                    pixel_data = pixel_p
                     CALL RemoveLast(pixel_list)
-                    CALL AddElement(pixel_list_bak, pixel_p)
+                    CALL AddElement(pixel_list_bak, pixel_data)
                     !$omp end critical
 
                     IF (modulo(i,k) == 0 .or. i == no_pixel) THEN
@@ -225,15 +216,14 @@ CONTAINS
                     
                     inten_px(:,:) = raytrace_px(basics,                      &
                                     grid, model, dust, gas,                  &
-                                    pixel_p%pos_xy(1), pixel_p%pos_xy(2), i_map)
+                                    pixel_data%pos_xy(1), pixel_data%pos_xy(2), i_map)
                 
                     !$omp critical
-                    fluxes%channel_map(pixel_p%pixel(1),pixel_p%pixel(2),:,:) = &
-                        fluxes%channel_map(pixel_p%pixel(1),pixel_p%pixel(2),:,:) + &
-!~                         fluxes%channel_map(pixel_p%pixel(1),pixel_p%pixel(2),:,:) * &
+                    fluxes%channel_map(pixel_data%pixel(1),pixel_data%pixel(2),:,:) = &
+                        fluxes%channel_map(pixel_data%pixel(1),pixel_data%pixel(2),:,:) + &
                         inten_px(:,:) *                                   &
                         unit_value *                                      &
-                        (pixel_p%size_xy(1) * pixel_p%size_xy(2)) /       &
+                        (pixel_data%size_xy(1) * pixel_data%size_xy(2)) /       &
                         (model%px_model_length_x(i_map)*                  &
                         model%px_model_length_y(i_map))
                     !$omp end critical
@@ -260,8 +250,9 @@ CONTAINS
                 inten_px = 0.0_r2
                 k = int(no_pixel/100.0)
                 PRINT *, '| | calculating continuum maps'
+
                 !$omp parallel num_threads(basics%num_core)
-                !$omp do schedule(dynamic) private(i) firstprivate(pixel_p, inten_px)
+                !$omp do schedule(dynamic) private(i, pixel_data) firstprivate( inten_px)
                 DO i = 1, no_pixel
                     IF (modulo(i,k) == 0 .or. i == no_pixel) THEN
                         WRITE (*,'(A,I3,A)') ' | | | ',                        &
@@ -270,26 +261,29 @@ CONTAINS
                     END IF
                     !$omp critical
                     CALL GetLast(pixel_list, pixel_p)
+                    pixel_data = pixel_p
                     CALL RemoveLast(pixel_list)
 !~                     CALL AddElement(pixel_list_bak, pixel_p)
                     !$omp end critical
-                    
-                    inten_px(:,:) = raytrace_px(                               &
+                    inten_px(:,1) = raytrace_px(                               &
                                         grid, model, dust, gas,                &
-                                        pixel_p%pos_xy(1), pixel_p%pos_xy(2),  &
-                                        i_map)
+                                        pixel_data%size_xy(1), pixel_data%size_xy(2), &
+                                        pixel_data%pos_xy(1), pixel_data%pos_xy(2),  &
+                                        i_map, 0)
                     !$omp critical
-                    fluxes%continuum_map(pixel_p%pixel(1),pixel_p%pixel(2),:, :) =       &
-                        fluxes%continuum_map(pixel_p%pixel(1),pixel_p%pixel(2),:,:) + &
+
+                    fluxes%continuum_map(pixel_data%pixel(1),pixel_data%pixel(2),:, :) =       &
+                        fluxes%continuum_map(pixel_data%pixel(1),pixel_data%pixel(2),:,:) + &
                         inten_px(:,:) *                                   &
                         unit_value *                                      &
-                        (pixel_p%size_xy(1) * pixel_p%size_xy(2)) /       &
+                        (pixel_data%size_xy(1) * pixel_data%size_xy(2)) /       &
                         (model%px_model_length_x(i_map)*                  &
                         model%px_model_length_y(i_map))
                     !$omp end critical
                 END DO
                 !$omp end do nowait
                 !$omp end parallel
+
                 
                 print *, '| | | saving continuum maps'
 

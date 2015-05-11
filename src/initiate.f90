@@ -150,8 +150,6 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
     n_interact_max    = 100000
     
     show_error = .True.               ! show some minor warnings
-    velo_type  = 1                    ! analytical velocity distribution
-!~     velo_type  = 2                 ! lin. interpolated velocity distribution
 
     ! use results of earlier calculations
     !
@@ -455,7 +453,8 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
                         L_sun, " L_sun"
 
     !----------------------------  Init Grid  ---------------------------------!
-
+    velo_type  = 1                    ! analytical velocity distribution
+!~     velo_type  = 2                 ! lin. interpolated velocity distribution
     IF (pluto_data .and. .not. old_model ) THEN
         ! fix the cell properties
         grid_name = 'spherical'
@@ -508,6 +507,7 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
             ! input/grid/c_coordinates.dat
             CALL read_no_cells(n_a, n_b, n_c)
             sf = 1 ! it is not needed
+            velo_type  = 2
         ELSE
             CALL parse('n_a',n_a, new_input_file)
             CALL parse('n_b',n_b, new_input_file) 

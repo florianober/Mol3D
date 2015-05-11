@@ -127,7 +127,7 @@ CONTAINS
             stop
         END SELECT
         !TbD volume and area of zero cell
-        grid%cell_minA(0) = model%r_in**2*PI
+
         grid%cell_minA(0) = minval(grid%cell_minA(1:grid%n_cell))
 
 
@@ -1258,7 +1258,7 @@ CONTAINS
             ! header:
             ! No of cells
             ! Sorting:
-            ! cell number & density & (TbD)
+            ! cell number & density & velo_x, velo_y, velo_z
             PRINT *, "Read model from file"
             OPEN(unit=1, file="input/grid/model.dat", &
                         action="read", status="old", form="formatted")
@@ -1269,10 +1269,11 @@ CONTAINS
                 STOP
             END iF
             DO i_cell = 1, grid%n_cell
-                READ(unit=1, fmt=*, iostat=io) i_cell_in, value_in
+                READ(unit=1, fmt=*, iostat=io) i_cell_in,                      &
+                                            grid%grd_dust_density(i_cell,:),   &
+                                            grid%velo(i_cell,:)
                 IF (i_cell_in == i_cell) THEN
-                    grid%grd_dust_density(i_cell,:) = value_in
-                    grid%grd_col_density(i_cell,:) = value_in
+                    grid%grd_col_density(i_cell,:) = grid%grd_dust_density(i_cell,:)
                 ELSE
                     PRINT *, "ERROR, model file is inconsistent"
                     PRINT *, "i_cell:", i_cell
@@ -1351,7 +1352,7 @@ CONTAINS
                                         REAL(grid%cell_vol(i_cell),kind=r2)
             ! set velocity, in a future release we should generalize this
             !
-            IF ( .not. basics%old_model) THEN
+            IF ( .not. basics%old_model .and. .not. GetGridType(grid) == 9) THEN
                 grid%velo(i_cell,:)  = Set_velo(grid%cellmidcaco(i_cell,:),    &
                                                 model%kep_const)
             END IF

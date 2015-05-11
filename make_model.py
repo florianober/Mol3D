@@ -18,6 +18,7 @@ sys.path.append('./visualize/')
 import time
 import math
 from scipy.interpolate import griddata
+from astropy.io import fits as pf
 
 import numpy as np
 import helper as hlp
@@ -40,14 +41,17 @@ GRID_NAME = 'spherical'                             # a = r,   b = th, c = ph
 
 N_A = 100              # no of coordinate a
 N_B = 101              # no of coordinate b
-N_C = 1                # no of coordinate c
+N_C = 100                # no of coordinate c
 
-DENSITY_DISTRIBUTION = 'Disk'     # density for a disk
+#~ DENSITY_DISTRIBUTION = 'Disk'     # density for a disk
 #~ DENSITY_DISTRIBUTION = 'Sphere'   # density for a sphere
 #~ DENSITY_DISTRIBUTION = 'User'     # density for user input
-#~ DENSITY_DISTRIBUTION = 'fosite'     # density for user input
+DENSITY_DISTRIBUTION = 'fosite'     # density for user input
 
-FOSITE_FILE = ''
+#~ VELOCITY_FIELD = 'Keplerian'
+VELOCITY_FIELD = 'fosite'
+
+FOSITE_FILE = '../Mol3d/output/planet-kley_0030.bin'
 
 if DENSITY_DISTRIBUTION == 'fosite':
     f = hlp.read_fosite(FOSITE_FILE)
@@ -82,13 +86,34 @@ if DENSITY_DISTRIBUTION == 'fosite':
     Y1 = (f['/mesh/bary_centers'][:,:,1]/convert_unit).flatten()
     surface_density = f['/timedisc/density']
     
+    if (f['/config/mesh/output/rotation']): 
+        vxi = f['/timedisc/xvelocity']
+        #~ omega = f['/config/timedisc/omega']
+        omega = f['/config/sources/grav/pbinary/omega_rot']
+        R = np.sqrt(f['/mesh/bary_centers'][:,:,0]**2 + f['/mesh/bary_centers'][:,:,1]**2)
+        veta = f['/timedisc/yvelocity'] + omega * R
+        rot = f['/mesh/rotation']
+        VELOCITY_X = (np.cos(rot)*vxi + np.sin(rot)*veta).flatten()
+        VELOCITY_Y = (-np.sin(rot)*vxi + np.cos(rot)*veta).flatten()
+    else:
+        VELOCITY_X = f['/timedisc/xvelocity']
+        VELOCITY_Y = f['/timedisc/yvelocity']
+        
     # make a plot of the fosite data
-    # x_grid = f['/mesh/grid_x']/convert_unit
-    # y_grid = f['/mesh/grid_y']/convert_unit
-
-    # plt.pcolormesh(x_grid, y_grid, surface_density)
-    # plt.colorbar()
-    # plt.show()
+    #x_grid = f['/mesh/grid_x']/convert_unit
+    #y_grid = f['/mesh/grid_y']/convert_unit
+    #plt.figure('v_x')
+    #plt.pcolormesh(x_grid, y_grid, vx)
+    #plt.colorbar()
+    #plt.figure('v_y')
+    #plt.pcolormesh(x_grid, y_grid, vy)
+    #plt.colorbar()
+    #plt.figure('abs(v)')
+    #plt.pcolormesh(x_grid, y_grid, np.sqrt(vy**2+vx**2))
+    #plt.colorbar()
+    #plt.figure('surface-density')
+    #plt.pcolormesh(x_grid, y_grid, surface_density)
+    #plt.colorbar()
 
     if f['/config/mesh/output/volume']:
         M_disk = (surface_density * f['/mesh/volume']).sum()/hlp.M_sun
@@ -97,11 +122,9 @@ if DENSITY_DISTRIBUTION == 'fosite':
     FOSITE_DENSITY = surface_density.flatten()
 
     if f['/config/sources/grav/output/height']:
-        height1 = f['/sources/grav/height'].flatten()/convert_unit
-        #~ print('1')
+        FOSITE_HEIGHT = f['/sources/grav/height'].flatten()/convert_unit
     else:
-        height1 = []
-        #~ print('2')
+        FOSITE_HEIGHT = []
     print( '')
 
 LINK = True # link the model and boundaries automatically
@@ -150,19 +173,19 @@ def get_density_fosite(pos_xyz):
     r = np.sqrt(pos_xyz[0, :]**2 + pos_xyz[1, :]**2)
     z = pos_xyz[2,:]
     density = np.zeros_like(r)
-    ind = (r >= R_IN) & (r < R_OU)
+
     xi = pos_xyz[0, :]
     yi = pos_xyz[1, :]
-    if height1 != []:
-        h = griddata((X1, Y1), height1, (xi[ind], yi[ind]), method='linear')
+    if FOSITE_HEIGHT != []:
+        h = griddata((X1, Y1), FOSITE_HEIGHT, (xi, yi), method='linear')
     else:
         scale_h = 10.0
         beta = 1.125
-        h = scale_h * (r[ind]/100.0)**beta
+        h = scale_h * (r/100.0)**beta
     
-    density[ind] = griddata((X1, Y1), FOSITE_DENSITY, (xi[ind], yi[ind]),
-                            method='linear') * \
-                            np.exp(-0.5 * (z[ind]/h)**2, dtype=np.float64)
+    density = griddata((X1, Y1), FOSITE_DENSITY, (xi, yi),
+                            method='linear') / h * \
+                            np.exp(-0.5 * (z/h)**2, dtype=np.float64)
 
 
     return density
@@ -176,26 +199,23 @@ def get_density_user(pos_xyz):
 
     return density
 
-FIRST_CALL = True
 def get_density(pos_xyz):
     """
     stearing routine to get the density at the given cartesian coordinate 
     """
-    global FIRST_CALL
 
     if DENSITY_DISTRIBUTION == 'Disk':
         
         density = get_density_disk(pos_xyz)
 
     elif DENSITY_DISTRIBUTION == 'Sphere':
-        if FIRST_CALL and GRID_NAME != 'spherical':
+        if GRID_NAME != 'spherical':
             print("Warning, a %s grid might not be the best solution for a sphere" %(GRID_NAME))
         density = get_density_sphere(pos_xyz)
 
     elif DENSITY_DISTRIBUTION == 'fosite':
-        #TbD
-        if FIRST_CALL:
-            print('Loading the density from Fosite')
+
+        print('Loading the density from Fosite')
         density = get_density_fosite(pos_xyz)
 
     elif DENSITY_DISTRIBUTION == 'User':
@@ -206,9 +226,75 @@ def get_density(pos_xyz):
     else:
         print("ERROR: density model unknown")
         sys.exit()
-    FIRST_CALL = False
 
     return density
+#-------------------------------------------------------------------------------
+# velocity field (feel free to include more models)
+
+def get_velocity_Keplerian(pos_xyz):
+    """
+    TBD!
+    Keplerian rotation for one central star
+    """
+    z = pos_xyz[2,:]
+    r = np.sqrt(pos_xyz[0,:]**2 + pos_xyz[1,:]**2)
+    velocity_xyz = np.zeros((len(r),3))
+    velocity_xyz[:, 0] = pos_xyz[0,:]
+    velocity_xyz[:, 1] = pos_xyz[1,:]
+    velocity_xyz[:, 2] = 0.0 
+
+    return velocity_xyz
+
+def get_velocity_fosite(pos_xyz):
+    """
+    a very(!) simple but working Fosite interface 
+    """
+    r = np.sqrt(pos_xyz[0, :]**2 + pos_xyz[1, :]**2)
+    z = pos_xyz[2,:]
+
+    xi = pos_xyz[0, :]
+    yi = pos_xyz[1, :]
+
+    velocity_xyz = np.zeros((len(r),3))
+    velocity_xyz[:, 0] = griddata((X1, Y1), VELOCITY_X, (xi, yi), method='linear')
+    velocity_xyz[:, 1] = griddata((X1, Y1), VELOCITY_Y, (xi, yi), method='linear')
+    velocity_xyz[:, 2] = 0.0
+    
+    return velocity_xyz
+
+def get_velocity_user(pos_xyz):
+    """
+    a user interface 
+    """
+    velocity_xyz = np.zeros_like(pos_xyz)
+
+
+    return velocity_xyz
+
+def get_velocity(pos_xyz):
+    """
+    stearing routine to get the density at the given cartesian coordinate 
+    """
+
+    if VELOCITY_FIELD == 'Keplerian':
+        
+        velocity = get_velocity_Keplerian(pos_xyz)
+
+    elif VELOCITY_FIELD == 'fosite':
+
+        print('Loading the velocity field from Fosite')
+        velocity = get_velocity_fosite(pos_xyz)
+
+    elif VELOCITY_FIELD == 'User':
+        #TbD
+        #velocity = get_velocity_user(pos_xyz) at position 'mid_point_cart'
+        print("ERROR: user velocity definition is not implemeted")
+        sys.exit()
+    else:
+        print("ERROR: velocity model unknown")
+        sys.exit()
+
+    return velocity
 
 #-------------------------------------------------------------------------------
 # main program
@@ -352,7 +438,7 @@ def main():
     c_bounds_file.close()
     
     N_Cells = N_A * N_B * N_C
-    data = np.zeros((N_Cells, 2), dtype=np.float64)
+    data = np.zeros((N_Cells, 13), dtype=np.float64)
 
     # create density distribution:
     print("Calculating the midpoint coordinates for %d cells" %N_Cells)
@@ -370,26 +456,32 @@ def main():
                 mid_point_coord[1, i_cell] = (b_bounds[i_b] + b_bounds[i_b+1])/2.0
                 mid_point_coord[2, i_cell] = (c_bounds[i_c] + c_bounds[i_c+1])/2.0
 
+
                 # convert to cartesian
                 if GRID_NAME == 'spherical':
-                    mid_point_cart[:, i_cell] = hlp.sp2ca(mid_point_coord[:, i_cell])
+                    #~ mid_point_cart[:, i_cell] = hlp.sp2ca(mid_point_coord[:, i_cell])
+                    data[i_cell, 0:3] = hlp.sp2ca(mid_point_coord[:, i_cell])
 
                 elif GRID_NAME == 'cylindrical':
-                    mid_point_cart[:, i_cell] = hlp.cy2ca(mid_point_coord[:, i_cell])
-
+                    #~ mid_point_cart[:, i_cell] = hlp.cy2ca(mid_point_coord[:, i_cell])
+                    data[i_cell, 0:3] = hlp.cy2ca(mid_point_coord[:, i_cell])
                 elif GRID_NAME == 'cartesian':
-                    mid_point_cart[:, i_cell] = 1.0* mid_point_coord[:, i_cell]
-
+                    #~ mid_point_cart[:, i_cell] = 1.0* mid_point_coord[:, i_cell]
+                    data[i_cell, 0:3] =mid_point_coord[:, i_cell]
                 # increase the cell counter
                 i_cell += 1
     print("Calculating the density distribution")
-    data[:, 1] = get_density(mid_point_cart)
+    data[:, 3] = get_density(data[:, 0:3])
     
+    print("Calculating the velocity distribution")
+    data[:, 4:7] = get_velocity(data[:, 0:3])
     # save results
     print("Saving the model for the use with Mol3D")
-    model_file = open(PATH_INPUT_GRID + MODEL_NAME +  '_' +
-                                        DENSITY_DISTRIBUTION + '_' +
-                                        GRID_NAME + '_model.dat', 'w')
+
+    file_name = PATH_INPUT_GRID + MODEL_NAME +  '_' + \
+                DENSITY_DISTRIBUTION + '_' + \
+                GRID_NAME
+    model_file = open(file_name + '_model.dat', 'w')
 
     # write header
     model_file.write('%d \n' %(N_Cells))
@@ -398,10 +490,24 @@ def main():
     for i_a in range(N_A):
         for i_b in range(N_B):
             for i_c in range(N_C):
-                model_file.write('%d\t%.12e \n' %(data[i_cell, 0], data[i_cell, 1]))
+                model_file.write('%d\t%.12e\t%.12e\t%.12e\t%.12e \n' %(data[i_cell, 0], data[i_cell, 1], data[i_cell, 2], data[i_cell, 3], data[i_cell, 4]))
                 i_cell += 1
     model_file.close()
 
+    # save results
+    print("Saving the model for the use with Mol3D -> Fits")
+    header = pf.Header()
+    # write data array in header
+    header['HIERARCH /config/dust_density'] = (1, 1)
+    header['HIERARCH /config/velocity_x'] = (1, 2)
+    header['HIERARCH /config/velocity_y'] = (1, 3)
+    header['HIERARCH /config/velocity_z'] = (1, 4)
+    header['N_DUST'] = 1
+    hdu = pf.PrimaryHDU(data, header=header)
+    hdulist = pf.HDUList(hdu)
+    hdulist.writeto(file_name + '_model.fits', clobber=True)
+
+    
     print("")
     print("%s model '%s' succesfully generated on a %s grid"
                                 %(DENSITY_DISTRIBUTION, MODEL_NAME, GRID_NAME))
@@ -435,3 +541,4 @@ def main():
     print("bye bye")
 
 main()
+plt.show()
