@@ -41,32 +41,39 @@ CONTAINS
   SUBROUTINE InitRandgen(this,seed,un)
     IMPLICIT NONE
     !------------------------------------------------------------------------!
-    TYPE(Randgen_TYP)   :: this
-    INTEGER             :: seed
-    INTEGER             :: J
-    CHARACTER(LEN=*)    :: un
+    TYPE(Randgen_TYP)                    :: this
+    INTEGER                              :: seed
+    INTEGER                              :: N, i
+    INTEGER, DIMENSION(:), ALLOCATABLE   :: seed_array
+    CHARACTER(LEN=*)                     :: un
     !------------------------------------------------------------------------!
-    INTENT(IN)          :: seed,un
-    INTENT(INOUT)       :: this
+    INTENT(IN)                           :: seed, un
+    INTENT(INOUT)                        :: this
     !------------------------------------------------------------------------!
     CALL InitCommon(this%gentype,seed,un)
-
-    this%IDUM = seed
-    this%IFF  = 0
-    this%IR   = 0
-    this%IY   = 0
-
-    this%RM=1.0/M
-    if  (this%IDUM<0 .or. this%IFF==0)  then
-       this%IFF  = 1
-       this%IDUM = modulo(IC-this%IDUM,M)
-       do J=1,97
-          this%IDUM = modulo(IA*this%IDUM+IC,M)
-          this%IR(J)= this%IDUM
-       end do
-       this%IDUM = modulo(IA*this%IDUM+IC,M)
-       this%IY   = this%IDUM
-    endif
+    CALL RANDOM_SEED(N)
+    ALLOCATE(seed_array(1:N))
+    DO i = 1, N
+        seed_array(i) = INT((seed * M) + i * IA + IC)
+    END DO
+    CALL RANDOM_SEED(PUT=seed_array)
+!~     this%IDUM = seed
+!~     this%IFF  = 0
+!~     this%IR   = 0
+!~     this%IY   = 0
+!~ 
+!~     this%RM=1.0/M
+!~     if  (this%IDUM<0 .or. this%IFF==0)  then
+!~        this%IFF  = 1
+!~        this%IDUM = modulo(IC-this%IDUM,M)
+!~        do J=1,97
+!~           this%IDUM = modulo(IA*this%IDUM+IC,M)
+!~           this%IR(J)= this%IDUM
+!~        end do
+!~        this%IDUM = modulo(IA*this%IDUM+IC,M)
+!~        this%IY   = this%IDUM
+!~     endif
+    DEALLOCATE(seed_array)
 
   END SUBROUTINE InitRandgen
 
@@ -79,7 +86,7 @@ CONTAINS
     CALL CloseCommon(this%gentype)
   END SUBROUTINE CloseRandgen
 
-  SUBROUTINE RAN2(this,randno)
+  SUBROUTINE RAN2(this, randno)
     IMPLICIT NONE
     !------------------------------------------------------------------------!
     TYPE(Randgen_TYP), INTENT(INOUT) :: this
@@ -87,17 +94,17 @@ CONTAINS
     REAL(kind=r2),INTENT(OUT)        :: randno
     !------------------------------------------------------------------------!
       
-    J = 1+(97*this%IY)/M
-    if (J > 97 .or. J < 1) then
-        print *, "subroutine RAN2(): failed."
-        stop
-    end if
-    this%IY   = this%IR( J)
-    this%rndx = this%IY*this%RM
-    this%IDUM = modulo(IA*this%IDUM+IC,M)
-    this%IR(J)= this%IDUM
+!~     J = 1+(97*this%IY)/M
+!~     if (J > 97 .or. J < 1) then
+!~         print *, "subroutine RAN2(): failed."
+!~         stop
+!~     end if
+!~     this%IY   = this%IR( J)
+!~     this%rndx = this%IY*this%RM
+!~     this%IDUM = modulo(IA*this%IDUM+IC,M)
+!~     this%IR(J)= this%IDUM
     
-    randno = this%rndx
+    CALL RANDOM_NUMBER(randno)
   END SUBROUTINE RAN2
 
   PURE FUNCTION GetGenSeed(this) RESULT(ut)
