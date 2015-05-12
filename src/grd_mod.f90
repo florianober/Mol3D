@@ -1014,7 +1014,7 @@ CONTAINS
         IF (basics%old_model) THEN
             print '(2A)', ' | loading model parameter from: ', TRIM(basics%pronam_old)
             CALL read_model(grid, TRIM(basics%path_results) //                 &
-                                  Getproname(basics)//'_model.fits')
+                                  TRIM(basics%pronam_old)//'_model.fits')
 
             PRINT *, "| done!                        "
             CLOSE(unit=1)
@@ -1030,7 +1030,7 @@ CONTAINS
             moco(3) = PI
             DO i = 1, (grid%n(1))*(grid%n(2))*grid%n(3)
                 READ(unit=1,fmt=*,iostat=io) moco(1),moco(2),value_in
-!~                 print *, i
+
                 moco(1) = 10.0**(moco(1))
                 i_cell = get_cell_nr(grid,mo2ca(grid,moco))
                 grid%grd_dust_density(i_cell,:) = 10.0**(value_in)
@@ -1039,7 +1039,8 @@ CONTAINS
             CLOSE(unit=1)
         ELSE IF (GetGridType(grid) == 6 .and. GetGridName(grid) == 'spherical' ) THEN
             ! note: 
-            !       this one is just to read in Marios disk
+            !       this one is just to read in Marios disk models
+            !       (should be removed in near future)
             print *,'  read model from text_file'
             OPEN(unit=1, file="input/grid/HRFIX_410.dat", &
                          action="read", status="old", form="formatted")

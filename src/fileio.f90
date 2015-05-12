@@ -310,6 +310,7 @@ CONTAINS
         IF (naxes(2) /= grid%n_cell) THEN 
             print *, "ERROR, the number of grid cells in model fits file   &
                      &is not correct"
+            print *, naxes(2), grid%n_cell
             STOP
         END IF
         k = grid%n_cell/100

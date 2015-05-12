@@ -636,7 +636,7 @@ def shrink(data, rows, cols):
 '''
 class to read Fosite results
 -> converted to Python 3
-developed by M. Jung as a part of the Fosite package
+developed by M. Jung as a part of the Fosite (T.Illenseer) package
 '''
 
 class read_fosite(object):
