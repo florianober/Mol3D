@@ -265,12 +265,11 @@ CONTAINS
 
     END SUBROUTINE  save_boundaries
 
-    SUBROUTINE read_model(basics, grid)
+    SUBROUTINE read_model(grid, filename)
 
         IMPLICIT NONE
         !----------------------------------------------------------------------!
         TYPE(Grid_TYP), INTENT(INOUT)                :: grid
-        TYPE(Basic_TYP), INTENT(IN)                  :: basics
         !----------------------------------------------------------------------!
         INTEGER                                      :: i_cell
         INTEGER                                      :: n_dust
@@ -279,7 +278,7 @@ CONTAINS
         INTEGER                                      :: sta, u, bs, rw, nfound
         INTEGER,DIMENSION(2)                         :: naxes
         REAL(kind=r2), DIMENSION(:), ALLOCATABLE     :: line
-        CHARACTER(len=256)                           :: filename
+        CHARACTER(len=*), INTENT(IN)                 :: filename
         CHARACTER(len=256)                           :: comment
         LOGICAL                                      :: anyf
         !----------------------------------------------------------------------!
@@ -287,7 +286,6 @@ CONTAINS
         ! get a new u(nit) number
         call ftgiou(u,sta)
         ! init fits file
-        filename = TRIM(basics%path_results)//TRIM(basics%pronam_old)//'_model.fits'
         call ftopen(u,TRIM(filename),0,bs,sta)
         ! check axis
         call ftgknj(u, 'NAXIS', 1, 2, naxes, nfound, sta)

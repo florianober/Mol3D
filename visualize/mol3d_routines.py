@@ -184,7 +184,7 @@ class mol3d:
     def set_units(self):
         self.__unit = {}
         self.__unit['PX'] = 1.0
-        self.__unit['AS'] = (self.__attr['n_bin_map']/self.__attr['arcs'])**2
+        self.__unit['AS'] = ((self.__attr['n_bin_map'] + 0.5)/self.__attr['arcs'])**2
 
     def __get_unit_value(self, unit):
 

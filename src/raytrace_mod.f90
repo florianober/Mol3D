@@ -203,7 +203,7 @@ CONTAINS
                                 dz_new = 0.9*dz*epsi**(-0.2)
                                 IF ( epsi .le. 1 ) THEN
                                     intensity(vch) = intensity_new
-                                    pos_xyz_cell = pos_xyz_cell+cell_d_l*model%D_2obs(3, :, i_map)
+                                    pos_xyz_cell = pos_xyz_cell + cell_d_l*model%D_2obs(3, :, i_map)
                                     cell_sum = cell_sum + cell_d_l
                                     dz = MIN(dz_new,4*dz)
                                     cell_d_l = dz*model%ref_unitn
@@ -246,7 +246,6 @@ CONTAINS
         INTEGER, INTENT(IN)                              :: i_map
 
 !~         REAL(KIND=r2), DIMENSION(1:dust%n_lam,1:4)           :: px_intensity
-
 
         REAL(KIND=r2)                                    :: ray_len
         REAL(KIND=r2)                                    :: dz
@@ -455,7 +454,6 @@ CONTAINS
         
 
         IF (diff .gt. 0.1 .and. depth .lt. 4) THEN
-!~             print *, depth + 1
             DO k = 1, 4
                 intensity(:, k) = get_continuum_intensity_in_px(grid, model, dust, gas,  &
                               xxres*0.5_r2, yyres*0.5_r2, coor_x_arr(k), coor_y_arr(k),    &

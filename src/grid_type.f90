@@ -55,18 +55,19 @@ MODULE Grid_type
         REAL(kind=r2),DIMENSION(:,:),ALLOCATABLE      :: Nv_col
         REAL(kind=r2),DIMENSION(:),ALLOCATABLE        :: Nv_mol
         REAL(kind=r1),DIMENSION(:,:),ALLOCATABLE      :: lvl_pop
-        !  grd_density: this is the number density of the dust component (from mc3d)
+        !  grd_density: this is the number density of the dust components
         REAL(kind=r2),DIMENSION(:,:),ALLOCATABLE      :: grd_dust_density
-        !  grd_coldensity: this is the number density of all(!) possible collision partner for the
+        !  grd_coldensity: this is the number density of all(!)
+        !                  possible collision partner for the
         !                  selected molecule
         !                  first dimension: cell identifier
         !                  second dimension: collision partner
         !                                    1) H2
         !                                    2) H2 para
         !                                    3) H2 ortho
-        !                                    4) He
-        !                                    5) Elektron
-        !                                    6) ...
+        !                                    4) He (not used yet)
+        !                                    5) Elektron (not used yet)
+        !                                    6) ...(not used yet)
         REAL(kind=r2),DIMENSION(:,:),ALLOCATABLE      :: grd_col_density
         !  grd_mol_density: this is the number density of the selected molecule
         !
@@ -85,8 +86,8 @@ MODULE Grid_type
         INTEGER                                   :: n_cell
         INTEGER                                   :: i_cell
         INTEGER                                   :: nh_n_dust
-        INTEGER,DIMENSION(:,:,:),ALLOCATABLE          :: cell_idx2nr
-        INTEGER,DIMENSION(:,:),ALLOCATABLE            :: cell_nr2idx
+        INTEGER,DIMENSION(:,:,:),ALLOCATABLE      :: cell_idx2nr
+        INTEGER,DIMENSION(:,:),ALLOCATABLE        :: cell_nr2idx
                 
         INTEGER                                   :: counter
         
@@ -291,13 +292,13 @@ CONTAINS
             this%cell_gauss_a( 0:this%n_cell ), &
             this%cell_gauss_a2( 0:this%n_cell ), &
             this%Nv(       0:this%n_cell, 1:n_dust ), &
-            this%Nv_col(       0:this%n_cell, 1:6 ), &
+            this%Nv_col(       0:this%n_cell, 1:3 ), &
             this%Nv_mol(       0:this%n_cell), &
             this%cell_energy( 1:n_dust, 0:this%n_cell), &
             this%cell_energy_sum( 1:n_dust, 0:this%n_cell,1:2), &
             this%grd_dust_density( 0:this%n_cell, 1:n_dust ), &
             this%grd_mol_density( 0:this%n_cell), &
-            this%grd_col_density( 0:this%n_cell,1:6), &
+            this%grd_col_density( 0:this%n_cell,1:3), &
             this%velo( 0:this%n_cell,1:3 ), &
             this%cellmidcaco(0:this%n_cell,1:3), &
             this%absvelo( 0:this%n_cell), &

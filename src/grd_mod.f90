@@ -228,9 +228,9 @@ CONTAINS
         grid%Nv_mol(:) = grid%grd_mol_density(:) * REAL(grid%cell_vol(:),kind=r2)
 
         !TbD: all other partners:
-        grid%Nv_col(:,4:6)            = 0.0_r2
-        grid%grd_col_density(:,4:6)   = 0.0_r2
-        grid%grd_col_density(0,:)     = 0.0_r2
+        !grid%Nv_col(:,4:6)            = 0.0_r2
+        !grid%grd_col_density(:,4:6)   = 0.0_r2
+        !grid%grd_col_density(0,:)     = 0.0_r2
         
         hd_totalmass = 0.0_r2
         hd_dusttotalmass = 0.0_r2
@@ -1128,7 +1128,8 @@ CONTAINS
             
         IF (basics%old_model) THEN
             print '(2A)', ' | loading model parameter from: ', TRIM(basics%pronam_old)
-            CALL read_model(basics, grid)
+            CALL read_model(grid, TRIM(basics%path_results) //                 &
+                                  Getproname(basics)//'_model.fits')
 
             PRINT *, "| done!                        "
             CLOSE(unit=1)
@@ -1251,7 +1252,7 @@ CONTAINS
             CLOSE(unit=1)
         ELSE IF (GetGridType(grid) == 9) THEN
             ! this is the most general way to read the density (and velocity?)
-            ! distribution. It reads the "input/grid/model.dat" file that should
+            ! distribution. It reads the "input/grid/model.fits" file that should
             ! be a symbolic link to the actual model file. Please note,
             ! the model MUST correspond to the to the grid, defined
             !
@@ -1259,28 +1260,31 @@ CONTAINS
             ! No of cells
             ! Sorting:
             ! cell number & density & velo_x, velo_y, velo_z
+!~             CALL read_model(basics, grid)
             PRINT *, "Read model from file"
-            OPEN(unit=1, file="input/grid/model.dat", &
-                        action="read", status="old", form="formatted")
-            !read header
-            READ(unit=1, fmt=*, iostat=io) i_cell_in
-            IF (i_cell_in /= grid%n_cell) THEN
-                PRINT *, "ERROR, number of cells /= number of cells in file"
-                STOP
-            END iF
-            DO i_cell = 1, grid%n_cell
-                READ(unit=1, fmt=*, iostat=io) i_cell_in,                      &
-                                            grid%grd_dust_density(i_cell,:),   &
-                                            grid%velo(i_cell,:)
-                IF (i_cell_in == i_cell) THEN
-                    grid%grd_col_density(i_cell,:) = grid%grd_dust_density(i_cell,:)
-                ELSE
-                    PRINT *, "ERROR, model file is inconsistent"
-                    PRINT *, "i_cell:", i_cell
-                    PRINT *, "i_cell in file:", i_cell_in
-                    STOP
-                END IF
-            END DO
+            CALL read_model(grid, "input/grid/model.fits")
+            
+!~             OPEN(unit=1, file="input/grid/model.dat", &
+!~                         action="read", status="old", form="formatted")
+!~             !read header
+!~             READ(unit=1, fmt=*, iostat=io) i_cell_in
+!~             IF (i_cell_in /= grid%n_cell) THEN
+!~                 PRINT *, "ERROR, number of cells /= number of cells in file"
+!~                 STOP
+!~             END iF
+!~             DO i_cell = 1, grid%n_cell
+!~                 READ(unit=1, fmt=*, iostat=io) i_cell_in,                      &
+!~                                             grid%grd_dust_density(i_cell,:),   &
+!~                                             grid%velo(i_cell,:)
+!~                 IF (i_cell_in == i_cell) THEN
+!~                     grid%grd_col_density(i_cell,:) = grid%grd_dust_density(i_cell,:)
+!~                 ELSE
+!~                     PRINT *, "ERROR, model file is inconsistent"
+!~                     PRINT *, "i_cell:", i_cell
+!~                     PRINT *, "i_cell in file:", i_cell_in
+!~                     STOP
+!~                 END IF
+!~             END DO
         ELSE
             ! analytical density distribution, defined in the model_mod.f90 file
             DO i_cell = 1, grid%n_cell
