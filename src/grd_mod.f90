@@ -664,8 +664,8 @@ CONTAINS
             sf = grid%sf+0.01
             dx = model%r_ou * (sf-1.0_r2)/ (sf**((grid%n(1)-1)*0.5) - 1.0_r2)
             do i_x=1, int(grid%n(1)*0.5)
-                grid%co_mx_a(int((grid%n(1)-1)*0.5+i_x+1)) =            dx * (sf**i_x - 1.0_r2) / (sf-1.0_r2)
-                grid%co_mx_a(int((grid%n(1)-1)*0.5-i_x)) =  -1.0_r2 * dx * (sf**i_x - 1.0_r2) / (sf-1.0_r2)
+                grid%co_mx_a(int((grid%n(1)-1)*0.5+i_x+1)) = dx * (sf**i_x - 1.0_r2) / (sf-1.0_r2)
+                grid%co_mx_a(int((grid%n(1)-1)*0.5-i_x)) = -1.0_r2 * dx * (sf**i_x - 1.0_r2) / (sf-1.0_r2)
             end do
             grid%co_mx_a(int((grid%n(1)-1)*0.5)) = -1.0_r2/3.0_r2 * dx 
             grid%co_mx_a(int((grid%n(1)-1)*0.5+1)) = 1.0_r2/3.0_r2 * dx
@@ -681,8 +681,8 @@ CONTAINS
             sf = grid%sf+0.01
             dy = model%r_ou * (sf-1.0_r2)/ (sf**((grid%n(2)-1)*0.5) - 1.0_r2)
             do i_y=1, int(grid%n(2)*0.5)
-                grid%co_mx_b(int((grid%n(2)-1)*0.5+i_y+1)) =            dy * (sf**i_y - 1.0_r2) / (sf-1.0_r2)
-                grid%co_mx_b(int((grid%n(2)-1)*0.5-i_y)) =  -1.0_r2 * dy * (sf**i_y - 1.0_r2) / (sf-1.0_r2)
+                grid%co_mx_b(int((grid%n(2)-1)*0.5+i_y+1)) = dy * (sf**i_y - 1.0_r2) / (sf-1.0_r2)
+                grid%co_mx_b(int((grid%n(2)-1)*0.5-i_y)) = -1.0_r2 * dy * (sf**i_y - 1.0_r2) / (sf-1.0_r2)
             end do
             grid%co_mx_b(int((grid%n(2)-1)*0.5)) = -1.0_r2/3.0_r2 * dy 
             grid%co_mx_b(int((grid%n(2)-1)*0.5+1)) = 1.0_r2/3.0_r2 * dy 
@@ -699,8 +699,8 @@ CONTAINS
             sf = grid%sf+0.01
             dz = model%r_ou * (sf-1.0_r2)/ (sf**((grid%n(3)-1)*0.5) - 1.0_r2)
             do i_z=1, int(grid%n(3)*0.5)
-                grid%co_mx_c(int((grid%n(3)-1)*0.5+i_z+1)) =            dz * (sf**i_z - 1.0_r2) / (sf-1.0_r2)
-                grid%co_mx_c(int((grid%n(3)-1)*0.5-i_z)) =  -1.0_r2 * dz * (sf**i_z - 1.0_r2) / (sf-1.0_r2)
+                grid%co_mx_c(int((grid%n(3)-1)*0.5+i_z+1)) = dz * (sf**i_z - 1.0_r2) / (sf-1.0_r2)
+                grid%co_mx_c(int((grid%n(3)-1)*0.5-i_z)) = -1.0_r2 * dz * (sf**i_z - 1.0_r2) / (sf-1.0_r2)
             end do
             grid%co_mx_c(int((grid%n(3)-1)*0.5)) = -1.0_r2/3.0_r2 * dz 
             grid%co_mx_c(int((grid%n(3)-1)*0.5+1)) = 1.0_r2/3.0_r2 * dz 
@@ -881,58 +881,6 @@ CONTAINS
             end do
             
         CASE(3)
-            print *, 'pluto interface'
-            ! here we have a linear spherical grid
-            ! this is motivated by a given density distribution from the pluto code
-            ! to save endless memory, the grid is equally spaced, but only between 
-            ! in theta direction, r and ph are unchanged
-            !
-            ! ---
-            ! 1.1. rho
-            ! co_mx_a( 0 ): r_in
-            grid%co_mx_a(0) = model%r_in
-
-            ! dr1: radial extension
-            dr1 = (model%r_ou - model%r_in) / real(grid%n(1), kind=r2)
-
-            ! set outer ring radii:
-            ! co_mx_a( 1 ): r_in + dr1
-            ! co_mx_a(n(1)): r_ou
-            IF (grid%n(1) /= 100) print *, 'WARNING: no of r angles should be 100'
-            do i_r=1, grid%n(1)
-                grid%co_mx_a(i_r) = grid%co_mx_a(0) + dr1 * real(i_r, kind=r2)
-            end do
-            
-            ! ---
-            ! 1.2. theta
-            ! co_mx_b(  0 ) = -PI/2 (-90°)
-            ! co_mx_b(n(2)) = +PI/2 (+90°)
-            
-            grid%co_mx_b(0)         = -PI/2.0_r2
-            grid%co_mx_b(grid%n(2)) =  PI/2.0_r2
-            
-            ! give boundaries, derived from input file, check it!!!
-            grid%co_mx_b(1)            = -0.30099091
-            grid%co_mx_b(grid%n(2)-1)  =  0.30099091
-            IF (grid%n(2) /= 65) print *, 'WARNING: no of th angles should be 65'
-
-            dth = (grid%co_mx_b(grid%n(2)-1) - grid%co_mx_b(1)) / real(grid%n(2)-2, kind=r2)
-            do i_th=2, grid%n(2)-1
-                grid%co_mx_b(i_th) = grid%co_mx_b(1) +  dth * real(i_th-1, kind=r2)
-            end do
-            
-            ! ---
-            ! 1.3 phi
-            ! co_mx_c(  0 ) = 0    (  0°)
-            ! co_mx_c(n(3)) = 2xPI (360°)
-            grid%co_mx_c(0) = 0.0_r2
-            IF (grid%n(3) /= 124) print *, 'WARNING: no of ph angles should be 124'
-            dph = 2.0_r2*PI / real(grid%n(3), kind=r2)
-            do i_ph=1, grid%n(3)
-                grid%co_mx_c(i_ph) =  grid%co_mx_c(0) + dph * real(i_ph, kind=r2)
-            end do
-            
-        CASE(4)
             ! ---
             ! 1.1 r
             open(unit=1, file="input/grid/logr.dat", &
@@ -964,61 +912,6 @@ CONTAINS
             do i_ph=1, grid%n(3)
                 grid%co_mx_c(i_ph) = grid%co_mx_c(0) + dph * real(i_ph, kind=r2)
             end do
-
-        CASE(5)
-            ! This is an old and very rubbish implemented version. 
-            ! it should work, but...;)
-            ! user given spherical grid, here interface to PLUTO code
-            ! read grid from file, as ph and th are linear spaced, the no of cells are
-            ! allready calculated und we have just du space them evenly
-            ! the r cells are taken from the input file
-            ! here we have to reset the given modelparameter
-            ! let's discuss this later
-            open(unit=1, file="input/grid/pluto_disk.dat", &
-                action="read", status="unknown", form="formatted")
-
-            DO i = 1,23
-                read(unit=1,fmt=*) waste
-            END DO
-            
-            ! make r boundaries
-            DO i_abc = 0,grid%n(1)-1
-                read(unit=1,fmt=*) i, trash, grid%co_mx_a(i_abc)
-            END DO
-            ! transform cm to AU
-            grid%co_mx_a(:) = grid%co_mx_a(:)/con_au/100.0_r2
-            
-            ! we assume an exponential increasing r coordinate, therefore we can
-            ! calculate the effective outer boundary == r_ou
-            ! 
-            grid%co_mx_a(grid%n(1)) = exp((log(grid%co_mx_a(1)) -              &
-                                           log(grid%co_mx_a(0))) *             &
-                                           (grid%n(1)+1) + log(grid%co_mx_a(0)))
-            
-            ! now adjust the innercoordinate to the user given inner rim
-            ! please be aware, that this includes the assumption, that the  
-            ! given PLUTO disk model is somehow scalable (self similar)
-            grid%co_mx_a = grid%co_mx_a * model%r_in/grid%co_mx_a(0)
-            
-            ! now adjust the outer radius the given one
-            
-            model%r_ou = grid%co_mx_a(grid%n(1))
-            print *, model%r_ou
-            
-            ! make th boundaries
-            grid%co_mx_b(0) = -PI/2.0_r2
-            
-            DO i_abc=1, grid%n(2)
-                grid%co_mx_b(i_abc) = grid%co_mx_b(0) +  PI / real(grid%n(2), kind=r2) * real(i_abc, kind=r2)
-            end do
-
-            ! make ph boundaries
-            grid%co_mx_c(0) = 0.0
-            DO i_abc=1, grid%n(3)
-                grid%co_mx_c(i_abc) = grid%co_mx_c(0) +  2.0*PI / real(grid%n(3), kind=r2) * real(i_abc, kind=r2)
-            end do
-
-            close(unit=1)
 
         CASE(9)
             ! ---
@@ -1079,7 +972,6 @@ CONTAINS
                 STOP
             END IF
 
-
         END SELECT
     
     END SUBROUTINE set_boundaries_sp
@@ -1106,14 +998,7 @@ CONTAINS
         
         INTEGER                                     :: i_cell, i_cell_in, i, k
         INTEGER                                     :: i_in, i_r, i_th, i_ph
-        INTEGER                                     :: io
-
-        INTEGER,DIMENSION(1:3)                      :: pluto_n
-        
-        
-        REAL(kind=r2),DIMENSION(:),ALLOCATABLE      :: pluto_r
-        REAL(kind=r2),DIMENSION(:),ALLOCATABLE      :: pluto_ph
-        REAL(kind=r2),DIMENSION(:),ALLOCATABLE      :: pluto_th
+        INTEGER                                     :: io, N_dummy
         
         REAL(kind=r2), DIMENSION(3)                 :: moco, velo_hlp
         REAL(kind=r2), DIMENSION(3,3)               :: S
@@ -1133,73 +1018,8 @@ CONTAINS
 
             PRINT *, "| done!                        "
             CLOSE(unit=1)
-        ELSE IF (basics%pluto_data) THEN
-            OPEN(unit=1, file="input/grid/sp1_reduced.dat", &
-                action="read", status="unknown", form="formatted")
-            ! read density from provided file
-            ! first read header
-            DO i = 1,4
-                READ(unit=1,fmt=*,iostat=io) waste
-            END DO
-            READ(unit=1,fmt=*,iostat=io) pluto_n(1)
-            READ(unit=1,fmt=*,iostat=io) waste
-            READ(unit=1,fmt=*,iostat=io) pluto_n(2)
-            READ(unit=1,fmt=*,iostat=io) pluto_n(3)
-            
-            ALLOCATE( pluto_r(1:pluto_n(1)), pluto_th(1:pluto_n(2)),           &
-                      pluto_ph(1:pluto_n(3)))
-            
-            
-            DO i = 1,3
-                READ(unit=1,fmt=*,iostat=io) waste
-            END DO
-            
-            ! read r coordinates
-            DO i = 1,pluto_n(1)
-                READ(unit=1,fmt=*,iostat=io) i_in, pluto_r(i)
-            END DO
-            pluto_r = pluto_r*grid%sf
-            DO i = 1,2
-                READ(unit=1,fmt=*,iostat=io) waste
-            END DO
-            
-            ! read th coordinates and correct for mc3d grid with pi/2
-            DO i = 1,pluto_n(2)
-                READ(unit=1,fmt=*,iostat=io) i_in, pluto_th(i)
-            END DO
-            pluto_th = pluto_th - PI/2.0
-            DO i = 1,2
-                READ(unit=1,fmt=*,iostat=io) waste
-            END DO
-            
-            !read ph coordinates
-            DO i = 1,pluto_n(3)
-                READ(unit=1,fmt=*,iostat=io) i_in, pluto_ph(i)
-            END DO
-            ! now read density distribution
-            
-            DO i = 1,3
-                READ(unit=1,fmt=*,iostat=io) waste
-            END DO
-            
-            DO i = 1,pluto_n(1)*pluto_n(2)*pluto_n(3)
-                
-                READ(unit=1,fmt=*,iostat=io) i_r, i_th, i_ph, value_in
 
-                moco = (/pluto_r(i_r),pluto_th(i_th),pluto_ph(i_ph)/)
-                i_cell = get_cell_nr(grid,mo2ca(grid,moco))
-                    
-!~                 IF (i_ph == 1) THEN    
-                
-                grid%grd_dust_density(i_cell,:) = value_in
-                grid%grd_col_density(i_cell,:) = value_in
-!~                 END IF
-                
-            END DO
-            
-            DEALLOCATE(pluto_r,pluto_th,pluto_ph)
-            CLOSE(unit=1)
-        ELSE IF (GetGridType(grid) == 4 .and. GetGridName(grid) == 'spherical' ) THEN
+        ELSE IF (GetGridType(grid) == 3 .and. GetGridName(grid) == 'spherical' ) THEN
             print *, 'Tobias density'
             OPEN(unit=1, file="input/grid/tobias_disk.dat", &
                 action="read", status="unknown", form="formatted")
@@ -1240,7 +1060,7 @@ CONTAINS
                             k = k +1
                         END IF
                         p_vec%comp = ca2sp(grid%cellmidcaco(i_cell,:))
-                        READ(unit=1,fmt=*,iostat=io) pluto_n, velo_hlp, value_in
+                        READ(unit=1,fmt=*,iostat=io) N_dummy, velo_hlp, value_in
                         grid%grd_dust_density(i_cell,:) = value_in
                         grid%grd_col_density(i_cell,:)  = value_in
                         
@@ -1252,39 +1072,13 @@ CONTAINS
             CLOSE(unit=1)
         ELSE IF (GetGridType(grid) == 9) THEN
             ! this is the most general way to read the density (and velocity?)
-            ! distribution. It reads the "input/grid/model.fits" file that should
-            ! be a symbolic link to the actual model file. Please note,
-            ! the model MUST correspond to the to the grid, defined
-            !
-            ! header:
-            ! No of cells
-            ! Sorting:
-            ! cell number & density & velo_x, velo_y, velo_z
-!~             CALL read_model(basics, grid)
-            PRINT *, "Read model from file"
+            ! distribution. It reads the "input/grid/model.fits" file that 
+            ! should be a symbolic link to the actual model file.
+            ! This approach should be independend of the 
+
+            PRINT *, "Read model distribution from file"
             CALL read_model(grid, "input/grid/model.fits")
-            
-!~             OPEN(unit=1, file="input/grid/model.dat", &
-!~                         action="read", status="old", form="formatted")
-!~             !read header
-!~             READ(unit=1, fmt=*, iostat=io) i_cell_in
-!~             IF (i_cell_in /= grid%n_cell) THEN
-!~                 PRINT *, "ERROR, number of cells /= number of cells in file"
-!~                 STOP
-!~             END iF
-!~             DO i_cell = 1, grid%n_cell
-!~                 READ(unit=1, fmt=*, iostat=io) i_cell_in,                      &
-!~                                             grid%grd_dust_density(i_cell,:),   &
-!~                                             grid%velo(i_cell,:)
-!~                 IF (i_cell_in == i_cell) THEN
-!~                     grid%grd_col_density(i_cell,:) = grid%grd_dust_density(i_cell,:)
-!~                 ELSE
-!~                     PRINT *, "ERROR, model file is inconsistent"
-!~                     PRINT *, "i_cell:", i_cell
-!~                     PRINT *, "i_cell in file:", i_cell_in
-!~                     STOP
-!~                 END IF
-!~             END DO
+
         ELSE
             ! analytical density distribution, defined in the model_mod.f90 file
             DO i_cell = 1, grid%n_cell
@@ -1338,13 +1132,8 @@ CONTAINS
             ! don't load this from the old model, so we are able to distribute 
             ! the molecules in the way we want
 
-!~             IF (P_z .gt. P_xy**1.8/1000. .and. P_z .lt. P_xy**1.2/5.) THEN
             grid%grd_mol_density(i_cell)   = grid%grd_col_density(i_cell, 1) * &
                                              gas%mol_abund
-!~             ELSE
-!~                 grid%grd_mol_density(i_cell)   = 0.0
-!~             END IF
-
 
             ! resulting number of particles/molecules
 

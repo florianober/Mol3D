@@ -59,7 +59,6 @@ MODULE basic_type
         CHARACTER(len=256)                :: new_input_file
         LOGICAL                           :: do_MC_temperature
         LOGICAL                           :: old_model
-        LOGICAL                           :: pluto_data
         LOGICAL                           :: do_raytr
         LOGICAL                           :: do_continuum_raytrace
         LOGICAL                           :: do_continuum_mc
@@ -87,7 +86,7 @@ CONTAINS
                          do_MC_temperature, old_pname, old_model,              &
                          do_continuum_raytrace, do_continuum_mc,               &
                          do_velo_ch_map, do_peel_off,                          &
-                         n_tem, t_dust_min, t_dust_max, num_core, pluto_data,  &
+                         n_tem, t_dust_min, t_dust_max, num_core,              &
                          input_file, new_input_file)
 
         IMPLICIT NONE
@@ -107,10 +106,9 @@ CONTAINS
         
         REAL(kind=r1)         :: t_dust_max
         REAL(kind=r1)         :: t_dust_min
+        LOGICAL               :: old_model
         
         LOGICAL               :: do_MC_temperature
-        LOGICAL               :: old_model
-        LOGICAL               :: pluto_data
         LOGICAL               :: do_continuum_raytrace
         LOGICAL               :: do_continuum_mc
         LOGICAL               :: do_velo_ch_map
@@ -120,8 +118,8 @@ CONTAINS
         INTENT(IN)          :: ut, un, presult, pname, num_core,               &
                                n_tem, t_dust_max, t_dust_min,                  &
                                do_MC_temperature, old_model, old_pname,        &
-                               pluto_data, do_continuum_raytrace,              &
-                               do_continuum_mc, do_velo_ch_map, do_peel_off
+                               do_continuum_raytrace, do_continuum_mc,         &
+                               do_velo_ch_map, do_peel_off
         INTENT(INOUT)       :: this
         !----------------------------------------------------------------------!
         CALL InitCommon(this%mtype,ut,un)
@@ -174,7 +172,6 @@ CONTAINS
         this%t_dust_min = t_dust_min
         this%do_MC_temperature   = do_MC_temperature
         this%old_model  = old_model
-        this%pluto_data = pluto_data
 
         this%do_continuum_raytrace  = do_continuum_raytrace
         this%do_continuum_mc  = do_continuum_mc

@@ -102,8 +102,6 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
 
     LOGICAL                                          :: do_MC_temperature
     LOGICAL                                          :: old_model
-    !remark: pluto_data should be removed
-    LOGICAL                                          :: pluto_data  
     LOGICAL                                          :: do_velo_ch_map
     LOGICAL                                          :: do_continuum_raytrace
     LOGICAL                                          :: do_continuum_mc
@@ -247,15 +245,11 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
     WRITE(help,fmt='(L1)') do_velo_ch_map
     WRITE(unit=3,fmt='(A)') 'do_velo_ch_map = {'//TRIM(help)//'}'
 
-!~     pluto_data = .True.
-    pluto_data = .False.
-
-    
     CALL InitBasic(basics,photon_type,'Reemission map', proname, r_path,       &
                    do_MC_temperature, old_proname,                             &
                    old_model, do_continuum_raytrace,                           &
                    do_continuum_mc, do_velo_ch_map, peel_off,                  &
-                   n_tem, t_dust_min, t_dust_max, num_core, pluto_data,        &
+                   n_tem, t_dust_min, t_dust_max, num_core,                    &
                    input_file, new_input_file)
 
     !------------------------------  Init Model  ------------------------------!
@@ -374,7 +368,7 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
     '}                      set the method to calculate the level populations,1 := LTE  2 := FEP  3 := LVG  9 := file (TbD)'
 
     !tr_cat(1) = 4            !transition (tr) in molecular cat   !tbd
-    CALL parse('line',tr_cat(1),new_input_file)
+    CALL parse('line', tr_cat(1), new_input_file)
     WRITE(help,fmt='(I2)') tr_cat(1)
     WRITE(unit=3,fmt='(A)') 'line = {'//TRIM(help)// &
     '}                          line transition no (see gas_input file)  '
@@ -411,8 +405,9 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
                             ! each dust species to ensure the correct usage
 
     aniso  = 1                 ! Scattering 1) Anisotropic (Mie, prefered) 
-                               !            2) Isotropic (not tested)
-                               !            3) Henyey-Greenstein (not tested)
+                               !            2) Isotropic
+                               !            3) Henyey-Greenstein (not much tested)
+
     ALLOCATE(dust_cat(1:n_dust))
 
     CALL parse('dust_cat_name',dust_cat(1), input_file)
@@ -453,22 +448,14 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
                         L_sun, " L_sun"
 
     !----------------------------  Init Grid  ---------------------------------!
+    ! we need to gerneralize the usage of this key TbD
     velo_type  = 1                    ! analytical velocity distribution
 !~     velo_type  = 2                 ! lin. interpolated velocity distribution
-    IF (pluto_data .and. .not. old_model ) THEN
-        ! fix the cell properties
-        grid_name = 'spherical'
-        grid_type = 3
-        n_a = 100
-        n_b = 65
-        n_c = 124
-        CALL parse('sf',sf,input_file)  ! in fact, it is used to scale the grid
-        model%r_in = sf*model%r_in
-        model%r_ou = sf*model%r_ou
 
-    ELSE IF ( old_model ) THEN
-        CALL parse('grid_name', grid_name, input_file)
-
+    CALL parse('grid_type', grid_type, input_file)
+    CALL parse('grid_name', grid_name, input_file)
+    
+    IF ( old_model ) THEN
         ! read from the old model boundary files
         file_a = TRIM(basics%path_results) //                                  &
                  TRIM(basics%pronam_old) // '_a_boundaries.dat'
@@ -480,13 +467,19 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
         CALL read_no_cells(n_a, n_b, n_c, file_a, file_b, file_c)
         grid_type = 9
         sf = 1.0 ! not used
+    ELSE IF (grid_type == 9) THEN
+        ! grid is defined in input files see
+        ! input/grid/a_coordinates.dat
+        ! input/grid/b_coordinates.dat
+        ! input/grid/c_coordinates.dat
+        CALL read_no_cells(n_a, n_b, n_c)
+        sf = 1 ! it is not needed
+        velo_type  = 2 
     ELSE
         ! this is the normal way, read the grid properties from the input file
-        CALL parse('grid_name', grid_name, input_file)  
         ! possible values: spherical (well tested)
-        !                  cylindrical (working but there might
+        !                  cylindrical, cartesian (working but there might
         !                  be some bugs, test for yourself)
-        !                  cartesian (partly implemented)
         !
         ! EXAMPLE:
         ! 
@@ -497,28 +490,11 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
         ! n(2) = n_th : number of point in th direction, must be odd
         ! n(3) = n_ph : number of point in oh direction, must be 1 or even
         ! sf   = step factor for logarithmic r scale (MC3D style)
-        !
 
-        CALL parse('grid_type', grid_type, input_file)
-        IF (grid_type == 9) THEN
-            ! grid is defined in input files see
-            ! input/grid/a_coordinates.dat
-            ! input/grid/b_coordinates.dat
-            ! input/grid/c_coordinates.dat
-            CALL read_no_cells(n_a, n_b, n_c)
-            sf = 1 ! it is not needed
-            velo_type  = 2
-        ELSE
-            CALL parse('n_a',n_a, new_input_file)
-            CALL parse('n_b',n_b, new_input_file) 
-            CALL parse('n_c',n_c, new_input_file)
-            CALL parse('sf',sf, new_input_file)
-        END IF
-        
-        IF (pluto_data) THEN
-            model%r_in = sf*model%r_in
-            model%r_ou = sf*model%r_ou
-        END IF
+        CALL parse('n_a',n_a, new_input_file)
+        CALL parse('n_b',n_b, new_input_file) 
+        CALL parse('n_c',n_c, new_input_file)
+        CALL parse('sf',sf, new_input_file)
 
     END IF
 
@@ -550,9 +526,6 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
 
     ! give the type of the specified grid 
     ! 1 == analytical version (prefered)
-    ! 2 == user input version, under construction
-    !
-    !
     !   Some examples here:
     ! SELECT CASE(grid_type)
     !

@@ -159,78 +159,9 @@ CONTAINS
                 this%sf     = sf
                 this%n(2)   = n_b
                 this%n(3)   = n_c
-            
-            CASE(4)
-                ! case 1 logarithm r spaced grid
-                ! case 2 linear r spaced grid
-                ! we can use the same definitions
-                this%n(1)   = 200
-                this%sf     = 1.000
-                this%n(2)   = 201
-                this%n(3)   = 1
-            
-            CASE(5)
-                ! interface to Pluto data
-                ! 
-                ! was a test and is working, but not in use
-                open(unit=1, file="input/grid/pluto_disk.dat", &
-                action="read", status="unknown", form="formatted")
-                
-                DO i = 1,6
-                    read(unit=1,fmt=*) waste
-                END DO
-                read(unit=1,fmt=*) n(1)
-                this%n(1) = n(1)
-                read(unit=1,fmt=*) n(2)
-                read(unit=1,fmt=*) n(3)
-                DO i = 1,14
-                    read(unit=1,fmt=*) waste
-                END DO
-                DO i_abc = 1,this%n(1)+2
-                    read(unit=1,fmt=*) waste
-                END DO
-                ! calculate no of th angles
-                !
-                
-                IF (n(2) >1 ) THEN
-                    DO i_abc = 1, 2
-                        read(unit=1,fmt=*) i, trash, d_angle(i_abc)
-                    END DO
-                    
-                    DO i_abc = 1, n(2)-2
-                        read(unit=1,fmt=*) waste
-                    END DO
-                    read(unit=1,fmt=*) waste
-                    read(unit=1,fmt=*) waste
-                    
-                ELSE
-                    read(unit=1,fmt=*) i, trash, d_angle(1)
-                    d_angle(2) = PI
-                    read(unit=1,fmt=*) waste
-                    read(unit=1,fmt=*) waste
-                END IF
-                ! make sure, this%n(2) is odd!
-                this%n(2) = anint(PI/abs(d_angle(2)-d_angle(1)))
-                
-                
-                ! calculate no of ph angles
-                IF (n(3) >1 ) THEN
-                    DO i_abc = 1, 2
-                        read(unit=1,fmt=*) i, trash, d_angle(i_abc)
-                    END DO
-                ELSE
-                    read(unit=1,fmt=*) i, trash, d_angle(1)
-                    d_angle(2) = 2.0*PI
-                END IF
-                ! make sure, this%n(3) is even or 1
-                this%n(3) = anint(2.0*PI/abs(d_angle(2)-d_angle(1)))
-                
-                close(unit=1)
-                this%sf     = 1.0
 
-                
             CASE DEFAULT
-                print *, 'selected coordinate type not found. try grid_type = [1,2,3,4,5,9]'
+                print *, 'selected coordinate type not found. try grid_type = [1,2,3,9]'
                 stop
             END SELECT
 
