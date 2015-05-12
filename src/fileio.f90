@@ -265,12 +265,11 @@ CONTAINS
 
     END SUBROUTINE  save_boundaries
 
-    SUBROUTINE read_model(basics, grid)
+    SUBROUTINE read_model(grid, filename)
 
         IMPLICIT NONE
         !----------------------------------------------------------------------!
         TYPE(Grid_TYP), INTENT(INOUT)                :: grid
-        TYPE(Basic_TYP), INTENT(IN)                  :: basics
         !----------------------------------------------------------------------!
         INTEGER                                      :: i_cell
         INTEGER                                      :: n_dust
@@ -279,7 +278,7 @@ CONTAINS
         INTEGER                                      :: sta, u, bs, rw, nfound
         INTEGER,DIMENSION(2)                         :: naxes
         REAL(kind=r2), DIMENSION(:), ALLOCATABLE     :: line
-        CHARACTER(len=256)                           :: filename
+        CHARACTER(len=*), INTENT(IN)                 :: filename
         CHARACTER(len=256)                           :: comment
         LOGICAL                                      :: anyf
         !----------------------------------------------------------------------!
@@ -287,7 +286,6 @@ CONTAINS
         ! get a new u(nit) number
         call ftgiou(u,sta)
         ! init fits file
-        filename = TRIM(basics%path_results)//TRIM(basics%pronam_old)//'_model.fits'
         call ftopen(u,TRIM(filename),0,bs,sta)
         ! check axis
         call ftgknj(u, 'NAXIS', 1, 2, naxes, nfound, sta)
@@ -895,7 +893,7 @@ CONTAINS
                     '_continuum_map'//TRIM(outname)//'.fits.gz'
         CALL ftinit(u,'!'//fits_name,1,sta)
         ! write header
-        CALL ftphpr(u,.true.,-32,4,(/2*model%n_bin_map+1,                  &
+        CALL ftphpr(u,.true.,-64,4,(/2*model%n_bin_map+1,                  &
                                     2*model%n_bin_map+1,                   &
                                     dust%n_lam, 4/),                       &
                     0,1,.true.,sta)
@@ -970,7 +968,7 @@ CONTAINS
         ! init fits file
         call ftinit(u,'!'//TRIM(basics%path_results)//Getproname(basics)//'_velo_int_map.fits.gz',1,sta)
         ! write header
-        call ftphpr(u,.true.,-32,2,(/2*model%n_bin_map+1,2*model%n_bin_map+1/),0,1,.true.,sta)
+        call ftphpr(u,.true.,-64,2,(/2*model%n_bin_map+1,2*model%n_bin_map+1/),0,1,.true.,sta)
         ! write array to fits file
         call ftpprd(u,1,1,(2*model%n_bin_map+1)**2,sum(fluxes%channel_map(:,:,:,1),DIM=3)/ &
                     real(gas%i_vel_chan, kind=r2)*gas%vel_max*1e-3,sta)

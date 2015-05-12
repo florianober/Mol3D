@@ -98,11 +98,10 @@ CONTAINS
         
         this%pos_xyz     = 0.0_r2
         this%pos_xyz_new = 0.0_r2
-        this%pos_xyz_li  = 0.0_r2
+        this%pos_xyz_li  = 0.0_r2 ! position of last interaction
         this%dir_xyz     = 0.0_r2
-        
-        !this%D           = 0.0_r2
-        this%D_2global       = 0.0_r2
+
+        this%D_2global    = 0.0_r2
         this%stokes      = 0.0_r2
         
         this%SINPHI      = 0.0_r2 

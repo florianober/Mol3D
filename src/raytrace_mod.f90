@@ -467,7 +467,7 @@ FUNCTION raytrace_px_generic(basics, grid, model, dust, gas,          &
                                 dz_new = 0.9*dz*epsi**(-0.2)
                                 IF ( epsi .le. 1 ) THEN
                                     intensity(vch) = intensity_new
-                                    pos_xyz_cell = pos_xyz_cell+cell_d_l*model%D_2obs(3, :, i_map)
+                                    pos_xyz_cell = pos_xyz_cell + cell_d_l*model%D_2obs(3, :, i_map)
                                     cell_sum = cell_sum + cell_d_l
                                     dz = MIN(dz_new,4*dz)
                                     cell_d_l = dz*model%ref_unitn
@@ -493,9 +493,9 @@ FUNCTION raytrace_px_generic(basics, grid, model, dust, gas,          &
         END IF
     END FUNCTION get_line_intensity_in_px
     
-    FUNCTION get_continuum_intensity_in_px(grid, model, dust, gas,            &
+    FUNCTION get_continuum_intensity_along_one_path(grid, model, dust, gas,   &
                               coor_map1, coor_map2, i_map)                    &
-                              RESULT(px_intensity)
+                              RESULT(intensity)
         
     IMPLICIT NONE
         !----------------------------------------------------------------------!
@@ -509,8 +509,7 @@ FUNCTION raytrace_px_generic(basics, grid, model, dust, gas,          &
         REAL(KIND=r2),INTENT(IN)                         :: coor_map2
         INTEGER, INTENT(IN)                              :: i_map
 
-        REAL(KIND=r2), DIMENSION(1:dust%n_lam,1:4)           :: px_intensity
-
+!~         REAL(KIND=r2), DIMENSION(1:dust%n_lam,1:4)           :: px_intensity
 
         REAL(KIND=r2)                                    :: ray_len
         REAL(KIND=r2)                                    :: dz
@@ -521,11 +520,8 @@ FUNCTION raytrace_px_generic(basics, grid, model, dust, gas,          &
 
         REAL(KIND=r2)                                    :: d_l
         REAL(KIND=r2)                                    :: cell_d_l
-        REAL(KIND=r2)                                    :: cell_sum
-        REAL(KIND=r1)                                    :: ray_minA
         REAL(KIND=r1)                                    :: epsi
-        REAL(KIND=r2)                                    :: epsr2
-
+        REAL(KIND=r2)                                    :: cell_sum
 
         REAL(KIND=r2), DIMENSION(1:dust%n_lam)           :: intensity
         REAL(KIND=r2)                                    :: intensity_new
@@ -561,22 +557,19 @@ FUNCTION raytrace_px_generic(basics, grid, model, dust, gas,          &
         pos_xyz(:) = -model%D_2obs(3, :, i_map) * sqrt(ray_len) +              &
                       coor_map1*model%D_2obs(1, :, i_map) +                    &
                       coor_map2*model%D_2obs(2, :, i_map)
-        px_intensity(:,:) = 0.0  
+ 
         intensity(:)      = 0.0  
-        ray_minA          = 20.0_r2
-        epsr2             = EPSILON(dz)
-        dz                = epsr2
-        dz_sum            = 0.0_r2
+        dz                = EPSILON(dz)
+
 
         IF ( ray_len .gt. 0.0_r2 ) THEN
 
             nr_cell      = get_cell_nr(grid, pos_xyz)
-            DO WHILE ( dz_sum*(1.0_r2+epsr2*1.0e3) .lt. 2.0_r2* sqrt(ray_len) )
+            DO WHILE (check_inside(nr_cell, grid, model))
                 IF ( nr_cell==0 ) THEN
-
                     CALL path_skip( grid, pos_xyz,model%D_2obs(3, :, i_map), &
                                    pos_xyz_new,nr_cell_new,d_l)
-                    dz_sum = dz_sum + d_l
+
                     pos_xyz = pos_xyz_new
                     nr_cell = nr_cell_new
                     IF (.not. check_inside(nr_cell, grid, model) ) EXIT
@@ -587,7 +580,7 @@ FUNCTION raytrace_px_generic(basics, grid, model, dust, gas,          &
 
                 ! At this point, we have an entrance point(pos_xyz) and exit point (pos_xyz_new) and 
                 ! the length of the cell path (d_l) 
-                IF ( (nr_cell /= 0 ) .and. (grid%grd_mol_density(nr_cell) .gt. 1.0e-200_r2) ) THEN
+                IF ( sum(grid%grd_dust_density(nr_cell,:)) .gt. 1.0e-200_r2 ) THEN
                     DO tr = 1, gas%n_tr   ! be careful with more than one transition at once
                         DO i_lam = 1, dust%n_lam
                             alpha_dust = sum(grid%grd_dust_density(nr_cell,:) * &
@@ -646,11 +639,103 @@ FUNCTION raytrace_px_generic(basics, grid, model, dust, gas,          &
                 
                 pos_xyz = pos_xyz_new
                 nr_cell = nr_cell_new
-                dz_sum = dz_sum + d_l
+
             END DO !walk in z direction towards observer
         
-        px_intensity(:,1) = intensity ! only the first stokes component
+!~         px_intensity(:,1) = intensity ! only the first stokes component
         END IF
+    END FUNCTION get_continuum_intensity_along_one_path
+
+    RECURSIVE FUNCTION get_continuum_intensity_in_px(grid, model, dust, gas,  &
+                              xxres, yyres, coor_map1, coor_map2, i_map,      &
+                              depth, intensity_mid)                           &
+                              RESULT(px_intensity)
+        
+    IMPLICIT NONE
+        !----------------------------------------------------------------------!
+        TYPE(Grid_TYP),INTENT(IN)                        :: grid
+        TYPE(Model_TYP),INTENT(IN)                       :: model
+        TYPE(Dust_TYP),INTENT(IN)                        :: dust
+        TYPE(Gas_TYP),INTENT(IN)                         :: gas
+        
+        !----------------------------------------------------------------------!
+        REAL(KIND=r2),INTENT(IN)                         :: xxres
+        REAL(KIND=r2),INTENT(IN)                         :: yyres
+        REAL(KIND=r2),INTENT(IN)                         :: coor_map1
+        REAL(KIND=r2),INTENT(IN)                         :: coor_map2
+        INTEGER, INTENT(IN)                              :: i_map
+        INTEGER, INTENT(IN)                              :: depth
+        REAL(KIND=r2), DIMENSION(1:dust%n_lam),OPTIONAL  :: intensity_mid
+        REAL(KIND=r2), DIMENSION(1:dust%n_lam)           :: intensity_central
+        
+        REAL(KIND=r2), DIMENSION(4)                      :: coor_x_arr
+        REAL(KIND=r2), DIMENSION(4)                      :: coor_y_arr
+
+        REAL(KIND=r2), DIMENSION(1:dust%n_lam)           :: px_intensity
+        REAL(KIND=r2), DIMENSION(1:dust%n_lam, 1:4)      :: intensity
+        REAL(KIND=r2)                                    :: diff
+        INTEGER                                          :: k
+
+        !----------------------------------------------------------------------!
+        intensity = 0.0_r2
+        intensity_central = 0.0_r2
+        px_intensity(:) = 0.0_r2
+        !central Pixel
+        
+        IF (.not. present(intensity_mid)) THEN
+            
+            intensity_central = get_continuum_intensity_along_one_path(grid,   &
+                            model, dust, gas,                                  &
+                            coor_map1, coor_map2, i_map)
+        ELSE
+            intensity_central = intensity_mid
+        END IF
+        !Subpixel
+        !Pixel 1
+        coor_x_arr(1) = coor_map1+xxres*0.25_r2
+        coor_y_arr(1) = coor_map2+yyres*0.25_r2
+        
+        !Pixel 2
+        coor_x_arr(2) = coor_map1+xxres*0.25_r2
+        coor_y_arr(2) = coor_map2-yyres*0.25_r2
+        
+        !Pixel 3
+        coor_x_arr(3) = coor_map1-xxres*0.25_r2
+        coor_y_arr(3) = coor_map2+yyres*0.25_r2
+        
+        !Pixel 4
+        coor_x_arr(4) = coor_map1-xxres*0.25_r2
+        coor_y_arr(4) = coor_map2-yyres*0.25_r2
+
+        DO k = 1, 4
+            intensity(:, k) = get_continuum_intensity_along_one_path(grid,     &
+                                model, dust, gas,                              &
+                                coor_x_arr(k), coor_y_arr(k) , i_map)
+            diff = maxval(abs(intensity(:, k)                    &
+                     - intensity_central)/(intensity_central+epsilon(1.0_r2)))
+            IF (diff .gt. 0.1 .and. depth .lt. 4) EXIT
+        END DO
+        
+
+        IF (diff .gt. 0.1 .and. depth .lt. 4) THEN
+            DO k = 1, 4
+                intensity(:, k) = get_continuum_intensity_in_px(grid, model, dust, gas,  &
+                              xxres*0.5_r2, yyres*0.5_r2, coor_x_arr(k), coor_y_arr(k),    &
+                              i_map, depth+1)
+            END DO
+        ELSE
+        !$omp critical
+        open(unit=1, file=TRIM('pixel_pos.dat'), &
+                    action="write", status="unknown", form="formatted",position="append")
+        DO k = 1,4
+            WRITE(unit=1, fmt=*) coor_x_arr(k), coor_y_arr(k), depth
+        END DO
+        CLOSE(unit=1)
+        !$omp end critical
+        END IF
+        ! only the first stokes component
+        px_intensity(:) = sum(intensity, dim=2) * 0.25_r2
+
     END FUNCTION get_continuum_intensity_in_px
     
     RECURSIVE SUBROUTINE get_individual_needed_px(basics, grid, model, i,j,    &
@@ -672,92 +757,111 @@ FUNCTION raytrace_px_generic(basics, grid, model, dust, gas,          &
         REAL(KIND=r2),INTENT(IN)                         :: coor_map1
         REAL(KIND=r2),INTENT(IN)                         :: coor_map2
         INTEGER,INTENT(IN)                               :: i_map
-
+        
+        REAL(KIND=r2)                                    :: coor_x
+        REAL(KIND=r2), DIMENSION(4)                      :: coor_x_arr
+        REAL(KIND=r2)                                    :: coor_y
+        REAL(KIND=r2), DIMENSION(4)                      :: coor_y_arr
         
         REAL(KIND=r2)                                    :: ray_len
-        REAL(KIND=r2)                                    :: dz
-        REAL(KIND=r2)                                    :: dz_sum
         
         REAL(KIND=r2)                                    :: d_l
-        REAL(KIND=r1)                                    :: ray_minA
+        REAL(KIND=r2)                                    :: ray_minA
 
         REAL(KIND=r2), DIMENSION(3)                      :: pos_xyz
         REAL(KIND=r2), DIMENSION(3)                      :: pos_xyz_new
 
         INTEGER                                          :: nr_cell
         INTEGER                                          :: nr_cell_new
+        INTEGER                                          :: k
         INTEGER,INTENT(IN)                               :: i,j
 
     
         LOGICAL                                         :: kill_photon, log_size
         !----------------------------------------------------------------------!
+        ray_minA = 20.0
+        log_size = .False.
+        
+        !Pixel 1
+        coor_x_arr(1) = coor_map1+xxres*0.25_r2
+        coor_y_arr(1) = coor_map2+yyres*0.25_r2
+        
+        !Pixel 2
+        coor_x_arr(2) = coor_map1+xxres*0.25_r2
+        coor_y_arr(2) = coor_map2-yyres*0.25_r2
+        
+        !Pixel 3
+        coor_x_arr(3) = coor_map1-xxres*0.25_r2
+        coor_y_arr(3) = coor_map2+yyres*0.25_r2
+        
+        !Pixel 4
+        coor_x_arr(4) = coor_map1-xxres*0.25_r2
+        coor_y_arr(4) = coor_map2-yyres*0.25_r2
 
-        ray_len = get_ray_length(GetGridName(grid), model%r_ou,                &
-                                 coor_map1, coor_map2)
-        pos_xyz(:) = -model%D_2obs(3, :, i_map) * sqrt(ray_len) +              &
-                      coor_map1*model%D_2obs(1, :, i_map) +                    &
-                      coor_map2*model%D_2obs(2, :, i_map)
-        ray_minA          = 20.0
-        dz                = EPSILON(dz)
-        dz_sum            =  0.0_r2
-        log_size = .False.   
+        DO k = 1, 4
+            coor_x = coor_x_arr(k)
+            coor_y = coor_y_arr(k)
+            ray_len = get_ray_length(GetGridName(grid), model%r_ou,                &
+                                     coor_x, coor_y)
+            pos_xyz(:) = -model%D_2obs(3, :, i_map) * sqrt(ray_len) +              &
+                          coor_x * model%D_2obs(1, :, i_map) +  &
+                          coor_y * model%D_2obs(2, :, i_map)
 
-        IF ( ray_len .gt. 0.0_r2 ) THEN
-            nr_cell  = get_cell_nr(grid, pos_xyz)
-            DO WHILE (dz_sum*(1.0_r2+epsilon(dz_sum)*1.0e3) .lt. 2.0_r2* sqrt(ray_len) )
-                IF ( nr_cell==0 ) THEN
+            IF ( ray_len .gt. 0.0_r2 .and. .not. log_size) THEN
+                nr_cell  = get_cell_nr(grid, pos_xyz)
+                DO WHILE (check_inside(nr_cell, grid, model))
+                    IF ( nr_cell==0 ) THEN
+                        ray_minA = MIN(ray_minA, grid%cell_minA(0))
+                        CALL path_skip( grid, pos_xyz, model%D_2obs(3, :, i_map), &
+                                       pos_xyz_new,nr_cell_new,d_l)
+                        
+                        pos_xyz = pos_xyz_new
+                        nr_cell = nr_cell_new
+                        
+                        IF (.not. check_inside(nr_cell, grid, model) ) EXIT
+                    END IF
+                    ray_minA = MIN(ray_minA, grid%cell_minA(nr_cell))
+                    IF ( xxres*yyres .gt. ray_minA) THEN
+                        log_size = .True.
+!~                         EXIT
+                    END IF
+                    CALL path( grid, pos_xyz, pos_xyz_new, nr_cell, nr_cell_new, &
+                               d_l, kill_photon, model%D_2obs(3, :, i_map) )
 
-                    CALL path_skip( grid, pos_xyz, model%D_2obs(3, :, i_map), &
-                                   pos_xyz_new,nr_cell_new,d_l)
-                    dz_sum = dz_sum + d_l
                     pos_xyz = pos_xyz_new
                     nr_cell = nr_cell_new
-                    
-                    IF (.not. check_inside(nr_cell, grid, model) ) EXIT
-                END IF
 
-                CALL path( grid, pos_xyz, pos_xyz_new, nr_cell, nr_cell_new, &
-                           d_l, kill_photon, model%D_2obs(3, :, i_map) )
-                
-                ray_minA = MIN(ray_minA, grid%cell_minA(nr_cell))
-                IF ( xxres*yyres .gt. ray_minA ) THEN
-                    log_size = .True.
-                    EXIT
-                END IF
+                END DO !walk in z direction towards observer
+            END IF
+        END DO
 
-                pos_xyz = pos_xyz_new
-                nr_cell = nr_cell_new
-
-                dz_sum = dz_sum + d_l
-
-            END DO !walk in z direction towards observer
-
-        END IF
         IF ( log_size) THEN
             CALL        get_individual_needed_px(basics, grid, model,          &
                         i,j, xxres*0.5_r2, yyres*0.5_r2,                       &
-                        coor_map1+xxres*0.5_r2, coor_map2+yyres*0.5_r2,        &
+                        coor_map1+xxres*0.25_r2, coor_map2+yyres*0.25_r2,      &
                         i_map, pixel_list)
 
             CALL        get_individual_needed_px(basics, grid, model,          &
                         i,j, xxres*0.5_r2, yyres*0.5_r2,                       &
-                        coor_map1+xxres*0.5_r2, coor_map2-yyres*0.5_r2,        &
+                        coor_map1+xxres*0.25_r2, coor_map2-yyres*0.25_r2,      &
                         i_map, pixel_list)
                         
             CALL        get_individual_needed_px(basics, grid, model,          &
                         i,j, xxres*0.5_r2, yyres*0.5_r2,                       &
-                        coor_map1-xxres*0.5_r2, coor_map2+yyres*0.5_r2,        &
+                        coor_map1-xxres*0.25_r2, coor_map2+yyres*0.25_r2,      &
                         i_map,pixel_list )
                         
             CALL        get_individual_needed_px(basics, grid, model,          &
                         i,j, xxres*0.5_r2, yyres*0.5_r2,                       &
-                        coor_map1-xxres*0.5_r2, coor_map2-yyres*0.5_r2,        &
+                        coor_map1-xxres*0.25_r2, coor_map2-yyres*0.25_r2,      &
                         i_map, pixel_list)                                     
         ELSE
             pixel_data%pixel  =  (/i, j/)
             pixel_data%pos_xy  = (/coor_map1, coor_map2/)
             pixel_data%size_xy = (/xxres, yyres/)
+            !$omp critical
             CALL AddElement(pixel_list, pixel_data)
+            !$omp end critical
             CONTINUE
         END IF
 
