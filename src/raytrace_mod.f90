@@ -458,14 +458,14 @@ CONTAINS
                               i_map, depth+1)
             END DO
         ELSE
-        !$omp critical
-        open(unit=1, file=TRIM('pixel_pos.dat'), &
-                    action="write", status="unknown", form="formatted",position="append")
-        DO k = 1,4
-            WRITE(unit=1, fmt=*) coor_x_arr(k), coor_y_arr(k), depth
-        END DO
-        CLOSE(unit=1)
-        !$omp end critical
+!~         !$omp critical
+!~         open(unit=1, file=TRIM('pixel_pos.dat'), &
+!~                     action="write", status="unknown", form="formatted",position="append")
+!~         DO k = 1,4
+!~             WRITE(unit=1, fmt=*) coor_x_arr(k), coor_y_arr(k), depth
+!~         END DO
+!~         CLOSE(unit=1)
+!~         !$omp end critical
         END IF
         ! only the first stokes component
         px_intensity(:) = sum(intensity, dim=2) * 0.25_r2
