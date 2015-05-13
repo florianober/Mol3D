@@ -535,9 +535,9 @@ CONTAINS
         DO k = 1, 4
             coor_x = coor_x_arr(k)
             coor_y = coor_y_arr(k)
-            ray_len = get_ray_length(GetGridName(grid), model%r_ou,                &
+            ray_len = get_ray_length(GetGridName(grid), model%r_ou,            &
                                      coor_x, coor_y)
-            pos_xyz(:) = -model%D_2obs(3, :, i_map) * sqrt(ray_len) +              &
+            pos_xyz(:) = -model%D_2obs(3, :, i_map) * sqrt(ray_len) +          &
                           coor_x * model%D_2obs(1, :, i_map) +  &
                           coor_y * model%D_2obs(2, :, i_map)
 

@@ -71,12 +71,13 @@ if DENSITY_DISTRIBUTION == 'fosite':
         print('Found SI units')
         # SI units -> convert m to AU
         convert_unit = hlp.AU
+
+        # rescale if necessary
+        #R_IN = round(f['/config/mesh/xmin']/convert_unit, 2)
+        #R_OU = round(f['/config/mesh/xmax']/convert_unit, 2)
         
-        R_IN = round(f['/config/mesh/xmin']/convert_unit, 2)
-        R_OU = round(f['/config/mesh/xmax']/convert_unit, 2)
-        
-        print('Rescaling the inner edge: %2.2f AU' %R_IN)
-        print('Rescaling the outer edge: %2.2f AU' %R_OU)
+        #print('Rescaling the inner edge: %2.2f AU' %R_IN)
+        #print('Rescaling the outer edge: %2.2f AU' %R_OU)
         
     elif f['/config/physics/units'] == 3:
         print('Found geometric units')
@@ -93,18 +94,34 @@ if DENSITY_DISTRIBUTION == 'fosite':
     Y1 = (f['/mesh/bary_centers'][:,:,1]/convert_unit).flatten()
     surface_density = f['/timedisc/density']
     
-    if (f['/config/mesh/output/rotation']): 
-        vxi = f['/timedisc/xvelocity']
-        #~ omega = f['/config/timedisc/omega']
-        omega = f['/config/sources/grav/pbinary/omega_rot']
-        R = np.sqrt(f['/mesh/bary_centers'][:,:,0]**2 + f['/mesh/bary_centers'][:,:,1]**2)
-        veta = f['/timedisc/yvelocity'] + omega * R
+    if (f['/config/mesh/output/rotation']):
+        # get velocity
+        curv_vx = f['/timedisc/xvelocity']
+        curv_vy = f['/timedisc/yvelocity']
+        # now convert to cartesian coordinates
         rot = f['/mesh/rotation']
-        VELOCITY_X = (np.cos(rot)*vxi + np.sin(rot)*veta).flatten()
-        VELOCITY_Y = (-np.sin(rot)*vxi + np.cos(rot)*veta).flatten()
+        # routine from Fosite
+        cart_vx = np.cos(rot) * curv_vx + np.sin(rot) * curv_vy
+        cart_vy = -np.sin(rot) * curv_vx + np.cos(rot) * curv_vy
+
     else:
-        VELOCITY_X = f['/timedisc/xvelocity']
-        VELOCITY_Y = f['/timedisc/yvelocity']
+        cart_vx = f['/timedisc/xvelocity']
+        cart_vy = f['/timedisc/yvelocity']
+
+    # now correct for the rotation frame if necessary
+    # first we calculate the velocity vector of the rot frame
+    if f['/config/timedisc/omega']:
+        omega = f['/config/timedisc/omega']
+        R = np.sqrt(f['/mesh/bary_centers'][:,:,0]**2 + f['/mesh/bary_centers'][:,:,1]**2)
+        
+        rot_vx = - f['/mesh/bary_centers'][:,:,1] * omega
+        rot_vy =   f['/mesh/bary_centers'][:,:,0] * omega
+    else:
+        rot_vx = 0.0
+        rot_vy = 0.0
+    # now we only need a vector addition
+    VELOCITY_X = (cart_vx + rot_vx).flatten()
+    VELOCITY_Y = (cart_vy + rot_vy).flatten()
         
     # make a plot of the fosite data
     #x_grid = f['/mesh/grid_x']/convert_unit
