@@ -46,19 +46,19 @@ N_A = 100              # no of coordinate a
 N_B = 101              # no of coordinate b
 N_C = 100                # no of coordinate c
 
-#~ DENSITY_DISTRIBUTION = 'Disk'     # density for a disk
+DENSITY_DISTRIBUTION = 'Disk'     # density for a disk
 #~ DENSITY_DISTRIBUTION = 'Sphere'   # density for a sphere
 #~ DENSITY_DISTRIBUTION = 'User'     # density for user input
-DENSITY_DISTRIBUTION = 'fosite'     # density for user input
+#~ DENSITY_DISTRIBUTION = 'fosite'     # density for user input
 
-#~ VELOCITY_FIELD = 'Keplerian'
-VELOCITY_FIELD = 'fosite'
+VELOCITY_FIELD = 'Keplerian'
+#~ VELOCITY_FIELD = 'fosite'
 
 TEMPERATURE_DISTRIBUTION = 'no'
 #~ TEMPERATURE_DISTRIBUTION = 'power'
 #~ TEMPERATURE_DISTRIBUTION = 'fosite'
 
-FOSITE_FILE = '../Mol3d/output/planet-kley_0030.bin'
+FOSITE_FILE = '' # add your fosite file name here
 
 if DENSITY_DISTRIBUTION == 'fosite':
     f = hlp.read_fosite(FOSITE_FILE)
@@ -190,7 +190,6 @@ def get_density_fosite(pos_xyz):
     density[ind] = griddata((X1, Y1), FOSITE_DENSITY, (xi[ind], yi[ind]),
                             method='linear', fill_value=0) / h[ind] * \
                             np.exp(-0.5 * (z[ind]/h[ind])**2, dtype=np.float64)
-
 
     return density
 
@@ -371,7 +370,7 @@ def get_temperature(pos_xyz):
     if TEMPERATURE_DISTRIBUTION == 'no':
         pass
     elif TEMPERATURE_DISTRIBUTION == 'power':
-        
+
         temperature[ind] = get_temperature_power(pos_xyz[ind])
 
     elif TEMPERATURE_DISTRIBUTION == 'fosite':
@@ -593,27 +592,10 @@ def main():
     header['HIERARCH Mol3D_velocity_z'] = (1, 13)
 
     # save results
-    print("Saving the model for the use with Mol3D")
-
+    print("Saving the model for the use with Mol3D -> Fits")
     file_name = PATH_INPUT_GRID + MODEL_NAME +  '_' + \
                 DENSITY_DISTRIBUTION + '_' + \
                 COORDINATE_SYSTEM
-    model_file = open(file_name + '_model.dat', 'w')
-
-    # write header
-    model_file.write('%d \n' %(N_Cells))
-
-    i_cell = 0
-    for i_a in range(N_A):
-        for i_b in range(N_B):
-            for i_c in range(N_C):
-                model_file.write('%d\t%.12e\t%.12e\t%.12e\t%.12e \n' %(data[i_cell, 0], data[i_cell, 3], data[i_cell, 10], data[i_cell, 11], data[i_cell, 12]))
-                i_cell += 1
-    model_file.close()
-
-    # save results
-    print("Saving the model for the use with Mol3D -> Fits")
-    
 
     # write data array in header and fits file
     header['N_DUST'] = 1
@@ -701,8 +683,6 @@ def main():
                                 %(MODEL_NAME, DENSITY_DISTRIBUTION, COORDINATE_SYSTEM))
         print("      ln -sf %s_%s_%s_c_boundaries.dat c_boundaries.dat"
                                 %(MODEL_NAME, DENSITY_DISTRIBUTION, COORDINATE_SYSTEM))
-        print("      ln -sf %s_%s_%s_model.dat model.dat"
-                                %(MODEL_NAME, DENSITY_DISTRIBUTION, COORDINATE_SYSTEM))
         print("      ln -sf %s_%s_%s_model.fits model.fits"
                                 %(MODEL_NAME, DENSITY_DISTRIBUTION, COORDINATE_SYSTEM))
         print("      (in the 'input/grid/' directory)")
@@ -712,8 +692,6 @@ def main():
         os.system("ln -sf %s_%s_%s_b_boundaries.dat %sb_boundaries.dat"
                 %(MODEL_NAME, DENSITY_DISTRIBUTION, COORDINATE_SYSTEM, PATH_INPUT_GRID))
         os.system("ln -sf %s_%s_%s_c_boundaries.dat %sc_boundaries.dat"
-                %(MODEL_NAME, DENSITY_DISTRIBUTION, COORDINATE_SYSTEM, PATH_INPUT_GRID))
-        os.system("ln -sf %s_%s_%s_model.dat %smodel.dat"
                 %(MODEL_NAME, DENSITY_DISTRIBUTION, COORDINATE_SYSTEM, PATH_INPUT_GRID))
         os.system("ln -sf %s_%s_%s_model.fits %smodel.fits"
                 %(MODEL_NAME, DENSITY_DISTRIBUTION, COORDINATE_SYSTEM, PATH_INPUT_GRID))
