@@ -33,8 +33,8 @@ PATH_INPUT_GRID = 'input/grid/'
 #-------------------------------------------------------------------------------
 # global model definitions
 MODEL_NAME = 'example' # must not be the Mol3D project name
-R_IN = 3.0
-R_OU = 120.0
+R_IN = 10
+R_OU = 200.0
 M_STAR = 0.7*hlp.M_sun
 M_DISK = 1e-2*hlp.M_sun
 
@@ -58,7 +58,7 @@ TEMPERATURE_DISTRIBUTION = 'no'
 #~ TEMPERATURE_DISTRIBUTION = 'power'
 #~ TEMPERATURE_DISTRIBUTION = 'fosite'
 
-FOSITE_FILE = '' # add your fosite file name here
+FOSITE_FILE = ''
 
 if DENSITY_DISTRIBUTION == 'fosite':
     f = hlp.read_fosite(FOSITE_FILE)
@@ -73,11 +73,11 @@ if DENSITY_DISTRIBUTION == 'fosite':
         convert_unit = hlp.AU
 
         # rescale if necessary
-        #R_IN = round(f['/config/mesh/xmin']/convert_unit, 2)
-        #R_OU = round(f['/config/mesh/xmax']/convert_unit, 2)
-        
-        #print('Rescaling the inner edge: %2.2f AU' %R_IN)
-        #print('Rescaling the outer edge: %2.2f AU' %R_OU)
+        #~ R_IN = round(f['/config/mesh/xmin']/convert_unit, 2)
+        #~ R_OU = round(f['/config/mesh/xmax']/convert_unit, 2)
+        #~ 
+        #~ print('Rescaling the inner edge: %2.2f AU' %R_IN)
+        #~ print('Rescaling the outer edge: %2.2f AU' %R_OU)
         
     elif f['/config/physics/units'] == 3:
         print('Found geometric units')
@@ -108,11 +108,22 @@ if DENSITY_DISTRIBUTION == 'fosite':
         cart_vx = f['/timedisc/xvelocity']
         cart_vy = f['/timedisc/yvelocity']
 
-    # now correct for the rotation frame if necessary
-    # first we calculate the velocity vector of the rot frame
-    if f['/config/timedisc/omega']:
-        omega = f['/config/timedisc/omega']
-        R = np.sqrt(f['/mesh/bary_centers'][:,:,0]**2 + f['/mesh/bary_centers'][:,:,1]**2)
+    # now correct for the rotation frame if necessary and available
+    # first we calculate the velocity vector of the rotating frame
+    # Just check if an omega value is given somewhere, it is not
+    # generalized in fosite at the moment
+    # 
+    omega_array =['/config/sources/grav/pbinary/omega_rot',
+                   '/config/sources/grav/binary/omega_rot',
+                   '/config/sources/rotframe/omega']
+
+    omega = 0.0
+    for item in omega_array:
+        if item in f.keys():
+            omega = max(omega, f[item])
+
+    if omega > 0.0:
+        print('Rotating Frame found, omega: %2.2g 1/s' %(omega) )
         
         rot_vx = - f['/mesh/bary_centers'][:,:,1] * omega
         rot_vy =   f['/mesh/bary_centers'][:,:,0] * omega
@@ -141,18 +152,41 @@ if DENSITY_DISTRIBUTION == 'fosite':
 
     if f['/config/mesh/output/volume']:
         M_disk = (surface_density * f['/mesh/volume']).sum()/hlp.M_sun
-        print('M_disk: %2.3g M_sun' %(M_disk))
-    
+        print('M_disk (fosite): %2.3g M_sun' %(M_disk))
+
     FOSITE_DENSITY = surface_density.flatten()
 
     if f['/config/sources/grav/output/height']:
         FOSITE_HEIGHT = f['/sources/grav/height'].flatten()/convert_unit
     else:
         FOSITE_HEIGHT = []
+        print('No height found fosite data set')
         
     print( '')
 SHOW_MODEL = True # show model distribution
 LINK = True # link the model and boundaries automatically
+
+#-------------------------------------------------------------------------------
+def in_model_space(pos_xyz):
+    """
+    Test if the given position is inside model space
+    returns a mask 'ind'
+    """
+    if COORDINATE_SYSTEM == 'spherical':
+        r = np.sqrt(pos_xyz[:, 0]**2 + pos_xyz[:, 1]**2 +pos_xyz[:, 2]**2)
+        ind = (r >= R_IN) & (r < R_OU)
+    elif COORDINATE_SYSTEM == 'cylindrical':
+        r = np.sqrt(pos_xyz[:, 0]**2 + pos_xyz[:, 1]**2)
+        z = np.abs(pos_xyz[:, 2])
+        ind = (r >= R_IN) & (r < R_OU) & (z < R_OU)
+    elif COORDINATE_SYSTEM == 'cartesian':
+        x = np.abs(pos_xyz[:, 0])
+        y = np.abs(pos_xyz[:, 1])
+        z = np.abs(pos_xyz[:, 2])
+        ind =  (x < R_OU) & (y < R_OU) & (z < R_OU)
+    else:
+        print("ERROR: could not find coordinate system (in_model_space)")
+    return ind
 
 #-------------------------------------------------------------------------------
 # density definitions (feel free to include more models)
@@ -218,26 +252,6 @@ def get_density_user(pos_xyz):
     density = 0.0
 
     return density
-def in_model_space(pos_xyz):
-    """
-    Test if the given position is inside model space
-    returns a mask 'ind'
-    """
-    if COORDINATE_SYSTEM == 'spherical':
-        r = np.sqrt(pos_xyz[:, 0]**2 + pos_xyz[:, 1]**2 +pos_xyz[:, 2]**2)
-        ind = (r >= R_IN) & (r < R_OU)
-    elif COORDINATE_SYSTEM == 'cylindrical':
-        r = np.sqrt(pos_xyz[:, 0]**2 + pos_xyz[:, 1]**2)
-        z = np.abs(pos_xyz[:, 2])
-        ind = (r >= R_IN) & (r < R_OU) & (z < R_OU)
-    elif COORDINATE_SYSTEM == 'cartesian':
-        x = np.abs(pos_xyz[:, 0])
-        y = np.abs(pos_xyz[:, 1])
-        z = np.abs(pos_xyz[:, 2])
-        ind =  (x < R_OU) & (y < R_OU) & (z < R_OU)
-    else:
-        print("ERROR: could not find coordinate system (in_model_space)")
-    return ind
 
 def get_density(pos_xyz):
     """
@@ -246,7 +260,6 @@ def get_density(pos_xyz):
     ind = in_model_space(pos_xyz)
     density = np.zeros(len(pos_xyz[:, 0]))
     if DENSITY_DISTRIBUTION == 'Disk':
-        
         density[ind] = get_density_disk(pos_xyz[ind])
 
     elif DENSITY_DISTRIBUTION == 'Sphere':
@@ -582,31 +595,39 @@ def main():
 
     print("Calculating the (dust) density distribution")
     data[:, 3] = get_density(data[:, 0:3])
-    header['HIERARCH Mol3D_dust_density1'] = (1, 4)
-    
+    # Example for the data arangement:
+    #      |        KEYWORD             |    | Position in data cube
+    header['HIERARCH Mol3D_dust_density1'] = 4
+
     # H2 density distribution (total)
     data[:, 5] = data[:, 3] * 100.0
+    header['HIERARCH Mol3D_col_density1'] = 6
     # H2 density distribution (para)
     data[:, 6] = 0.25 * data[:, 4]
+    header['HIERARCH Mol3D_col_density2'] = 7
     # H2 density distribution (ortho)
     data[:, 7] = 0.75 * data[:, 4]
+    header['HIERARCH Mol3D_col_density3'] = 8
 
     # molecule density distribution
     abundance = 1e-5
     data[:, 4] = data[:, 5] * abundance
-    
-    # dust temperature (if given, no temperature calculation will be done TbD)
-    data[:, 8] = 0.0
+    header['HIERARCH Mol3D_mol_density'] = 5
 
+    # dust temperature (if given, no temperature calculation will be done TbD)
+    data[:, 8] = get_temperature(data[:, 0:3])
+    header['HIERARCH Mol3D_dust_temp1'] = 9
+    
     # gas temperature
     data[:, 9] = get_temperature(data[:, 0:3])
+    header['HIERARCH Mol3D_gas_temp'] = 10
 
     print("Calculating the velocity distribution")
     
     data[:, 10:13] = get_velocity(data[:, 0:3])
-    header['HIERARCH Mol3D_velocity_x'] = (1, 11)
-    header['HIERARCH Mol3D_velocity_y'] = (1, 12)
-    header['HIERARCH Mol3D_velocity_z'] = (1, 13)
+    header['HIERARCH Mol3D_velocity_x'] = 11
+    header['HIERARCH Mol3D_velocity_y'] = 12
+    header['HIERARCH Mol3D_velocity_z'] = 13
 
     # save results
     print("Saving the model for the use with Mol3D -> Fits")

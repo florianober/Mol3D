@@ -145,8 +145,8 @@ CONTAINS
 
                         j_dust       =  sum(grid%grd_dust_density(nr_cell,:) * &
                                         dust%C_abs(:,dust%num_lam_map(dust%cont_map(tr))) * &
-                                        planckhz(grid%t_dust(nr_cell, :),&
-                                        con_c/dust%lam(dust%num_lam_map(dust%cont_map(tr)))))
+                                        planckhz(grid%t_dust(nr_cell, :), &
+                                        dust%nu(dust%num_lam_map(dust%cont_map(tr)))))
 
                         j_ul =      grid%grd_mol_density(nr_cell)                     *   &
                                     grid%lvl_pop(gas%trans_upper(gas%tr_cat(tr)),nr_cell)  *   &
@@ -293,10 +293,9 @@ CONTAINS
         pos_xyz(:) = -model%D_2obs(3, :, i_map) * sqrt(ray_len) +              &
                       coor_map1*model%D_2obs(1, :, i_map) +                    &
                       coor_map2*model%D_2obs(2, :, i_map)
- 
+
         intensity(:)      = 0.0  
         dz                = EPSILON(dz)
-
 
         IF ( ray_len .gt. 0.0_r2 ) THEN
 
@@ -317,60 +316,55 @@ CONTAINS
                 ! At this point, we have an entrance point(pos_xyz) and exit point (pos_xyz_new) and 
                 ! the length of the cell path (d_l) 
                 IF ( sum(grid%grd_dust_density(nr_cell,:)) .gt. 1.0e-200_r2 ) THEN
-                    DO tr = 1, gas%n_tr   ! be careful with more than one transition at once
-                        DO i_lam = 1, dust%n_lam
-                            alpha_dust = sum(grid%grd_dust_density(nr_cell,:) * &
-                                         dust%C_ext(:,i_lam))
-                            
-                            j_dust   =  sum(grid%grd_dust_density(nr_cell,:) * &
-                                        dust%C_abs(:,i_lam) * &
-                                        planckhz(grid%t_dust(nr_cell, : ),&
-                                        con_c/dust%lam(i_lam)))
-                            cell_d_l = d_l
-                            dz = cell_d_l * model%ref_unit
-                            cell_sum = 0.0_r2
-                            pos_xyz_cell = pos_xyz
-                            intensity_new   = 0.0_r2
-                            intensity_new2  = 0.0_r2
-                            DO WHILE (cell_sum .lt. d_l)
-                                RK_k(:) = 0.0
-                                DO k = 1,6
-                                    j_ges          = j_dust
-                                    alpha_ges      = alpha_dust
-                                    RK_k(k) = ( -alpha_ges*(intensity(i_lam) + &
-                                                dz*dot_product(RK_a(:,k),RK_k(:)) ) + j_ges)
-                                END DO ! for all k
+                    DO i_lam = 1, dust%n_lam
+                        alpha_dust = sum(grid%grd_dust_density(nr_cell,:) * &
+                                     dust%C_ext(:,i_lam))
                         
-                                intensity_new  = intensity(i_lam) + dz*(dot_product(RK_b1(:),RK_k(:)))
-                                intensity_new2 = intensity(i_lam) + dz*(dot_product(RK_b2(:),RK_k(:)))
-                                IF (intensity_new < 0.0_r2 .or.intensity_new2 < 0.0_r2 ) THEN
-                                    intensity_new  = 0.0_r2
-                                    intensity_new2 = 0.0_r2
+                        j_dust   =  sum(grid%grd_dust_density(nr_cell,:) * &
+                                    dust%C_abs(:,i_lam) * &
+                                    planckhz(grid%t_dust(nr_cell, : ),&
+                                    dust%nu(i_lam)))
+                        cell_d_l = d_l
+                        dz = cell_d_l * model%ref_unit
+                        cell_sum = 0.0_r2
+                        pos_xyz_cell = pos_xyz
+                        intensity_new   = 0.0_r2
+                        intensity_new2  = 0.0_r2
+                        DO WHILE (cell_sum .lt. d_l)
+                            RK_k(:) = 0.0
+                            DO k = 1,6
+                                j_ges          = j_dust
+                                alpha_ges      = alpha_dust
+                                RK_k(k) = ( -alpha_ges*(intensity(i_lam) + &
+                                            dz*dot_product(RK_a(:,k),RK_k(:)) ) + j_ges)
+                            END DO ! for all k
+                    
+                            intensity_new  = intensity(i_lam) + dz*(dot_product(RK_b1(:),RK_k(:)))
+                            intensity_new2 = intensity(i_lam) + dz*(dot_product(RK_b2(:),RK_k(:)))
+                            IF (intensity_new < 0.0_r2 .or. intensity_new2 < 0.0_r2 ) THEN
+                                intensity_new  = 0.0_r2
+                                intensity_new2 = 0.0_r2
+                            END IF
+                            epsi= abs(intensity_new2-intensity_new) /      &
+                                     ( rel_err*abs(intensity_new) + abs_err)
+                                     
+                            dz_new = 0.9*dz*epsi**(-0.2)
+                            IF ( epsi .le. 1 ) THEN
+                                intensity(i_lam) = intensity_new
+                                pos_xyz_cell = pos_xyz_cell+cell_d_l*model%D_2obs(3, :, i_map)
+                                cell_sum = cell_sum + cell_d_l
+                                dz = MIN(dz_new, 4*dz)
+                                cell_d_l = dz*model%ref_unitn
+                                IF ( cell_sum + cell_d_l .gt. d_l) THEN
+                                    cell_d_l = d_l - cell_sum
+                                    dz = cell_d_l*model%ref_unit
                                 END IF
-                                epsi= abs(intensity_new2-intensity_new) /      &
-                                         ( rel_err*abs(intensity_new) + abs_err)
-                                         
-                                dz_new = 0.9*dz*epsi**(-0.2)
-                                IF ( epsi .le. 1 ) THEN
-                                    intensity(i_lam) = intensity_new
-                                    pos_xyz_cell = pos_xyz_cell+cell_d_l*model%D_2obs(3, :, i_map)
-                                    cell_sum = cell_sum + cell_d_l
-                                    dz = MIN(dz_new, 4*dz)
-                                    cell_d_l = dz*model%ref_unitn
-                                    IF ( cell_sum + cell_d_l .gt. d_l) THEN
-                                        cell_d_l = d_l - cell_sum
-                                        dz = cell_d_l*model%ref_unit
-                                    END IF
-                                
-                                ELSE
-
-                                    dz = MAX(dz_new,0.25*dz)
-                                    cell_d_l = dz*model%ref_unitn
-                                END IF
-
-                            END DO  ! end walk inside one cell
-                        END DO ! i_lam
-                    END DO !transitions , please do only one transition per run
+                            ELSE
+                                dz = MAX(dz_new,0.25*dz)
+                                cell_d_l = dz*model%ref_unitn
+                            END IF
+                        END DO  ! end walk inside one cell
+                    END DO ! i_lam
                 END IF
                 
                 pos_xyz = pos_xyz_new

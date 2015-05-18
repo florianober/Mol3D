@@ -205,7 +205,6 @@ CONTAINS
                     CALL GetLast(pixel_list, pixel_p)
                     pixel_data = pixel_p
                     CALL RemoveLast(pixel_list)
-                    CALL AddElement(pixel_list_bak, pixel_data)
                     !$omp end critical
 
                     IF (modulo(i,k) == 0 .or. i == no_pixel) THEN
@@ -214,18 +213,19 @@ CONTAINS
                                   char(27)//'[A'
                     END IF 
                     
-                    inten_px(:,:) = raytrace_px(basics,                      &
-                                    grid, model, dust, gas,                  &
+                    inten_px(:,:) = raytrace_px(basics,                        &
+                                    grid, model, dust, gas,                    &
                                     pixel_data%pos_xy(1), pixel_data%pos_xy(2), i_map)
                 
                     !$omp critical
                     fluxes%channel_map(pixel_data%pixel(1),pixel_data%pixel(2),:,:) = &
                         fluxes%channel_map(pixel_data%pixel(1),pixel_data%pixel(2),:,:) + &
-                        inten_px(:,:) *                                   &
-                        unit_value *                                      &
-                        (pixel_data%size_xy(1) * pixel_data%size_xy(2)) /       &
-                        (model%px_model_length_x(i_map)*                  &
+                        inten_px(:,:) *                                        &
+                        unit_value *                                           &
+                        (pixel_data%size_xy(1) * pixel_data%size_xy(2)) /      &
+                        (model%px_model_length_x(i_map)*                       &
                         model%px_model_length_y(i_map))
+                    CALL AddElement(pixel_list_bak, pixel_data)
                     !$omp end critical
                 END DO
                 !$omp end do nowait
@@ -235,10 +235,12 @@ CONTAINS
 
                 CALL save_ch_map(model, basics, gas, fluxes, dust%n_dust)
                 PRINT *, '| | done!'
+
                 DO i = 1, no_pixel
                     CALL GetLast(pixel_list_bak, pixel_p)
+                    pixel_data = pixel_p
                     CALL RemoveLast(pixel_list_bak)
-                    CALL AddElement(pixel_list, pixel_p)
+                    CALL AddElement(pixel_list, pixel_data)
                 END DO
             END IF
 
@@ -263,7 +265,6 @@ CONTAINS
                     CALL GetLast(pixel_list, pixel_p)
                     pixel_data = pixel_p
                     CALL RemoveLast(pixel_list)
-!~                     CALL AddElement(pixel_list_bak, pixel_p)
                     !$omp end critical
                     inten_px(:,1) = raytrace_px(                               &
                                         grid, model, dust, gas,                &
@@ -271,7 +272,6 @@ CONTAINS
                                         pixel_data%pos_xy(1), pixel_data%pos_xy(2),  &
                                         i_map, 0)
                     !$omp critical
-
                     fluxes%continuum_map(pixel_data%pixel(1),pixel_data%pixel(2),:, :) =       &
                         fluxes%continuum_map(pixel_data%pixel(1),pixel_data%pixel(2),:,:) + &
                         inten_px(:,:) *                                   &
@@ -283,8 +283,6 @@ CONTAINS
                 END DO
                 !$omp end do nowait
                 !$omp end parallel
-
-                
                 print *, '| | | saving continuum maps'
 
                 CALL save_continuum_map(model, basics, dust,                   &
