@@ -17,6 +17,7 @@ MODULE raytrace_mod
     
     USE grd_mod
     USE math_mod
+    USE model_mod
     USE transfer_mod
 
     IMPLICIT NONE
@@ -172,16 +173,21 @@ CONTAINS
                                 DO k = 1,6
                                     IF (velo_type == 1 ) THEN
                                         ! analytical velocity distribution
-                                        velo_dir_xyz =  dot_product(Set_velo(pos_xyz_cell+ &
-                                                      cell_d_l*model%D_2obs(3, :, i_map) *      &
-                                                      RK_c(k),model%kep_const),              &
-                                                      model%D_2obs(3, :, i_map)) 
+                                        velo_dir_xyz = dot_product(get_velocity(model, &
+                                                        pos_xyz_cell+          &
+                                                        cell_d_l *             &
+                                                        model%D_2obs(3, :, i_map) *      &
+                                                        RK_c(k)),              &
+                                                        model%D_2obs(3, :, i_map))
 
                                     ELSEIF (velo_type == 2 ) THEN
                                         ! linear interpolation of the velocity 
-                                        velo_dir_xyz  = Get_velo(dot_product(grid%velo(nr_cell,:),model%D_2obs(3, :, i_map)), &
-                                                        dot_product(grid%velo(nr_cell_new,:),model%D_2obs(3, :, i_map)), &
-                                                        cell_d_l*RK_c(k)/d_l)
+                                        velo_dir_xyz = interpolate_velo(       &
+                                                            dot_product(grid%velo(nr_cell,:), &
+                                                            model%D_2obs(3, :, i_map)),       &
+                                                            dot_product(grid%velo(nr_cell_new,:), &
+                                                            model%D_2obs(3, :, i_map)),       &
+                                                            cell_d_l*RK_c(k)/d_l)
                                     END IF
                                     expo = -((gas%velo_channel(vch)-velo_dir_xyz)**2*      &
                                                      grid%cell_gauss_a2(nr_cell))
@@ -551,7 +557,6 @@ CONTAINS
                     ray_minA = MIN(ray_minA, grid%cell_minA(nr_cell))
                     IF ( xxres*yyres .gt. ray_minA) THEN
                         log_size = .True.
-!~                         EXIT
                     END IF
                     CALL path( grid, pos_xyz, pos_xyz_new, nr_cell, nr_cell_new, &
                                d_l, kill_photon, model%D_2obs(3, :, i_map) )
@@ -621,5 +626,20 @@ CONTAINS
         END SELECT
         ray_len = ray_len *(1.0_r2 - 1.0e6_r2*EPSILON(1.0_r2))
     END FUNCTION
+
+    ELEMENTAL FUNCTION interpolate_velo(velo1, velo2, x) RESULT(velo_x)
+
+        ! interpolate velocity 
+        !
+        IMPLICIT NONE
+        !----------------------------------------------------------------------!
+        REAL(kind=r2),INTENT(IN)                           :: velo1, velo2
+        REAL(kind=r2)                                      :: velo_x
+        REAL(kind=r2),INTENT(IN)                           :: x
+        !----------------------------------------------------------------------!
+
+        velo_x = (velo2-velo1)*x + velo1
+
+    END FUNCTION interpolate_velo
 
 END MODULE raytrace_mod

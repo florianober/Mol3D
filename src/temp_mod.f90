@@ -12,6 +12,8 @@ MODULE temp_mod
     USE fluxes_type
     USE photon_type
     USE source_type
+
+    USE model_mod, ONLY : get_temperature
     
     USE MCRT_mod, ONLY : MC_photon_transfer
 
@@ -81,7 +83,7 @@ CONTAINS
                         
                         caco = mo2ca(grid, moco)
                         DO i_dust = 1, dust%n_dust
-                            grid%t_dust(i_cell, i_dust) = Get_temp(caco)
+                            grid%t_dust(i_cell, i_dust) = get_temperature(caco)
                         END DO
                     END DO
                 END DO
@@ -99,21 +101,17 @@ CONTAINS
                 grid%cell_energy(i_dust,i_cell) = min_cell_energy
             END IF
         END DO
-!~         IF (grid%grd_dust_density(i_cell,1) <= 1.0e-34 ) THEN
-!~             grid%t_dust(i_cell,1) = 0.0
-!~         END IF
-        ! setting the gas temperature equal to the dust temperature
-        grid%t_gas(i_cell) = grid%t_dust(i_cell,1)
-        
-        ! include some kind of freeze out Temperature (TbD: define this more generally)
 
-!~         IF ( grid%t_gas(i_cell) <= 35.0 .or. grid%t_gas(i_cell) >= 60.0 ) THEN
-!~             grid%grd_mol_density(i_cell)   = 0.0
-!~         END IF
+        ! setting the gas temperature equal to the dust temperature
+        ! we need to gerneralize this
+        grid%t_gas(i_cell) = grid%t_dust(i_cell, 1)
+        
     END DO
     
     CALL sv_temp(basics, grid)      ! The propose of this routine has changed, nowadays it
                                     ! is just for saving the x midplane temperature
+                                    ! we should remove this and save the cut for all
+                                    ! disk properties
 
     
     ! CALCULATE PROBERTIES, WHICH NEED TEMPERATURE INFORMATIONS
@@ -139,26 +137,7 @@ CONTAINS
         END DO
     END IF
     END SUBROUTINE set_temperature
-  
-    PURE FUNCTION Get_temp(caco) RESULT(temps)
-        IMPLICIT NONE
-        !----------------------------------------------------------------------!
-        REAL(kind=r2), DIMENSION(1:3),INTENT(IN)         :: caco
-        REAL(kind=r2)                                    :: temps
-        REAL(kind=r2)                                    :: konst, P_xy, P_h
-        
-        !----------------------------------------------------------------------!
 
-            !define your temperature distribution here!
-            konst = 100.0_r2
-            
-            P_xy  = sqrt(caco(1)**2+caco(2)**2 + EPSILON(1.0))
-            P_h     = 5.0_r2 * (P_xy/100.0_r2)**1.125_r2
-            
-           ! temps   = 500.0_r2*P_xy**(-0.5) * (2.0-exp(-0.5*(abs(caco(3))/P_h)**2))
-            temps   = 200.0_r2*P_xy**(-0.5)
-
-    END FUNCTION Get_temp
     SUBROUTINE MC_temp(basics, grid, model,                                    &
                        dust, sources_in, fluxes)
 

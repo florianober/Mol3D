@@ -20,9 +20,7 @@ MODULE grd_mod
     !--------------------------------------------------------------------------!
     PRIVATE
     !--------------------------------------------------------------------------!
-    PUBLIC ::   make_grid, &
-                Set_velo, &
-                Get_velo
+    PUBLIC ::   make_grid
     !--------------------------------------------------------------------------!
 
 CONTAINS
@@ -1102,11 +1100,11 @@ CONTAINS
                 !
                 !IF (P_xy .lt. R_gap_in .or. P_xy .gt. R_gap_ou) THEN
 !~                 IF (abs(atan(P_z/P_xy)) < 0.30 ) THEN
-                    grid%grd_dust_density(i_cell,:) = get_den(model,           &
+                    grid%grd_dust_density(i_cell,:) = get_density(model,       &
                                     grid%cellmidcaco(i_cell, :)) * dust%sidi(:)
                     
                     ! set the density for all other elements (H, He,...)
-                    grid%grd_col_density(i_cell,:)  = get_den(model,           &
+                    grid%grd_col_density(i_cell,:)  = get_density(model,       &
                                                     grid%cellmidcaco(i_cell, :))
                 !ELSE
 !~                     grid%grd_dust_density(i_cell,:) = 0.0_r2
@@ -1147,56 +1145,12 @@ CONTAINS
             ! set velocity, in a future release we should generalize this
             !
             IF ( .not. basics%old_model .and. .not. GetGridType(grid) == 9) THEN
-                grid%velo(i_cell,:)  = Set_velo(grid%cellmidcaco(i_cell,:),    &
-                                                model%kep_const)
+                grid%velo(i_cell,:)  = get_velocity(model,                     &
+                                                    grid%cellmidcaco(i_cell,:),&
+                                                    'KEPLERIAN')
             END IF
             grid%absvelo(i_cell) = norm(REAL(grid%velo(i_cell,:),kind=r2))
         END DO
     END SUBROUTINE set_grid_properties
-    
-    
-    PURE FUNCTION Set_velo(caco,kep_const) RESULT(velo)
-    
-        ! define your velocity distribution here
-        ! velocity in cartesian coordinates
-        !
-        IMPLICIT NONE
-        !----------------------------------------------------------------------!
-        REAL(kind=r2), DIMENSION(1:3),INTENT(IN)              :: caco
-        REAL(kind=r1), DIMENSION(1:3)                         :: velo
-        REAL(kind=r2)                                         :: konst, expp, r
-        REAL(kind=r1),INTENT(IN)                              :: kep_const
-        !----------------------------------------------------------------------!
-        ! we assume pure keplerian rotation, therefore v(r) ~ r**-0.5
-
-        konst = kep_const  !
-        
-        expp  = -1.5  ! is a result of keplerian rotation and
-                      ! coordinate system conversion
-        r     = (caco(1)**2+caco(2)**2 + EPSILON(1.0_r2))**(expp*0.5)*konst
-        
-        velo(1) = (-1.0) * caco(2) * r
-        velo(2) =          caco(1) * r
-        velo(3) = 0.0
-        
-    END FUNCTION Set_velo
-
-
-    ELEMENTAL FUNCTION Get_velo(velo1, velo2, x) RESULT(velo_x)
-
-        ! interpolate velocity 
-        !
-        IMPLICIT NONE
-        !----------------------------------------------------------------------!
-        REAL(kind=r2),INTENT(IN)                           :: velo1,velo2
-        REAL(kind=r2)                                      :: velo_x
-        REAL(kind=r2),INTENT(IN)                           :: x
-        !----------------------------------------------------------------------!
-
-        velo_x = (velo2-velo1)*x + velo1
-
-    END FUNCTION Get_velo
-    
-
 
 end module grd_mod

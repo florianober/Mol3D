@@ -335,7 +335,7 @@ CONTAINS
 
             ! set temperature
             grid%t_dust(i_cell,:) = line(n_dust+8:2*n_dust+7)
-            grid%t_gas(i_cell)    = line(2*n_dust + 9)
+            grid%t_gas(i_cell)    = line(2*n_dust + 8)
             ! set velocity
             grid%velo(i_cell,:) = line(2*n_dust+9:2*n_dust+11)
         END DO
@@ -708,11 +708,13 @@ CONTAINS
         !----------------------------------------------------------------------!
         INTEGER                                      ::  i_a, i_b, i_c
         INTEGER                                      ::  i_dust, i_cell
-        REAL(kind=r2)                                ::  hd_r, hd_tem
+        REAL(kind=r2)                                ::  hd_r
+        REAL(kind=r2)                                ::  hd_tem, hd_tem_gas
         
         CHARACTER(len=252)                           :: filename
         CHARACTER(len=4)                             :: fileext
         CHARACTER(len=256)                           :: outname
+        CHARACTER(len=256)                           :: outname_gas
         CHARACTER(len=6)                             :: num2string
         !----------------------------------------------------------------------!
 
@@ -722,8 +724,14 @@ CONTAINS
             fileext = '.dat'
             filename = TRIM(basics%path_results)//Getproname(basics)//'_temp_x_'
             outname = TRIM(filename)//TRIM(num2string)//fileext
+            outname_gas = TRIM(filename)//'gas'//fileext
+            
             open(unit=1, file=TRIM(outname), &
                 action="write", status="unknown", form="formatted")
+            IF (i_dust == 1) THEN
+                open(unit=2, file=TRIM(outname_gas), &
+                    action="write", status="unknown", form="formatted")
+            END IF
             SELECT CASE(GetGridName(grid))
                 CASE('spherical')
 
@@ -736,10 +744,14 @@ CONTAINS
 
                         IF (grid%grd_dust_density(i_cell,i_dust) .eq. 0.0) THEN
                             hd_tem = 0.0_r2
+                            hd_tem_gas = 0.0_r2
+                            
                         ELSE
-                            hd_tem = grid%t_dust(i_cell,i_dust)
+                            hd_tem = grid%t_dust(i_cell, i_dust)
+                            IF (i_dust == 1) hd_tem_gas = grid%t_gas(i_cell)
                         END IF
-                       write(unit=1,fmt=*) hd_r, hd_tem
+                        write(unit=1,fmt=*) hd_r, hd_tem
+                        IF (i_dust == 1) write(unit=2,fmt=*) hd_r, hd_tem_gas
                     END DO
                 CASE('cylindrical')
                     !print *, 'cy temp_x'
@@ -752,10 +764,13 @@ CONTAINS
 
                         IF (grid%grd_dust_density(i_cell,i_dust) .eq. 0.0) THEN
                             hd_tem = 0.0_r2
+                            hd_tem_gas = 0.0_r2
                         ELSE
                             hd_tem = grid%t_dust(i_cell,i_dust)
+                            IF (i_dust == 1) hd_tem_gas = grid%t_gas(i_cell)
                         END IF
-                       write(unit=1,fmt=*) hd_r, hd_tem
+                        write(unit=1,fmt=*) hd_r, hd_tem
+                        IF (i_dust == 1) write(unit=2,fmt=*) hd_r, hd_tem_gas
                     END DO
 
                 CASE('cartesian')
@@ -768,15 +783,20 @@ CONTAINS
 
                         IF (grid%grd_dust_density(i_cell, i_dust) .eq. 0.0) THEN
                             hd_tem = 0.0_r2
+                            hd_tem_gas = 0.0_r2
+                            
                         ELSE
                             hd_tem = grid%t_dust(i_cell, i_dust)
+                            IF (i_dust == 1) hd_tem_gas = grid%t_gas(i_cell)
                         END IF
-                       write(unit=1,fmt=*) hd_r, hd_tem
+                        write(unit=1,fmt=*) hd_r, hd_tem
+                        IF (i_dust == 1) write(unit=2,fmt=*) hd_r, hd_tem_gas
                     END DO
 
                 CASE DEFAULT
                     print *, 'selected coordinate system not found, save temp_x'
             END SELECT
+            IF (i_dust == 1) close(unit=2)
             close(unit=1)
         END DO
     

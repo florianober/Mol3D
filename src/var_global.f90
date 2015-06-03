@@ -87,7 +87,7 @@ module var_global
   ! ---
   ! strings
   ! ---
-  character(len=8), public, parameter :: mol3d_version    = "Apr 2015"
+  character(len=8), public, parameter :: mol3d_version    = "Jun 2015"
 
   ! ---
   ! integer
