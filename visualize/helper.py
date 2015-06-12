@@ -162,7 +162,7 @@ def conv(image, beam=0.1, r_ou=200, dist=140, gg=''):
     pxwitdth = 2.0*arcs/N
     g_width = beam_stddev_x/pxwitdth
 
-    gauss = Gaussian2DKernel(width=g_width)  #stddev width in px
+    gauss = Gaussian2DKernel(stddev=g_width)  #stddev width in px
 
     # if gg is a given Kernel
     if gg != '':
@@ -244,19 +244,20 @@ def create_CASA_fits(map_in, out_name='standard.fits',
         half0 = (map_size[1]-1)/2   # frequency cube
         half1 = (map_size[2]-1)/2
         half2 = (map_size[3]-1)/2
-        map2 = map_in
+        map2 = zeros((map_size[0], map_size[1], map_size[2], map_size[3]), dtype=np.float32)
+        map2[:, :, :, :] = map_in[:, :, :, :]
 
     if len(map_size) == 3:
         half0 = (map_size[0]-1)/2   # frequency cube
         half1 = (map_size[1]-1)/2
         half2 = (map_size[2]-1)/2
-        map2 = zeros((1, map_size[0], map_size[1], map_size[2]))
+        map2 = zeros((1, map_size[0], map_size[1], map_size[2]), dtype=np.float32)
         map2[0, :, :, :] = map_in[:, :, :]
 
     elif len(map_size) == 2:
         half1 = (map_size[0]-1)/2
         half2 = (map_size[1]-1)/2
-        map2 = zeros((1, 1, map_size[0], map_size[1]))
+        map2 = zeros((1, 1, map_size[0], map_size[1]), dtype=np.float32)
         map2[0, 0, :, :] = map_in[:, :]
 
     sky = SkyCoord(position)
@@ -364,7 +365,8 @@ def maxres(wave, D):
 
 def res2AU(wave, D, distance):
     """
-    get distance in AU for a given wavelength, distance and telescope diameter
+    get distance in AU for a given wavelength [m], distance [pc]
+    and telescope diameter [m]
     """
     AU = as2AU(rad2as(maxres(wave, D)), distance)
     return AU
@@ -382,22 +384,21 @@ def rad2deg(rad):
 
 def deg2as(deg):
     """ convert degree to arcsec """
-    mas = deg*(3600.0)
-    return mas
+    return deg*(3600.0)
 
 def rad2as(rad):
     """ convert radians to arcsec """
     as_out = deg2as(rad2deg(rad))
     return as_out
 
-def as2deg(mas):
+def as2deg(arcsec):
     """ convert arcsec to degree """
-    deg = mas/3600.0
+    deg = arcsec/3600.0
     return deg
 
-def as2rad(as_in):
+def as2rad(arcsec):
     """ convert arcsec to radians """
-    return deg2rad(as2deg(as_in))
+    return deg2rad(as2deg(arcsec))
 
 def calc_a(b):
     """ calculate coupled alpha """
@@ -588,7 +589,7 @@ def blackbody_hz(freq, temp):
 
 def alma_fwhm(wavelength, max_base=16.0):
     """
-    calculate approximate FWHM for a given wavelength and the max baselength
+    calculate approximate FWHM for a given wavelength [m] and the max baselength [km]
     """
     return 76./(max_base*(c)*1e-9/wavelength)
 
@@ -632,6 +633,16 @@ def poldegang(I, Q, U):
 def shrink(data, rows, cols):
     return data.reshape(rows, data.shape[0]/rows,
                         cols, data.shape[1]/cols).sum(axis=1).sum(axis=2)
+
+def interpol_2d(data, rows, cols):
+    xx  = np.linspace(0, 1, data.shape[0])
+    yy  = np.linspace(0, 1, data.shape[1])
+    
+    xi  = np.linspace(0, 1, rows)
+    yi  = np.linspace(0, 1, cols)
+    f = interp2d(xx, yy, data, kind='linear')
+
+    return f(xi,yi)
 
 '''
 class to read Fosite results

@@ -148,12 +148,12 @@ def make_velo_ch_plot(data, vch, N1=3, N2=5, snr='', cmap=plt.cm.nipy_spectral,
     plt.setp(grid.axes_llc.xaxis.get_majorticklabels(), rotation=70)
     return fig
 
-def make_spectra(path_results, pname, unit='AS'):
+def make_spectra(path_results, pname, unit='PX'):
     """  present the spectral results of the project """
 
     project = mol3d(pname, path_results)
 
-    map_in = project.return_velo_ch_map('PX')
+    map_in = project.return_velo_ch_map('AS')
     if map_in != []:
         
         vch = project.vch

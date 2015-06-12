@@ -1,4 +1,4 @@
-! ===
+!
 ! definion of data types
 ! ---
 ! goal:    equip Mol3D with the flexibility to change the accuracy of floating
@@ -10,18 +10,18 @@
 !                 use datatype
 !                 real(kind=r2) :: a
 !                 a = 2.0_r2
-! ===
-module datatype
- implicit none
+!
 
- ! real
- integer, parameter, public :: r1=selected_real_kind(1)
+MODULE datatype
+    IMPLICIT NONE
 
- ! double precision
- integer, parameter, public :: r2=selected_real_kind(p=12)
- 
- ! quad precision
- ! integer, parameter, public :: r3=selected_real_kind(p=21)
- 
- 
-end module datatype
+    ! real
+    INTEGER, PARAMETER, PUBLIC :: r1=selected_real_kind(1)
+
+    ! double precision
+    INTEGER, PARAMETER, PUBLIC :: r2=selected_real_kind(p=12)
+    
+    ! quad precision
+    ! INTEGER, PARAMETER, PUBLIC :: r3=selected_real_kind(p=21)
+
+END MODULE datatype

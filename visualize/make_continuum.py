@@ -97,17 +97,15 @@ def make_continuum_maps(wlen, map_in, fig_label='', cmap='Set1',
         plt.ylabel(ylab)
 
         # now we need to calculate the polarisation degree and angle
-        # we merge neighbouring cells to provide a better result
+        # we merge neighbouring cells to provide better (visualisation) results
         
         shrink_down = int(0.1*map_in.shape[2])
+
+        I = hlp.shrink(map_in[0, w, :, :], shrink_down, shrink_down)
         
-        # this is excluding the first pixel row/column
-        # a bit dirty.....but it works for the moment
-        I = hlp.shrink(map_in[0, w, 1:, 1:], shrink_down, shrink_down)
+        Q = hlp.shrink(map_in[1, w, :, :], shrink_down, shrink_down)
         
-        Q = hlp.shrink(map_in[1, w, 1:, 1:], shrink_down, shrink_down)
-        
-        U = hlp.shrink(map_in[2, w, 1:, 1:], shrink_down, shrink_down)
+        U = hlp.shrink(map_in[2, w, :, :], shrink_down, shrink_down)
 
         pol_deg, pol_angle = hlp.poldegang(I, Q, U)
         pol_angle += np.pi/2 # Quiver and astro definition of the angle

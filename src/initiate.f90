@@ -13,7 +13,7 @@ MODULE initiate
     USE source_type
 
     USE parser_mod
-    USE fileio, ONLY       : save_input, read_no_cells
+    USE fileio, ONLY       : read_no_cells
 
     IMPLICIT NONE
 
@@ -52,7 +52,7 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
     CHARACTER(len=252)                               :: file_a, file_b, file_c
     CHARACTER(len=4)                                 :: ref_u_str
     CHARACTER(len=32)                                :: grid_name
-    CHARACTER(len=256)                                :: in_arg
+    CHARACTER(len=256)                               :: in_arg
     CHARACTER(len=8), ALLOCATABLE, DIMENSION(:)      :: dust_cat
     REAL(kind=r2)                                    :: ref_u
     REAL(kind=r2)                                    :: r_in
@@ -414,7 +414,7 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
     WRITE(unit=3,fmt='(A)') 'dust_cat_name = {'//TRIM(dust_cat(1))// &
     '}           dust catalog name (in input/dust) (in mc3d style)'
     WRITE(unit=3,fmt='(A)') ''
-
+    
     !dust_cat(2) = 'mrn---v4'
 
     CALL InitDust(dust, basics, gas, model, 1, 'mrn', n_dust, dens_dust,       &

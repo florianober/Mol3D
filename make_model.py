@@ -17,7 +17,7 @@ import sys
 sys.path.append('./visualize/')
 import time
 import math
-from scipy.interpolate import griddata
+from scipy.interpolate import griddata, interp1d
 from astropy.io import fits as pf
 
 import numpy as np
@@ -33,7 +33,7 @@ PATH_INPUT_GRID = 'input/grid/'
 #-------------------------------------------------------------------------------
 # global model definitions
 MODEL_NAME = 'example' # must not be the Mol3D project name
-R_IN = 10
+R_IN = 0.1
 R_OU = 200.0
 M_STAR = 0.7*hlp.M_sun
 M_DISK = 1e-2*hlp.M_sun
@@ -44,7 +44,7 @@ COORDINATE_SYSTEM = 'spherical'                             # a = r,   b = th, c
 
 N_A = 100              # no of coordinate a
 N_B = 101              # no of coordinate b
-N_C = 100                # no of coordinate c
+N_C = 1                # no of coordinate c
 
 DENSITY_DISTRIBUTION = 'Disk'     # density for a disk
 #~ DENSITY_DISTRIBUTION = 'Sphere'   # density for a sphere
@@ -59,6 +59,9 @@ TEMPERATURE_DISTRIBUTION = 'no'
 #~ TEMPERATURE_DISTRIBUTION = 'fosite'
 
 FOSITE_FILE = ''
+
+SHOW_MODEL = True # show model distribution
+LINK = True # link the model and boundaries automatically
 
 if DENSITY_DISTRIBUTION == 'fosite':
     f = hlp.read_fosite(FOSITE_FILE)
@@ -75,7 +78,7 @@ if DENSITY_DISTRIBUTION == 'fosite':
         # rescale if necessary
         #~ R_IN = round(f['/config/mesh/xmin']/convert_unit, 2)
         #~ R_OU = round(f['/config/mesh/xmax']/convert_unit, 2)
-        #~ 
+        
         #~ print('Rescaling the inner edge: %2.2f AU' %R_IN)
         #~ print('Rescaling the outer edge: %2.2f AU' %R_OU)
         
@@ -90,8 +93,9 @@ if DENSITY_DISTRIBUTION == 'fosite':
         print('Units are unknown')
         convert_unit = 1.
     
-    X1 = (f['/mesh/bary_centers'][:,:,0]/convert_unit).flatten()
-    Y1 = (f['/mesh/bary_centers'][:,:,1]/convert_unit).flatten()
+    X1 = (f['/mesh/bary_centers'][:, :, 0]/convert_unit)
+    Y1 = (f['/mesh/bary_centers'][:, :, 1]/convert_unit)
+
     surface_density = f['/timedisc/density']
     
     if (f['/config/mesh/output/rotation']):
@@ -131,40 +135,53 @@ if DENSITY_DISTRIBUTION == 'fosite':
         rot_vx = 0.0
         rot_vy = 0.0
     # now we only need a vector addition
-    VELOCITY_X = (cart_vx + rot_vx).flatten()
-    VELOCITY_Y = (cart_vy + rot_vy).flatten()
-        
-    # make a plot of the fosite data
+    VELOCITY_X = (cart_vx + rot_vx)
+    VELOCITY_Y = (cart_vy + rot_vy)
+    
+    ## make a plot of the fosite data
     #x_grid = f['/mesh/grid_x']/convert_unit
     #y_grid = f['/mesh/grid_y']/convert_unit
     #plt.figure('v_x')
-    #plt.pcolormesh(x_grid, y_grid, vx)
+    #plt.pcolormesh(x_grid, y_grid, cart_vx)
     #plt.colorbar()
     #plt.figure('v_y')
-    #plt.pcolormesh(x_grid, y_grid, vy)
+    #plt.pcolormesh(x_grid, y_grid, cart_vy)
     #plt.colorbar()
     #plt.figure('abs(v)')
-    #plt.pcolormesh(x_grid, y_grid, np.sqrt(vy**2+vx**2))
+    #plt.pcolormesh(x_grid, y_grid, np.sqrt(cart_vy**2+cart_vx**2))
     #plt.colorbar()
     #plt.figure('surface-density')
     #plt.pcolormesh(x_grid, y_grid, surface_density)
     #plt.colorbar()
+    #plt.show()
+    if TEMPERATURE_DISTRIBUTION == 'fosite':
+        FOSITE_TEMPERATURE = f['/sources/heating/Tdust']
+    
 
     if f['/config/mesh/output/volume']:
         M_disk = (surface_density * f['/mesh/volume']).sum()/hlp.M_sun
         print('M_disk (fosite): %2.3g M_sun' %(M_disk))
 
-    FOSITE_DENSITY = surface_density.flatten()
+    FOSITE_DENSITY = surface_density
 
     if f['/config/sources/grav/output/height']:
-        FOSITE_HEIGHT = f['/sources/grav/height'].flatten()/convert_unit
+        FOSITE_HEIGHT = f['/sources/grav/height']/convert_unit
+
+        #~ plt.figure()
+        #~ plt.plot(np.abs(X1),FOSITE_HEIGHT, label='scale heigth')
+        #~ plt.plot(np.abs(X1),FOSITE_DENSITY/FOSITE_HEIGHT, label='density')
+        #~ plt.plot(np.abs(X1),FOSITE_DENSITY, label='surface density')
+        #~ plt.xscale('log')
+        #~ plt.yscale('log')
+        #~ plt.legend()
     else:
         FOSITE_HEIGHT = []
         print('No height found fosite data set')
-        
+    #~ plt.plot(-f['/mesh/bary_centers'][:, :, 0]/convert_unit, f['/sources/grav/height']/convert_unit)
+    #~ plt.show()
+    #~ sys.exit()
+    
     print( '')
-SHOW_MODEL = True # show model distribution
-LINK = True # link the model and boundaries automatically
 
 #-------------------------------------------------------------------------------
 def in_model_space(pos_xyz):
@@ -231,14 +248,30 @@ def get_density_fosite(pos_xyz):
 
     xi = pos_xyz[:, 0]
     yi = pos_xyz[:, 1]
-    if FOSITE_HEIGHT != []:
-        h = griddata((X1, Y1), FOSITE_HEIGHT, (xi, yi), method='linear', fill_value=0)
+
+    if len(FOSITE_HEIGHT) > 0:
+        if X1.shape[1] == 1:
+            # 1 D case
+
+            h = interp1d(np.abs(X1.flatten()), FOSITE_HEIGHT.flatten(), bounds_error=False)(r)
+        else:
+            print ('two')
+            h = griddata((X1.flatten(), Y1.flatten()), FOSITE_HEIGHT.flatten(),
+                     (xi, yi), method='linear', fill_value=0)
     else:
         scale_h = 10.0
         beta = 1.125
         h = scale_h * (r/100.0)**beta
+
     ind = (h > 0)
-    density[ind] = griddata((X1, Y1), FOSITE_DENSITY, (xi[ind], yi[ind]),
+
+    if X1.shape[1] == 1:
+        hlp = interp1d(np.abs(X1.flatten()), FOSITE_DENSITY.flatten(), bounds_error=False)(r[ind])
+        density[ind] = hlp/ h[ind] * \
+                            np.exp(-0.5 * (z[ind]/h[ind])**2, dtype=np.float64)
+    else:
+        density[ind] = griddata((X1.flatten(), Y1.flatten()), FOSITE_DENSITY.flatten(),
+                            (xi[ind], yi[ind]),
                             method='linear', fill_value=0) / h[ind] * \
                             np.exp(-0.5 * (z[ind]/h[ind])**2, dtype=np.float64)
 
@@ -275,7 +308,6 @@ def get_density(pos_xyz):
         #TbD
         #density = get_density_user(pos_xyz) at position 'mid_point_cart'
         print("ERROR: user density definition is not implemeted")
-        sys.exit()
     else:
         print("ERROR: density model unknown")
         sys.exit()
@@ -310,8 +342,12 @@ def get_velocity_fosite(pos_xyz):
     yi = pos_xyz[:, 1]
 
     velocity_xyz = np.zeros((len(xi),3))
-    velocity_xyz[:, 0] = griddata((X1, Y1), VELOCITY_X, (xi, yi), method='linear', fill_value=0)
-    velocity_xyz[:, 1] = griddata((X1, Y1), VELOCITY_Y, (xi, yi), method='linear', fill_value=0)
+    velocity_xyz[:, 0] = griddata((X1.flatten(), Y1.flatten()),
+                                  VELOCITY_X.flatten(), (xi, yi),
+                                  method='linear', fill_value=0)
+    velocity_xyz[:, 1] = griddata((X1.flatten(), Y1.flatten()),
+                                  VELOCITY_Y.flatten(), (xi, yi),
+                                  method='linear', fill_value=0)
     velocity_xyz[:, 2] = 0.0
     
     return velocity_xyz
@@ -377,7 +413,15 @@ def get_temperature_fosite(pos_xyz):
     yi = pos_xyz[:, 1]
 
     temp = np.zeros_like(xi)
-    temp = griddata((X1, Y1), FOSITE_TEMPERATURE, (xi, yi), method='linear', fill_value=0)
+    if X1.shape[1] == 1:
+        # 1 D case
+        r = np.sqrt(pos_xyz[:, 0]**2+pos_xyz[:, 1]**2)
+        temp = interp1d(np.abs(X1.flatten()), FOSITE_TEMPERATURE.flatten(),
+                        bounds_error=False)(r)
+    else:
+            
+        temp = griddata((X1.flatten(), Y1.flatten()), FOSITE_TEMPERATURE.flatten(),
+                        (xi, yi), method='linear', fill_value=0)
     
     return temp
 
@@ -508,7 +552,7 @@ def main():
             print("ERROR, not enough cells in y-direction: %d < 21" %(N_B))
             sys.exit()
         b_bounds = np.zeros(N_B + 1, dtype=np.float64)
-        k = 5 # this is a scaling parameter, adjust if necessary
+        k = 5 # this is a scaling par.set_labelameter, adjust if necessary
         for i in range(-int((N_B-1)/2), int((N_B-1)/2)+2):
             b_bounds[i+int((N_B-1)/2)] = R_OU*np.sinh(k*(i-0.5)/((N_B-1)/2+0.5))/np.sinh(k)
 
@@ -567,10 +611,11 @@ def main():
     i_cell = 0
     mid_point_coord = np.zeros((3, N_Cells), dtype=np.float64)
     mid_point_cart = np.zeros((3, N_Cells), dtype=np.float64)
+
     for i_a in range(N_A):
         for i_b in range(N_B):
             for i_c in range(N_C):
-                data[i_cell, 0] = i_cell+1 # Mol3D/Fortran counts from 1
+                #~ data[i_cell, 0] = i_cell+1 # Mol3D/Fortran counts from 1
 
                 # first get the cell midpoint coordinate
 
@@ -586,6 +631,7 @@ def main():
                 elif COORDINATE_SYSTEM == 'cylindrical':
                     #~ mid_point_cart[:, i_cell] = hlp.cy2ca(mid_point_coord[:, i_cell])
                     data[i_cell, 0:3] = hlp.cy2ca(mid_point_coord[:, i_cell])
+
                 elif COORDINATE_SYSTEM == 'cartesian':
                     #~ mid_point_cart[:, i_cell] = 1.0* mid_point_coord[:, i_cell]
                     data[i_cell, 0:3] = mid_point_coord[:, i_cell]
@@ -614,8 +660,9 @@ def main():
     data[:, 4] = data[:, 5] * abundance
     header['HIERARCH Mol3D_mol_density'] = 5
 
-    # dust temperature (if given, no temperature calculation will be done TbD)
-    data[:, 8] = get_temperature(data[:, 0:3])
+    # dust temperature
+    #~ data[:, 8] = get_temperature(data[:, 0:3])
+    data[:, 8] = 0.0
     header['HIERARCH Mol3D_dust_temp1'] = 9
     
     # gas temperature
@@ -649,12 +696,13 @@ def main():
     # eye candy: show distributions
     if SHOW_MODEL:
         print("Visualisation of the model")
-        # xy-plane
-        N = 401
+        
+        N = 801
         xx = np.linspace(-R_OU, R_OU, N)
         yy = np.linspace(-R_OU, R_OU, N)
-        data = np.zeros((N**2))
         extent = [-R_OU, R_OU, -R_OU, R_OU]
+        data = np.zeros((N**2))
+        
         counter = 0
         pos_xyz = np.zeros((N*N, 3))
         for i in range(N):
@@ -668,7 +716,7 @@ def main():
         data = get_density(pos_xyz)
         data /= data.max()
         vmax = data.max()
-        vmin = vmax*1e-4
+        vmin = vmax*1e-6
         plt.imshow(data.reshape(N,N),
                    origin='lower',
                    norm=LogNorm(vmin=vmin,vmax=vmax),
@@ -681,6 +729,13 @@ def main():
         plt.imshow(data.reshape(N,N)/1000, origin='lower',
                    extent=extent, interpolation='None')
         plt.colorbar().set_label('velocity [km/s]')
+        
+        plt.figure('Temperature xy-plane')
+
+        data = get_temperature(pos_xyz)
+        plt.imshow(data.reshape(N,N), origin='lower',
+                   extent=extent, interpolation='None')
+        plt.colorbar().set_label('temperature [K]')
 
 
         # xz-plane
@@ -698,7 +753,7 @@ def main():
         data = get_density(pos_xyz)
         data /= data.max()
         vmax = data.max()
-        vmin = vmax*1e-4
+        vmin = vmax*1e-10
         plt.imshow(data.reshape(N,N),
                    origin='lower',
                    norm=LogNorm(vmin=vmin,vmax=vmax),
@@ -711,6 +766,13 @@ def main():
         plt.imshow(data.reshape(N,N)/1000, origin='lower',
                    extent=extent, interpolation='None')
         plt.colorbar().set_label('velocity [km/s]')
+
+        plt.figure('Temperature xz-plane')
+
+        data = get_temperature(pos_xyz)
+        plt.imshow(data.reshape(N,N), origin='lower',
+                   extent=extent, interpolation='None')
+        plt.colorbar().set_label('temperature [K]')
 
     if not(LINK):
         print("")

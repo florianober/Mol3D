@@ -104,15 +104,9 @@ CONTAINS
 
         ! setting the gas temperature equal to the dust temperature
         ! we need to gerneralize this
-        grid%t_gas(i_cell) = grid%t_dust(i_cell, 1)
+!~         grid%t_gas(i_cell) = grid%t_dust(i_cell, 1)
         
     END DO
-    
-    CALL sv_temp(basics, grid)      ! The propose of this routine has changed, nowadays it
-                                    ! is just for saving the x midplane temperature
-                                    ! we should remove this and save the cut for all
-                                    ! disk properties
-
     
     ! CALCULATE PROBERTIES, WHICH NEED TEMPERATURE INFORMATIONS
     

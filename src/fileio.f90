@@ -16,7 +16,7 @@ MODULE fileio
         CHARACTER(len=30), PARAMETER :: file_b  = "input/grid/b_boundaries.dat"
         CHARACTER(len=30), PARAMETER :: file_c  = "input/grid/c_boundaries.dat"
     !--------------------------------------------------------------------------!
-    PUBLIC :: vis_plane, vis_plane_fits, save_ch_map, sv_temp, save_input,     &
+    PUBLIC :: vis_plane, vis_plane_fits, save_ch_map,                          &
               save_model, save_boundaries, read_boundaries, read_no_cells,     &
               save_continuum_map, read_model
     !--------------------------------------------------------------------------!
@@ -347,11 +347,12 @@ CONTAINS
 
     END SUBROUTINE read_model
         
-    SUBROUTINE save_model(grid, basics)
+    SUBROUTINE save_model(grid, model, basics)
     
         IMPLICIT NONE
         !----------------------------------------------------------------------!
         TYPE(Grid_TYP), INTENT(IN)                   :: grid
+        TYPE(Model_TYP), INTENT(IN)                  :: model
         TYPE(Basic_TYP), INTENT(IN)                  :: basics
         !----------------------------------------------------------------------!
         INTEGER                                      :: i_cell
@@ -392,6 +393,9 @@ CONTAINS
         call ftclos(u, sta)
         ! free the (u)nit number
         call ftfiou(u, sta)
+
+        ! save x cuts
+        CALL save_x_cuts(basics, model, grid)
     END SUBROUTINE save_model
 
     SUBROUTINE vis_plane(grid, basics, model, plane, pix)
@@ -689,6 +693,7 @@ CONTAINS
     END SUBROUTINE add_essential_fits_keys
     
     SUBROUTINE sv_temp(basics, grid)
+        ! old not used
         IMPLICIT NONE
         !----------------------------------------------------------------------!
         TYPE(Basic_TYP), INTENT(IN)                  :: basics
@@ -700,7 +705,7 @@ CONTAINS
     END SUBROUTINE sv_temp
     
     SUBROUTINE sv_temp_x(basics, grid)
-    
+        ! old not used -> more general version -> save_x_cuts
         IMPLICIT NONE
         !----------------------------------------------------------------------!
         TYPE(Basic_TYP), INTENT(IN)                  :: basics
@@ -799,26 +804,175 @@ CONTAINS
             IF (i_dust == 1) close(unit=2)
             close(unit=1)
         END DO
-    
     END SUBROUTINE sv_temp_x
+
+    SUBROUTINE save_x_cuts(basics, model, grid)
+        ! save model cuts along the x-axis (y,z = 0)
     
-    SUBROUTINE save_input(basics,input_file)
-    ! not used at the moment
-    IMPLICIT NONE
+        IMPLICIT NONE
         !----------------------------------------------------------------------!
-        TYPE(Basic_TYP), INTENT(IN)                  :: basics
-        CHARACTER(len=*)                             :: input_file
-        CHARACTER(len=256)                           :: command
+        TYPE(Basic_TYP), INTENT(IN)             :: basics
+        TYPE(Model_TYP), INTENT(IN)             :: model
+        TYPE(Grid_TYP), INTENT(IN)              :: grid
+        !----------------------------------------------------------------------!
+        INTEGER                                 :: i_a, i_b, i_c
+        INTEGER                                 :: i_dust, i_cell
+        INTEGER                                 :: entries
+        REAL(kind=r2)                           :: hd_r
+        REAL(kind=r2)                           :: hd_tem, hd_tem_gas
+        
+        CHARACTER(len=256)                      :: outname
+        CHARACTER(len=20)                       :: fmt_string
 
         !----------------------------------------------------------------------!
-      
-        command = 'cp '//TRIM(input_file)//' '//TRIM(basics%path_results)//    &
-                        Getproname(basics)//'_input_file.dat'
-        ! I'm not sure if the SYSTEM command is a good choice.
-        CALL SYSTEM(command)
-        
-    END SUBROUTINE save_input
+        entries = 9 + 2*grid%nh_n_dust
+        write (fmt_string, fmt='(A, I2, A)') '(', entries, '(ES15.6E3))'
+
+        outname = TRIM(basics%path_results)//Getproname(basics)//'_cut_x.dat'
+
+        open(unit=1, file=TRIM(outname),                                       &
+             action="write", status="unknown", form="formatted")
+             
+        SELECT CASE(GetGridName(grid))
+        CASE('spherical')
+
+            i_b = ceiling(real(grid%n(2))/2.0)
+            i_c = 1
+            ! - x
+            DO i_a = grid%n(1), 1, -1
+                hd_r   = -(grid%co_mx_a(i_a-1) + grid%co_mx_a(i_a))/2.0_r2
+                i_cell = grid%cell_idx2nr(i_a, i_b, i_c)
+                    
+                write(unit=1,fmt=fmt_string)                                   &
+                    hd_r,                                                      &
+                    grid%grd_dust_density(i_cell,:),                           &
+                    grid%grd_mol_density(i_cell),                              &
+                    grid%grd_col_density(i_cell,1:3),                          &
+                    REAL(grid%t_dust(i_cell,:),kind=r2),                       &
+                    REAL(grid%t_gas(i_cell), kind=r2),                         &
+                    REAL(grid%velo(i_cell,:), kind=r2)
+            END DO
+
+            ! inside zero cell
+            i_cell = 0
+            hd_r = -grid%co_mx_a(0) 
+            write(unit=1,fmt=fmt_string)                                   &
+                hd_r,                                                      &
+                grid%grd_dust_density(i_cell,:),                           &
+                grid%grd_mol_density(i_cell) ,                             &
+                grid%grd_col_density(i_cell,1:3),                          &
+                REAL(grid%t_dust(i_cell,:),kind=r2),                       &
+                REAL(grid%t_gas(i_cell),kind=r2),                          &
+                REAL(grid%velo(i_cell,:), kind=r2)
+
+            hd_r = grid%co_mx_a(0) 
+            write(unit=1,fmt=fmt_string)                                   &
+                hd_r,                                                      &
+                grid%grd_dust_density(i_cell,:),                           &
+                grid%grd_mol_density(i_cell) ,                             &
+                grid%grd_col_density(i_cell,1:3),                          &
+                REAL(grid%t_dust(i_cell,:),kind=r2),                       &
+                REAL(grid%t_gas(i_cell),kind=r2),                          &
+                REAL(grid%velo(i_cell,:),kind=r2)
+
+            ! + x 
+            DO i_a = 1, grid%n(1)
+                hd_r   = (grid%co_mx_a(i_a-1) + grid%co_mx_a(i_a))/2.0_r2
+                i_cell = grid%cell_idx2nr(i_a, i_b, i_c)
+                    
+                write(unit=1,fmt=fmt_string)                                   &
+                    hd_r,                                                      &
+                    grid%grd_dust_density(i_cell,:),                           &
+                    grid%grd_mol_density(i_cell) ,                             &
+                    grid%grd_col_density(i_cell,1:3),                          &
+                    REAL(grid%t_dust(i_cell,:),kind=r2),                       &
+                    REAL(grid%t_gas(i_cell),kind=r2),                          &
+                    REAL(grid%velo(i_cell,:),kind=r2)
+
+            END DO
+        CASE('cylindrical')
+            i_b = 1
+            i_c = ceiling(real(grid%n(3))/2.0)
+            ! - x
+            DO i_a = grid%n(1), 1 , -1
+                hd_r   = -(grid%co_mx_a(i_a-1) + grid%co_mx_a(i_a))/2.0_r2
+                i_cell = grid%cell_idx2nr(i_a,i_b,i_c)
+
+                write(unit=1,fmt=fmt_string)                                   &
+                    hd_r,                                                      &
+                    grid%grd_dust_density(i_cell,:),                           &
+                    grid%grd_mol_density(i_cell) ,                             &
+                    grid%grd_col_density(i_cell,1:3),                          &
+                    REAL(grid%t_dust(i_cell,:),kind=r2),                       &
+                    REAL(grid%t_gas(i_cell),kind=r2),                          &
+                    REAL(grid%velo(i_cell,:),kind=r2)
+            END DO
+
+            ! inside zero cell
+            i_cell = 0
+            
+            hd_r = -grid%co_mx_a(0) 
+            write(unit=1,fmt=fmt_string)                                   &
+                hd_r,                                                      &
+                grid%grd_dust_density(i_cell,:),                           &
+                grid%grd_mol_density(i_cell) ,                             &
+                grid%grd_col_density(i_cell,1:3),                          &
+                REAL(grid%t_dust(i_cell,:),kind=r2),                       &
+                REAL(grid%t_gas(i_cell),kind=r2),                          &
+                REAL(grid%velo(i_cell,:),kind=r2)
+                
+            hd_r = grid%co_mx_a(0) 
+            write(unit=1,fmt=fmt_string)                                   &
+                hd_r,                                                      &
+                grid%grd_dust_density(i_cell,:),                           &
+                grid%grd_mol_density(i_cell) ,                             &
+                grid%grd_col_density(i_cell,1:3),                          &
+                REAL(grid%t_dust(i_cell,:),kind=r2),                       &
+                REAL(grid%t_gas(i_cell),kind=r2),                          &
+                REAL(grid%velo(i_cell,:),kind=r2)
+            ! + x 
+            DO i_a = 1, grid%n(1)
+                hd_r   = (grid%co_mx_a(i_a-1) + grid%co_mx_a(i_a))/2.0_r2
+                i_cell = grid%cell_idx2nr(i_a,i_b,i_c)
+
+                write(unit=1,fmt=fmt_string)                                   &
+                    hd_r,                                                      &
+                    grid%grd_dust_density(i_cell,:),                           &
+                    grid%grd_mol_density(i_cell) ,                             &
+                    grid%grd_col_density(i_cell,1:3),                          &
+                    REAL(grid%t_dust(i_cell,:),kind=r2),                       &
+                    REAL(grid%t_gas(i_cell),kind=r2),                          &
+                    REAL(grid%velo(i_cell,:),kind=r2)
+
+            END DO
+
+        CASE('cartesian')
+            i_b = ceiling(real(grid%n(2))/2.0)
+            i_c = ceiling(real(grid%n(3))/2.0)
+
+            DO i_a = ceiling(real(grid%n(1))/2.0), grid%n(1)
+                hd_r   = (grid%co_mx_a(i_a-1) + grid%co_mx_a(i_a))/2.0_r2
+                i_cell = grid%cell_idx2nr(i_a, i_b, i_c)
+                
+                write(unit=1,fmt=fmt_string)                                   &
+                    hd_r,                                                      &
+                    grid%grd_dust_density(i_cell,:),                           &
+                    grid%grd_mol_density(i_cell) ,                             &
+                    grid%grd_col_density(i_cell,1:3),                          &
+                    REAL(grid%t_dust(i_cell,:),kind=r2),                       &
+                    REAL(grid%t_gas(i_cell),kind=r2),                          &
+                    REAL(grid%velo(i_cell,:),kind=r2)
+                
+            END DO
+
+        CASE DEFAULT
+            print *, 'selected coordinate system not found, save cuts_x'
+        END SELECT
+        close(unit=1)
+
+    END SUBROUTINE save_x_cuts
     
+
     SUBROUTINE save_continuum_map(model, basics, dust, fluxes, mode, peel_off)
         
         IMPLICIT NONE

@@ -32,7 +32,7 @@ MODULE simulation_mod
 
 CONTAINS
 
-    SUBROUTINE run_simu(basics, fluxes ,grid , model, dust, gas, sources_in)
+    SUBROUTINE run_simu(basics, fluxes, grid, model, dust, gas, sources_in)
 
     IMPLICIT NONE
     !--------------------------------------------------------------------------!
@@ -74,7 +74,7 @@ CONTAINS
     ! --- save all results for later use
     ! first save the model itself
     print *, "| saving the model"
-    CALL save_model(grid, basics)
+    CALL save_model(grid, model, basics)
     print *, "| done!                 "
     print *, "|"
     ! now, provide some extra visualisation output 

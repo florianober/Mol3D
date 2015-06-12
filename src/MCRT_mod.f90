@@ -197,7 +197,7 @@ CONTAINS
                                     i_lam_in=i_lam)
             ! Second we calculate the re-emitted scattered light
             ! TbD (use the raytracing algorithm for dust re-emission for now)
-            !
+            ! THIS IS NOT FULLY IMPLEMENTED YET
 
             ! We need to start photons from every cell in the disk.....
             !CALL MC_photon_transfer(basics, grid, model,                       &

@@ -126,7 +126,6 @@ class mol3d:
             self.__attr['r_path'] = self.get_attr_from_file('r_path')
             self.__attr['r_ou'] = float(self.get_attr_from_file('r_ou'))
             self.__attr['r_in'] = float(self.get_attr_from_file('r_in'))
-            self.__attr['sf'] = float(self.get_attr_from_file('sf'))
             self.__attr['distance'] = float(self.get_attr_from_file('distance'))
             
             self.__attr['th_map'] = float(self.get_attr_from_file('th_map'))
@@ -181,10 +180,18 @@ class mol3d:
         else:
             print('ERROR: Could not find results (input file)')
 
+    def __getitem__(self, name):
+        try:
+            return self.__attr[name]
+        except:
+            print("ERROR, '%s' not found, available keys are:" %name)
+            for key in self.__attr.keys():
+                print(key)
+
     def set_units(self):
         self.__unit = {}
         self.__unit['PX'] = 1.0
-        self.__unit['AS'] = ((self.__attr['n_bin_map'] + 0.5)/self.__attr['arcs'])**2
+        self.__unit['AS'] = ((self.__attr['n_bin_map'] + 0.5)/self.__attr['image_arcs'])**2
 
     def __get_unit_value(self, unit):
 

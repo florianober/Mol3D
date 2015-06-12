@@ -111,8 +111,8 @@ contains
                     DO i_dust=1,dust%n_dust
                         !$omp atomic
                         grid%cell_energy_sum(i_dust,photon%nr_cell,1) = &
-                                grid%cell_energy_sum(i_dust,photon%nr_cell,1)+ &
-                                d_l * photon%energy * dust%C_abs(i_dust,photon%nr_lam) * &
+                                grid%cell_energy_sum(i_dust,photon%nr_cell,1) + &
+                                d_l * photon%energy * dust%C_abs(i_dust, photon%nr_lam) * &
                                 model%ref_unit
 
                     END DO
