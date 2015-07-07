@@ -980,7 +980,7 @@ CONTAINS
 
     SUBROUTINE set_grid_properties(basics, grid, dust, gas, model)
     ! set grid density and temperature! (and velocity) 
-    ! prepared for gerneral coordinates
+    ! prepared for general coordinates
     
         USE model_mod
         USE parser_mod
@@ -1070,10 +1070,10 @@ CONTAINS
             END DO
             CLOSE(unit=1)
         ELSE IF (GetGridType(grid) == 9) THEN
-            ! this is the most general way to read the density (and velocity?)
-            ! distribution. It reads the "input/grid/model.fits" file that 
+            ! this is the most general way to read in the different 
+            ! distribution (density, temperature, velocity...).
+            ! It reads the "input/grid/model.fits" file that 
             ! should be a symbolic link to the actual model file.
-            ! This approach should be independend of the 
 
             PRINT *, "Read model distribution from file"
             CALL read_model(grid, "input/grid/model.fits")
@@ -1095,23 +1095,18 @@ CONTAINS
                 !      
                 !
                 ! set the density for the dust component
+                
                 !###############################################################
                 ! add your custom density distribution here
                 !
-                !IF (P_xy .lt. R_gap_in .or. P_xy .gt. R_gap_ou) THEN
-!~                 IF (abs(atan(P_z/P_xy)) < 0.30 ) THEN
-                    grid%grd_dust_density(i_cell,:) = get_density(model,       &
+
+                grid%grd_dust_density(i_cell,:) = get_density(model,       &
                                     grid%cellmidcaco(i_cell, :)) * dust%sidi(:)
                     
-                    ! set the density for all other elements (H, He,...)
-                    grid%grd_col_density(i_cell,:)  = get_density(model,       &
-                                                    grid%cellmidcaco(i_cell, :))
-                !ELSE
-!~                     grid%grd_dust_density(i_cell,:) = 0.0_r2
-!~                     grid%grd_col_density(i_cell,:)  = 0.0_r2
-!~                 END IF
-                
-                !END IF
+                ! set the density for all other collision partner (H, He,...)
+                grid%grd_col_density(i_cell,:)  = get_density(model,       &
+                                                  grid%cellmidcaco(i_cell, :))
+
                 !###############################################################
             END DO
         END IF

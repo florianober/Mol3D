@@ -103,8 +103,8 @@ CONTAINS
         END DO
 
         ! setting the gas temperature equal to the dust temperature
-        ! we need to gerneralize this
-!~         grid%t_gas(i_cell) = grid%t_dust(i_cell, 1)
+        ! we should generalize this
+        grid%t_gas(i_cell) = grid%t_dust(i_cell, 1)
         
     END DO
     
@@ -117,7 +117,6 @@ CONTAINS
             ! set line width in each cell (in fact the inverse value)
             IF (grid%t_gas(i_cell) > 1.0e-2) THEN
                 v_turb = 100.0_r2 ! 100.0 eq turb. line width TbD
-                !v_turb = grid%velo(i_cell,3)! use i_z (as an indicator for turbulence)
                 
                 grid%cell_gauss_a(i_cell) = 1.0_r2 /                           &
                                 (sqrt(2.0_r2 * con_k * grid%t_gas(i_cell) /    &
