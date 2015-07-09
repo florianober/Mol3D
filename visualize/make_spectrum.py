@@ -153,7 +153,7 @@ def make_spectra(path_results, pname, unit='PX'):
 
     project = mol3d(pname, path_results)
 
-    map_in = project.return_velo_ch_map('AS')
+    map_in = project.return_velo_ch_map(unit)
     if map_in != []:
         
         vch = project.vch
@@ -165,18 +165,7 @@ def make_spectra(path_results, pname, unit='PX'):
         else:
             extent = [-arcs, arcs, -arcs, arcs]
 
-        # make line spectrum
-        
-        plt.figure('line spectrum')
-        y_arr = map_in.sum(axis=1).sum(axis=1)
-        plt.plot(vch, y_arr)
-        plt.ylim(0, 1.1*np.max(y_arr))
-        plt.xlim(np.min(vch), np.max(vch))
-        plt.xlabel('velocity [m/s]')
-        plt.ylabel('intensity [Jy]')
-
         # make intensity map
-        map_in = project.return_velo_ch_map(unit)
         fig = make_velo_int_plot(map_in, project.attr['dvelo'],
                                  extent=[-arcs, arcs, -arcs, arcs],
                                  conv=project.attr['distance'])
@@ -190,8 +179,19 @@ def make_spectra(path_results, pname, unit='PX'):
         offset = int((N1*N2-1)/2.)
         fig = make_velo_ch_plot(map_in[mid-(incr*offset): mid + (incr*offset+1): incr],
                             vch[mid-(incr*offset): mid + (incr*offset+1): incr],
-                            N1, N2, extent=extent, interpol='spline36')
+                            N1, N2, extent=extent, interpol='None')
         #~ fig.savefig(pname + '_velo_ch_map.pdf',bbox_inches='tight')
+
+        # make line spectrum
+        
+        plt.figure('line spectrum')
+        map_in = project.return_velo_ch_map('PX')
+        y_arr = map_in.sum(axis=1).sum(axis=1)
+        plt.plot(vch, y_arr)
+        plt.ylim(0, 1.1*np.max(y_arr))
+        plt.xlim(np.min(vch), np.max(vch))
+        plt.xlabel('velocity [m/s]')
+        plt.ylabel('intensity [Jy]')
 
 def make_spectra_fits(fits_file):
     fits = pf.open(fits_file)
@@ -246,6 +246,6 @@ if __name__ == "__main__":
     if '.fits' in P_NAME:
         make_spectra_fits('/home/fober/test.fits')
     else:
-        make_spectra(PATH_RESULTS, P_NAME)
+        make_spectra(PATH_RESULTS, P_NAME, unit='AS')
     plt.show()
 
