@@ -35,7 +35,7 @@ CONTAINS
   !
   ! ---
   
-    SUBROUTINE set_temperature(basics,grid,model,dust,gas,sources_in,fluxes)
+    SUBROUTINE set_temperature(basics, grid, model, dust, gas, sources_in,fluxes)
 
 
     IMPLICIT NONE
@@ -52,7 +52,6 @@ CONTAINS
     REAL(kind=r2), DIMENSION(1:3)                    :: caco
     REAL(kind=r2), DIMENSION(1:3)                    :: moco
     REAL(kind=r2)                                    :: min_cell_energy
-    REAL(kind=r2)                                    :: v_turb
     
     INTEGER                                          :: i_cell
     INTEGER                                          :: i_dust
@@ -116,12 +115,11 @@ CONTAINS
 
             ! set line width in each cell (in fact the inverse value)
             IF (grid%t_gas(i_cell) > 1.0e-2) THEN
-                v_turb = 100.0_r2 ! 100.0 eq turb. line width TbD
                 
                 grid%cell_gauss_a(i_cell) = 1.0_r2 /                           &
                                 (sqrt(2.0_r2 * con_k * grid%t_gas(i_cell) /    &
                                      (gas%mol_weight * 1.0e-3_r2 / con_Na) +   &
-                                      v_turb))
+                                      gas%v_turb))
             ELSE
                 grid%cell_gauss_a(i_cell) = 0.0_r2
             END IF                

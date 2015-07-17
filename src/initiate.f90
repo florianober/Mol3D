@@ -4,7 +4,6 @@ MODULE initiate
     USE var_global
 
     USE basic_type, ONLY   : Basic_TYP, InitBasic, CloseBasic
-    USE randgen_type, ONLY : Randgen_TYP, InitRandgen, CloseRandgen
     USE fluxes_type, ONLY  : Fluxes_TYP, InitFluxes, CloseFluxes
     USE model_type, ONLY   : Model_TYP, InitModel, CloseModel
     USE grid_type, ONLY    : Grid_TYP, InitGrid, CloseGrid
@@ -51,6 +50,7 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
     CHARACTER(len=256)                               :: flux_unit
     CHARACTER(len=252)                               :: file_a, file_b, file_c
     CHARACTER(len=4)                                 :: ref_u_str
+    CHARACTER(len=20)                                :: randgen_name
     CHARACTER(len=32)                                :: grid_name
     CHARACTER(len=256)                               :: in_arg
     CHARACTER(len=8), ALLOCATABLE, DIMENSION(:)      :: dust_cat
@@ -69,6 +69,7 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
     REAL(kind=r2)                                    :: sizexp
     REAL(kind=r1)                                    :: t_dust_max
     REAL(kind=r1)                                    :: t_dust_min
+    REAL(kind=r2)                                    :: v_turb
 
     REAL(kind=r2), ALLOCATABLE, DIMENSION(:)         :: dens_dust
     REAL(kind=r2), ALLOCATABLE, DIMENSION(:)         :: th_map
@@ -244,17 +245,24 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
     CALL parse('do_velo_ch_map', do_velo_ch_map, new_input_file)
     WRITE(help,fmt='(L1)') do_velo_ch_map
     WRITE(unit=3,fmt='(A)') 'do_velo_ch_map = {'//TRIM(help)//'}'
-
+    !  randgen_name = name of the desired random number generator,
+    !                 possible values at the moment:
+    !                 'MT'       : Mersenne Twister
+    !                              Copyright (C) 1997 Makoto Matsumoto and
+    !                                                 Takuji Nishimura
+    !                 'TAUS88'   : L'Ecuyer, P. (1996) (prefered)
+    !                 'COMPILER' : The compiler own
+    randgen_name = 'TAUS88'
+    
     CALL InitBasic(basics,photon_type,'Reemission map', proname, r_path,       &
                    do_MC_temperature, old_proname,                             &
                    old_model, do_continuum_raytrace,                           &
                    do_continuum_mc, do_velo_ch_map, peel_off,                  &
                    n_tem, t_dust_min, t_dust_max, num_core,                    &
-                   input_file, new_input_file)
+                   input_file, new_input_file, randgen_name)
 
     !------------------------------  Init Model  ------------------------------!
-     
-    
+
     CALL parse('r_in',r_in,input_file)
     
     WRITE(help,fmt='(ES15.6)') r_in
@@ -388,8 +396,12 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
     WRITE(unit=3,fmt='(A)') 'vel_max = {'//TRIM(help)//&
     '}                  max velocity in spectrum (in m/s)'
 
+    CALL parse('v_turb', v_turb, new_input_file)    
+    WRITE(help,fmt='(F8.2)') v_turb
+    WRITE(unit=3,fmt='(A)') 'v_turb = {'//TRIM(help)//&
+    '}                    turbulent velocity (in m/s)'
     CALL InitGas(gas, mode, gas_cat_name, molratio, abundance, n_tr, tr_cat,   &
-                 i_vel_chan, vel_max)
+                 i_vel_chan, vel_max, v_turb)
 
     DEALLOCATE( tr_cat )
 

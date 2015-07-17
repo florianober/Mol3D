@@ -219,8 +219,8 @@ CONTAINS
         ! We need to calculate the
         IF ( source%emission_concept == 1) THEN
             ! (isotropic)
-            CALL RAN2(rand_nr, rndx1)
-            CALL RAN2(rand_nr, rndx2)
+            CALL GetNewRandomNumber(rand_nr, rndx1)
+            CALL GetNewRandomNumber(rand_nr, rndx2)
             CALL isotropic_sphere(rndx1, rndx2, SINPHI, COSPHI, SINTHE, COSTHE)
         ! TbD: more emission concepts, expanded sources, dark limb darkening,
         !      sunspots, ....

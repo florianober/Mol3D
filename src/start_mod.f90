@@ -47,7 +47,7 @@ contains
     !--------------------------------------------------------------------------!
     i_lam = 1
     ! 1. get new source to start from
-    CALL RAN2(rand_nr,rndx)
+    CALL GetNewRandomNumber(rand_nr,rndx)
     i_source = GetNewSource(sources_in, rndx)
 
     ! 2. direction
@@ -63,7 +63,7 @@ contains
     ! 3. get new wavelength
     IF (.not. photon%fixed_lam) THEN
         DO
-            CALL RAN2(rand_nr,rndx)
+            CALL GetNewRandomNumber(rand_nr,rndx)
             IF (rndx .le. 1.0e-300_r2) CYCLE
             IF (rndx .gt. maxval(sources_in%source(i_source)%wave_cdf) ) THEN
                 i_lam = -1
@@ -137,8 +137,8 @@ contains
 
     ! 2. direction of emission
     ! (isotropic)
-    CALL RAN2(rand_nr, rndx1)
-    CALL RAN2(rand_nr, rndx2)
+    CALL GetNewRandomNumber(rand_nr, rndx1)
+    CALL GetNewRandomNumber(rand_nr, rndx2)
     CALL isotropic_sphere(rndx1, rndx2,                                        &
                               photon%SINPHI,                                   &
                               photon%COSPHI,                                   &

@@ -604,7 +604,7 @@ CONTAINS
            prob_action(:) = grid%grd_dust_density(photon%nr_cell,:) *          &
                                  this%C_ext(:,photon%nr_lam)
 
-           CALL RAN2(rand_nr, rndx)    
+           CALL GetNewRandomNumber(rand_nr, rndx)    
            hd1 = rndx * sum( prob_action(:) )
 
            i_dust_action = 1

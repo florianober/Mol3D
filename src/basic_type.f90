@@ -28,7 +28,7 @@ MODULE basic_type
     ! 
     !--------------------------------------------------------------------------!
     TYPE Basic_TYP
-        TYPE(Common_TYP) :: mtype                       ! -----------------    !
+        TYPE(Common_TYP) :: mtype                                              !
         !----------------------------------------------------------------------!
         INTEGER          :: pnamelen
         INTEGER          :: num_core
@@ -57,6 +57,10 @@ MODULE basic_type
         CHARACTER(len=256)                :: path_results
         CHARACTER(len=256)                :: input_file
         CHARACTER(len=256)                :: new_input_file
+        CHARACTER(len=20)                 :: randgen_name
+        CHARACTER(len=20)                 :: velocity_type
+        CHARACTER(len=20)                 :: temperature_type
+        
         LOGICAL                           :: do_MC_temperature
         LOGICAL                           :: old_model
         LOGICAL                           :: do_raytr
@@ -87,7 +91,7 @@ CONTAINS
                          do_continuum_raytrace, do_continuum_mc,               &
                          do_velo_ch_map, do_peel_off,                          &
                          n_tem, t_dust_min, t_dust_max, num_core,              &
-                         input_file, new_input_file)
+                         input_file, new_input_file, randgen_name)
 
         IMPLICIT NONE
         !----------------------------------------------------------------------!
@@ -103,6 +107,7 @@ CONTAINS
         CHARACTER(LEN=*)      :: presult
         CHARACTER(len=*)      :: input_file
         CHARACTER(len=*)      :: new_input_file
+        CHARACTER(len=*)      :: randgen_name
         
         REAL(kind=r1)         :: t_dust_max
         REAL(kind=r1)         :: t_dust_min
@@ -119,7 +124,7 @@ CONTAINS
                                n_tem, t_dust_max, t_dust_min,                  &
                                do_MC_temperature, old_model, old_pname,        &
                                do_continuum_raytrace, do_continuum_mc,         &
-                               do_velo_ch_map, do_peel_off
+                               do_velo_ch_map, do_peel_off, randgen_name
         INTENT(INOUT)       :: this
         !----------------------------------------------------------------------!
         CALL InitCommon(this%mtype,ut,un)
@@ -177,6 +182,10 @@ CONTAINS
         this%do_continuum_mc  = do_continuum_mc
         this%do_peel_off = do_peel_off
         this%do_velo_ch_map = do_velo_ch_map
+
+        this%randgen_name = randgen_name
+        this%velocity_type = 'ANALYTICAL_KEPLERIAN'   ! possible values: ANALYTICAL_KEPLERIAN, INTERPOLATE
+        this%temperature_type = 'MC'       ! possible values: MC, ANALYTICAL
 
         IF (do_continuum_raytrace .or. do_velo_ch_map) THEN
             this%do_raytr = .True.

@@ -53,7 +53,7 @@ contains
         !----------------------------------------------------------------------!
         ! ---
         ! 1. determine optical depth (distance) to next point of interaction
-        CALL RAN2(rand_nr,rndx)
+        CALL GetNewRandomNumber(rand_nr,rndx)
         tau_end = -log(1.0_r2 - rndx)
 
         ! 2. go to next point of interaction

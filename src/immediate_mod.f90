@@ -53,7 +53,7 @@ CONTAINS
         ! 2. chose a wavelength in the difference
         !    SED randomly == new wavelength, the photon energy is not
         !    changed
-        CALL RAN2(rand_nr,rndx)
+        CALL GetNewRandomNumber(rand_nr,rndx)
         i_lam = MIN(binary_search(rndx,                                    &
                     dust%QdB_dT_l_cdf(:,i_tem,i_dust_action))+1,           &
                     dust%n_lam)

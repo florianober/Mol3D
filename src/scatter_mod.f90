@@ -92,7 +92,7 @@ CONTAINS
         ! which shows to the accompanying elements of the scattering matrix.
         ! LOT=1 shows to THETA=0 degree and LOT=x shows to THETA=(x-1) * DANG
         ! degree.
-        CALL RAN2(rand_nr, rndx)
+        CALL GetNewRandomNumber(rand_nr, rndx)
         photon%lot_th = dust%SCAANG(i_dust, photon%nr_lam,                     &
                                     nint(real(dust%nrndpt,kind=r2)*rndx) )
         ANGLE  = (photon%lot_th-1) * dust%D_ANG
@@ -107,7 +107,7 @@ CONTAINS
                   real(-dust%SME(1, 2, i_dust, photon%nr_lam,photon%lot_th) /  &
                   dust%SME(1, 1, i_dust, photon%nr_lam, photon%lot_th), kind=r2)
 
-        CALL RAN2(rand_nr, rndx)
+        CALL GetNewRandomNumber(rand_nr, rndx)
 
         if (abs(PHIPAR) < 0.1_r2) then
            PHI = rndx * basics%PIx2                ! PHI = rndx * 2.0_r2 * PI
@@ -131,7 +131,7 @@ CONTAINS
                  else
                     if ((hd1-hd2) < 1.0e-15_r2) then
                          hl1 = .true.   ! endlos-schleife -> neuen wert auslosen
-                         CALL RAN2(rand_nr,rndx)
+                         CALL GetNewRandomNumber(rand_nr,rndx)
                          exit
                     endif
                  endif
@@ -180,8 +180,8 @@ CONTAINS
         REAL(kind=r2)                                    :: rndx1, rndx2
         !----------------------------------------------------------------------!
         ! ---
-        CALL RAN2(rand_nr, rndx1)
-        CALL RAN2(rand_nr, rndx2)
+        CALL GetNewRandomNumber(rand_nr, rndx1)
+        CALL GetNewRandomNumber(rand_nr, rndx2)
         CALL isotropic_sphere(rndx1, rndx2, photon%SINPHI, photon%COSPHI,      &
                                             photon%SINTHE, photon%COSTHE)
         photon%lot_th = nint( rad2grad(dasico( photon%SINTHE, photon%COSTHE )) )
@@ -210,7 +210,7 @@ CONTAINS
 
         ! ---
         ! theta
-        CALL RAN2(rand_nr, rndx)
+        CALL GetNewRandomNumber(rand_nr, rndx)
         photon%lot_th = dust%SCAANG(i_dust, photon%nr_lam,                     &
                                     nint(real(dust%nrndpt, kind=r2)*rndx))
         ANGLE  = photon%lot_th * dust%D_ANG
@@ -218,7 +218,7 @@ CONTAINS
         photon%COSTHE = cos(ANGLE)
 
         ! phi
-        CALL RAN2(rand_nr, rndx)
+        CALL GetNewRandomNumber(rand_nr, rndx)
         photon%SINPHI = sin( rndx * PI * 2.0_r2)
         photon%COSPHI = cos( rndx * PI * 2.0_r2)
 

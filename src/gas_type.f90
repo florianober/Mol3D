@@ -21,6 +21,7 @@ MODULE gas_type
         REAL(kind=r1)                           :: dust_mol_ratio
         REAL(kind=r1)                           :: mol_abund
         REAL(kind=r1)                           :: vel_max
+        REAL(kind=r1)                           :: v_turb
         
         REAL(kind=r1)                           :: mol_weight
         
@@ -69,7 +70,7 @@ MODULE gas_type
 CONTAINS
 
     SUBROUTINE InitGas(this, ut, un, moldustratio,                             &
-                       nvratio, n_tr, tr_cat, i_vel_chan, vel_max)
+                       nvratio, n_tr, tr_cat, i_vel_chan, vel_max, v_turb)
         IMPLICIT NONE
         !----------------------------------------------------------------------!
         TYPE(Gas_TYP)                      :: this
@@ -83,10 +84,11 @@ CONTAINS
         REAL(kind=r2)                      :: nvratio
         REAL(kind=r2)                      :: abundance
         REAL(kind=r2)                      :: vel_max
+        REAL(kind=r2)                      :: v_turb
 
         !----------------------------------------------------------------------!
         INTENT(IN)             :: ut,un, moldustratio, nvratio, n_tr, tr_cat, &
-                                  i_vel_chan, vel_max
+                                  i_vel_chan, vel_max, v_turb
         INTENT(INOUT)          :: this
         !----------------------------------------------------------------------!
         CALL InitCommon(this%mtype,ut,un)
@@ -110,6 +112,7 @@ CONTAINS
         this%dust_mol_ratio = moldustratio
         abundance           = nvratio
         this%mol_abund      = abundance
+        this%v_turb = v_turb
         
     END SUBROUTINE InitGas
 

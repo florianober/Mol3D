@@ -50,6 +50,7 @@ CONTAINS
         LOGICAL, INTENT(IN)                              :: deposit_energy
         LOGICAL, INTENT(IN)                              :: peel_off
         INTEGER                                          :: seed
+        REAL(kind=r2)                                    :: rndx
 
         INTEGER, INTENT(IN), OPTIONAL                    :: i_lam_in
         INTEGER(8)                                       :: i_phot, k_phot
@@ -60,14 +61,15 @@ CONTAINS
         IF (.not.PRESENT(i_lam_in)) THEN
             print *,'| | | starting photon transfer ... [this may take a while]'
         END IF
-        k_phot = model%no_photon/100
+        k_phot = MAX(NINT(model%no_photon/100.0_r2),1)
+
         kill_photon_count = 0
         ! initialize random number generator
         seed = -1
         !$omp parallel num_threads(basics%num_core) PRIVATE(rand_nr) FIRSTPRIVATE(seed)
         !$ seed = (omp_get_thread_num()+1)*(-1)
 
-        CALL InitRandgen(rand_nr,seed,'RAN2')
+        CALL InitRandgen(rand_nr, seed, basics%randgen_name)
         !----------------------------------------------------------------------!
         !$omp do schedule(dynamic) PRIVATE(i_phot) FIRSTPRIVATE(photon)
         DO i_phot=1,model%no_photon
@@ -77,6 +79,7 @@ CONTAINS
             ELSE
                 CALL InitPhoton(photon, 1, 'Photon')
             END IF
+
             ! show progress
             IF (modulo(i_phot, k_phot) == 0 .or. i_phot==model%no_photon) THEN
                 write (*,'(A,I3,A)') " | | | | - progress : ", &
@@ -86,12 +89,14 @@ CONTAINS
             ! 1. start photon (from included sources)
             CALL start_photon(basics, grid, model, rand_nr,                    &
                               dust, photon, sources_in)
+
             IF (photon%kill) THEN
                 !$omp atomic
                 kill_photon_count = kill_photon_count + 1
                 CALL ClosePhoton(photon)  
                 CYCLE
             END IF
+
             IF (peel_off) THEN
                 CALL peel_off_photon(model, grid, dust, rand_nr, fluxes, photon)
             END IF
@@ -157,7 +162,7 @@ CONTAINS
             IF (show_error) PRINT '(A,F5.2,A)', ' | | | | ',                   &
                             REAL(kill_photon_count)/model%no_photon*100_r2,    &
                                    ' % photons killed               '
-            print *, '| | | photon transfer finished                '
+            PRINT *, '| | | photon transfer finished                '
         END IF
     END SUBROUTINE MC_photon_transfer
         

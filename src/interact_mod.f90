@@ -115,7 +115,7 @@ CONTAINS
         i_dust = dust_select( grid, dust, rand_nr, photon)
         
         ! 2. select type of interaction
-        CALL RAN2(rand_nr, rndx)
+        CALL GetNewRandomNumber(rand_nr, rndx)
         
         IF ( rndx < dust%albedo(i_dust, photon%nr_lam) ) THEN
             

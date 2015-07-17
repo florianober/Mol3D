@@ -20,7 +20,7 @@ from matplotlib.colors import LogNorm
 if len(sys.argv) > 1:
     P_NAME = sys.argv[1]
 else:
-    P_NAME = 'example'
+    P_NAME = 'fosite_anna_test_sp'
 
 if len(sys.argv) > 2:
     PATH_RESULTS = sys.argv[2]
@@ -29,6 +29,61 @@ else:
     PATH_RESULTS = FILE_IN.readline().split()[0]
     FILE_IN.close()
 
+def make_cuts(path_results, p_name, axis='x'):
+    fits = pf.open(path_results + p_name + '_model.fits')
+    header = fits[0].header
+    data = fits[0].data
+    fits.close()
+
+    # very rubish implementation, and not sure if generally working, but
+    # for the moment its fine
+    if axis == 'x':
+        ind = (np.abs(data[:, 1]) <= 1.0e-10) & (np.abs(data[:, 2]) <= 1.0e-10)
+    else:
+        print('ERROR, axis not defined at the moment')
+        return None
+        
+    plt.figure('dust number density midplane')
+    plt.plot(np.abs(data[ind, 0]), data[ind, 3]*1e-6, 'b+-')
+    plt.xlabel('distance [AU]')
+    plt.ylabel('number density cm^-3')
+    vmax = data[ind, 3].max()*1e-6
+    vmin = vmax * 1.0e-8
+    plt.ylim(vmin, vmax)
+    plt.yscale('log')
+    plt.xscale('log')
+
+    plt.figure('temperatures midplane')
+    plt.plot(np.abs(data[ind, 0]), data[ind, 8], 'b+-')
+    plt.plot(np.abs(data[ind, 0]), data[ind, 9], 'r+-')
+    vmax = data[ind, 8].max()
+    vmin = vmax * 1.0e-2
+    plt.ylim(vmin, vmax)
+    plt.xlabel('distance [AU]')
+    plt.ylabel('temperature [K]')
+    plt.xscale('log')
+
+#~ 
+    #~ plt.figure()
+    #~ ind = (np.abs(data[:, 1]) <= 1.0e-10) & (data[:, 3] > 1e-11)
+#~ 
+    #~ ##~ plt.pcolormesh((np.abs(data[ind, 0]), data[ind, 2], data[ind, 8]*1e-6)
+    #~ plt.tripcolor(np.abs(data[ind, 0]), data[ind, 2], data[ind, 3]*1e-6, norm=LogNorm(vmax=1e6, vmin=1e-15), vmin=1e-15)
+    #~ plt.colorbar()
+    #~ ##~ plt.plot(np.abs(data[ind, 0]), data[ind, 2], 'k.')
+    #~ plt.xlabel('distance [AU]')
+    #~ plt.ylabel('distance [AU]')
+    #~ plt.figure()
+    #~ plt.tripcolor(np.abs(data[ind, 0]), data[ind, 2], data[ind, 8])
+    #~ plt.colorbar()
+    #~ plt.xlabel('distance [AU]')
+    #~ plt.ylabel('distance [AU]')
+    #~ plt.figure()
+    #~ plt.tripcolor(np.abs(data[ind, 0]), data[ind, 2], data[ind, 9])
+    #~ plt.colorbar()
+    #~ plt.xlabel('distance [AU]')
+    #~ plt.ylabel('distance [AU]')
+    
 def show_maps(path_results, p_name):
     """ search visualisation file for different planes """
 
@@ -36,7 +91,7 @@ def show_maps(path_results, p_name):
     present_plane(path_results+p_name, 'xz')
 
     # show xy-plane
-    present_plane(path_results+p_name, 'xy')
+    #~ present_plane(path_results+p_name, 'xy')
 
     # show yz-plane
     #~ present_plane(path_results+p_name, 'yz')
@@ -235,5 +290,6 @@ if __name__ == "__main__":
     """ main routine """
     
     show_maps(PATH_RESULTS, P_NAME)
+    make_cuts(PATH_RESULTS, P_NAME, axis='x')
 
     plt.show()

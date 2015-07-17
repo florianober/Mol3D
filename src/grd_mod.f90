@@ -168,8 +168,7 @@ CONTAINS
 
         print *, '                                                             '
         !----------------------------------------------------------------------!
-        !    ! estimate mass
-        !  scale to given mass, or to given density (at some point here 100 AU)
+        !
 
         IF (.not. basics%old_model) THEN
 
@@ -593,6 +592,9 @@ CONTAINS
                 PRINT *, "outer cell bound : ", grid%co_mx_a(grid%n(1))
                 STOP
             END IF
+            ! set the boundaries to the Mol3D values to ensure consistency
+            grid%co_mx_a(0) = model%r_in
+            grid%co_mx_a(grid%n(1)) = model%r_ou
 
             ! ---
             ! 2 phi
@@ -609,6 +611,9 @@ CONTAINS
                 PRINT *, "upper cell boundary : ", grid%co_mx_b(grid%n(2))
                 STOP
             END IF
+            ! set the boundaries to the Mol3D values to ensure consistency
+            grid%co_mx_b(0) = 0.0_r2
+            grid%co_mx_b(grid%n(2)) = 2_r2 * PI
 
             ! ---
             ! 3 z
@@ -617,7 +622,7 @@ CONTAINS
             ! co_mx_c(n(3)) = r_ou
 
             IF ( abs(model%r_ou + grid%co_mx_c(0)) .gt. 1.0e3_r2*epsilon(model%r_ou)) THEN
-                PRINT *, "ERROR: lower z coordinate is not r_ou"
+                PRINT *, "ERROR: lower z coordinate is not -r_ou"
                 PRINT *, "upper cell boundary : ", grid%co_mx_c(0)
                 STOP
             ELSEIF ( abs(model%r_ou - grid%co_mx_c(grid%n(3))) .gt. 1.0e3_r2*epsilon(model%r_ou)) THEN
@@ -625,6 +630,9 @@ CONTAINS
                 PRINT *, "upper cell boundary : ", grid%co_mx_c(grid%n(3))
                 STOP
             END IF
+            ! set the boundaries to the Mol3D values to ensure consistency
+            grid%co_mx_c(0) = -model%r_ou
+            grid%co_mx_c(grid%n(3)) = model%r_ou
         END SELECT
 
     END SUBROUTINE set_boundaries_cy
@@ -726,6 +734,9 @@ CONTAINS
                 PRINT *, "upper cell boundary : ", grid%co_mx_a(grid%n(1))
                 STOP
             END IF
+            ! set the boundaries to the Mol3D values to ensure consistency
+            grid%co_mx_a(0) = -model%r_ou
+            grid%co_mx_a(grid%n(1)) = model%r_ou
 
             ! ---
             ! 2 y
@@ -742,6 +753,9 @@ CONTAINS
                 PRINT *, "upper cell boundary : ", grid%co_mx_c(grid%n(2))
                 STOP
             END IF
+            ! set the boundaries to the Mol3D values to ensure consistency
+            grid%co_mx_b(0) = -model%r_ou
+            grid%co_mx_b(grid%n(2)) = model%r_ou
 
             ! ---
             ! 3 z
@@ -758,6 +772,10 @@ CONTAINS
                 PRINT *, "upper cell boundary : ", grid%co_mx_c(grid%n(3))
                 STOP
             END IF
+            ! set the boundaries to the Mol3D values to ensure consistency
+            grid%co_mx_c(0) = -model%r_ou
+            grid%co_mx_c(grid%n(3)) = model%r_ou
+            
         END SELECT
 
     END SUBROUTINE set_boundaries_ca
@@ -932,27 +950,31 @@ CONTAINS
                 STOP
             ELSEIF ( abs(model%r_ou - grid%co_mx_a(grid%n(1))) .gt. 1.0e3_r2*epsilon(model%r_ou) ) THEN
                 PRINT *, "ERROR: Outer rim given in input file is not consistent with the grid"
-                PRINT *, "r_ou             : ", model%r_in
+                PRINT *, "r_ou             : ", model%r_ou
                 PRINT *, "outer cell bound : ", grid%co_mx_a(grid%n(1))
                 STOP
             END IF
- 
-
+            ! set the boundaries to the Mol3D values to ensure consistency
+            grid%co_mx_a(0) = model%r_in
+            grid%co_mx_a(grid%n(1)) = model%r_ou
             ! ---
             ! 2 theta
             ! test for consistency
             ! co_mx_b(  0 ) = -PI/2    (- 90°)
             ! co_mx_b(n(2)) =  PI/2    (  90°)
 
-            IF ( abs(PI/2 + grid%co_mx_b(0)) .gt. 1.0e3_r2*epsilon(PI) ) THEN
+            IF ( abs(PI/2_r2 + grid%co_mx_b(0)) .gt. 1.0e3_r2*epsilon(PI) ) THEN
                 PRINT *, "ERROR: lower theta coordinate is not -PI/2"
                 PRINT *, "lowest cell boundary : ", grid%co_mx_b(0)
                 STOP
-            ELSEIF ( abs(PI/2 - grid%co_mx_b(grid%n(2))) .gt. 1.0e3_r2*epsilon(PI) ) THEN
+            ELSEIF ( abs(PI/2_r2 - grid%co_mx_b(grid%n(2))) .gt. 1.0e3_r2*epsilon(PI) ) THEN
                 PRINT *, "ERROR: upper theta coordinate is not PI/2"
                 PRINT *, "upper cell boundary : ", grid%co_mx_b(grid%n(2))
                 STOP
             END IF
+            ! set the boundaries to the Mol3D values to ensure consistency
+            grid%co_mx_b(0) = -PI/2_r2
+            grid%co_mx_b(grid%n(2)) = PI/2_r2
             
             ! ---
             ! 3 phi
@@ -969,7 +991,9 @@ CONTAINS
                 PRINT *, "upper cell boundary : ", grid%co_mx_c(grid%n(3))
                 STOP
             END IF
-
+            ! set the boundaries to the Mol3D values to ensure consistency
+            grid%co_mx_c(0) = 0.0_r2
+            grid%co_mx_c(grid%n(3)) = 2_r2 * PI
         END SELECT
     
     END SUBROUTINE set_boundaries_sp
