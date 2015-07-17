@@ -9,7 +9,7 @@
 #                                                                                   #
 # author: Florian Ober                                                              #
 # email : fober@astrophysik.uni-kiel.de                                             #
-# date  : Apr 2015                                                                  #
+# date  : Jul 2015                                                                  #
 #####################################################################################
 
                                           (+) working, (o) testing, (-) not working
@@ -59,12 +59,13 @@ line_mode = {3}                           set the method to calculate the level 
                                           1 := LTE  2 := FEP  3 := LVG
 line = {3}                                line transition number (see gas_input file)
 i_vel_chan = {36}                         (half) Number of velocity channels
-vel_max = {1500.0}                        max velocity in spectrum (in m/s)
+vel_max = {1500.0}                        max velocity in spectrum (in m/s
+v_turb = {100}                            turbulent velocity (in m/s)'
 
 gas_cat_name = {co.dat}                   gas catalog name (in input/mol) (Leiden database style)
 dust_cat_name = {mrn--250}                dust catalog name (in input/dust) (in mc3d style)
 grid_name = {spherical}                   possible values: spherical (+), cylindrical (+), cartesian (o)
-grid_type = {1}                           default = 1. 2 and higher values for user defined grids
+grid_type = {1}                           default = 1, 2 and higher values for user defined grids
                                                     9 is reserved for a grid defined in a text file (+)
 
 n_a = {100}                               x - cartesian(o), rho - cylindrical(+), r     - spherical(+)
