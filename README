@@ -1,10 +1,10 @@
 ====================================================================
 
-Mol3d: 3D line and dust continuum radiative transfer code
+Mol3D: 3D line and dust continuum radiative transfer code
 --------
 
 author:         Florian Ober  
-version:        Jul 2015  
+version:        Aug 2015  
 email:          fober@astrophysik.uni-kiel.de  
 
 --------
@@ -38,7 +38,7 @@ If you do so you can skip this section and go directly to the next
 section (-- compiler --)  
   
 The second possibility is to install cfitsio into the directory   
-above this Mol3d installation (e.g. './../cfitsio'). Please not, it works  
+above this Mol3D installation (e.g., './../cfitsio'). Please note, it works  
 best if you install cfitsio with shared libraries:  
 
 >cd ../cfitsio/
@@ -136,4 +136,4 @@ If you have further problems in running the code, please do not hesitate
 to ask me.
 
 You are free to use and extend this code, but if you do so
-please cite 'F. Ober 2015, Astronomy and Astrophysics, Volume 579, A105'
+please cite 'Ober et al. 2015, Astronomy and Astrophysics, Volume 579, A105'
