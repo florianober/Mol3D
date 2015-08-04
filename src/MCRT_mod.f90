@@ -216,10 +216,7 @@ CONTAINS
         !----------------------------------------------------------------------!
         ! reset maps
         fluxes%continuum_map = 0.0_r2
-        DO i_dust = 1, dust%n_dust
-            grid%cell_energy_sum(i_dust,:,1) = grid%cell_energy(i_dust,:) *    &
-                                               (basics%PIx4 * grid%cell_vol(:))
-        END DO
+
         !TbD: better adjustment of the wavelength table
 
         DO i_lam = 42, 42!dust%n_lam
@@ -241,7 +238,6 @@ CONTAINS
             !                        deposit_energy=.False.,                    &
             !                        i_lam_in=i_lam)
         END DO
-        grid%cell_energy_sum(: , :, 1) = 0.0_r2
 
         CALL save_continuum_map(model, basics, dust, fluxes, 2,                &
                                 peel_off=basics%do_peel_off)

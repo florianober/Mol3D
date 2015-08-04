@@ -111,9 +111,9 @@ CONTAINS
     ! now, provide some extra visualisation output 
     ! 1: xz plane, 2: xy plane, 3: yz plane
     print *, "| generate visualisation output"
-    CALL vis_plane_fits(grid, basics, model, 1, 801)
-    CALL vis_plane_fits(grid, basics, model, 2, 801)
-    CALL vis_plane_fits(grid, basics, model, 3, 801)
+    CALL vis_plane_fits(grid, basics, model, 1, 256)
+    CALL vis_plane_fits(grid, basics, model, 2, 256)
+    CALL vis_plane_fits(grid, basics, model, 3, 256)
     print *, "| done!                 "
     print *, "|"
 

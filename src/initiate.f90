@@ -172,11 +172,12 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
 
     ! set further parameters 
 
-    n_tem             = 40000
+    
     n_scatt_th        = 361
     nrndpt            = 10000
-    t_dust_min        = 0
-    t_dust_max        = 2000.0
+    n_tem             = 500
+    t_dust_min        = 3
+    t_dust_max        = 3000.0
     n_interact_max    = 100000
     
     show_error = .True.               ! show some minor warnings
@@ -189,7 +190,7 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
         ! use the input file of the old calculation to ensure model consistency
         CALL parse('old_proname',old_proname,new_input_file)
         IF (old_proname == proname) THEN
-            print *, 'ERRORL: The given project name equals the old project name. Please adjust!'
+            print *, 'ERROR: The given project name equals the old project name. Please adjust!'
             STOP
         END IF
 
@@ -199,7 +200,7 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
         input_file = new_input_file
         old_proname = 'notdefined'
     END IF
-        
+    
     ! save input to file
     outname = TRIM(r_path)//TRIM(proname)//'_input_file.dat'
     

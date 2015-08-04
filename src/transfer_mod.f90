@@ -141,8 +141,8 @@ contains
                 ! c) store information about (fractional) path through last cell
                     DO i_dust=1,dust%n_dust
                         !$omp atomic
-                        grid%cell_energy_sum(i_dust,photon%nr_cell,1) = &
-                                grid%cell_energy_sum(i_dust,photon%nr_cell,1) + &
+                        grid%cell_energy(i_dust, photon%nr_cell) = &
+                                grid%cell_energy(i_dust, photon%nr_cell) + &
                                 d_l * photon%energy * dust%C_abs(i_dust, photon%nr_lam) * &
                                 model%ref_unit
 
@@ -161,8 +161,8 @@ contains
                 IF (deposit_energy) THEN    
                     DO i_dust=1,dust%n_dust
                         !$omp atomic
-                        grid%cell_energy_sum(i_dust,photon%nr_cell,1) = &
-                                grid%cell_energy_sum(i_dust,photon%nr_cell,1)+ &
+                        grid%cell_energy(i_dust,photon%nr_cell) = &
+                                grid%cell_energy(i_dust, photon%nr_cell)+ &
                                 d_l * photon%energy * dust%C_abs(i_dust,photon%nr_lam) * &
                                 model%ref_unit
                     END DO
