@@ -129,14 +129,22 @@ def make_continuum_maps(wlen, map_in, fig_label='', cmap='Set1',
 
         # now we need to calculate the polarisation degree and angle
         # we merge neighbouring cells to provide better (visualisation) results
-        
-        shrink_down = int(0.1*map_in.shape[2])
 
-        I = hlp.shrink(map_in[0, w, :, :], shrink_down, shrink_down)
+        map
         
-        Q = hlp.shrink(map_in[1, w, :, :], shrink_down, shrink_down)
         
-        U = hlp.shrink(map_in[2, w, :, :], shrink_down, shrink_down)
+        
+        I_interpolate = hlp.interpol_2d(map_in[0, w, :, :], map_in.shape[2]-1, map_in.shape[2]-1)
+
+        shrink_down = int(0.05*I_interpolate.shape[0])
+
+        I = hlp.shrink(I_interpolate, shrink_down, shrink_down)
+
+        Q_interpolate = hlp.interpol_2d(map_in[1, w, :, :], map_in.shape[2]-1, map_in.shape[2]-1)
+        Q = hlp.shrink(Q_interpolate, shrink_down, shrink_down)
+        
+        U_interpolate = hlp.interpol_2d(map_in[2, w, :, :], map_in.shape[2]-1, map_in.shape[2]-1)
+        U = hlp.shrink(U_interpolate, shrink_down, shrink_down)
 
         pol_deg, pol_angle = hlp.poldegang(I, Q, U)
         pol_angle += np.pi/2 # Quiver and astro definition of the angle
@@ -275,21 +283,6 @@ def make_continuum_all(path_results, pname, unit='PX'):
             map_in = getattr(project, 'return_continuum_maps'+method) (unit)
             wlen = sed_txt[:, 0]
             make_continuum_maps(wlen, map_in, extent=extent)
-
-    #  MC3D test cases
-    #~ pname2 = 'th90i00a'
-    #~ map_in = np.zeros((4, 100, 401, 401))
-    #~ mc3d, vch2 =  hlp.read_mc3dmap2('/home/fober/mc3dtests/mc.v4.0.020/results/'+ pname2 +'.stokes_map.I')
-    #~ map_in[0, 21, :, :] = mc3d[0,:, ::-1, ::-1]
-    #~ 
-    #~ mc3d, vch2 =  hlp.read_mc3dmap2('/home/fober/mc3dtests/mc.v4.0.020/results/'+ pname2 +'.stokes_map.Q')
-    #~ map_in[1, 21, :, :] = mc3d[0,:, ::-1, ::-1]
-    #~ 
-    #~ mc3d, vch2 =  hlp.read_mc3dmap2('/home/fober/mc3dtests/mc.v4.0.020/results/'+ pname2 +'.stokes_map.U')
-    #~ map_in[2, 21, :, :] = mc3d[0,:, ::-1, ::-1]
-    #~ 
-    #~ mc3d, vch2 =  hlp.read_mc3dmap2('/home/fober/mc3dtests/mc.v4.0.020/results/'+ pname2 +'.stokes_map.V')
-    #~ map_in[3, 21, :, :] = mc3d[0,:, ::-1, ::-1]
 
 if __name__ == "__main__":
 

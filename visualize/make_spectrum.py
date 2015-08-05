@@ -204,11 +204,23 @@ def make_spectra(path_results, pname, unit='PX'):
 
         # make velocity channel overview map
         mid = project.attr['i_vel_chan']
-        incr = 2
+
         N1 = 3
         N2 = 5
+        incr = int(map_in.shape[0]/(N1*N2))
+        if incr == 0 or map_in.shape[0] == N1*N2:
+            N1 = 3
+            N2 = 3
+            incr = int(map_in.shape[0]/(N1*N2))
+        if incr == 0 or map_in.shape[0] == N1*N2:
+            N1 = 1
+            N2 = 3
+            incr = int(map_in.shape[0]/(N1*N2))
         offset = int((N1*N2-1)/2.)
-        fig = make_velo_ch_plot(map_in[mid-(incr*offset): mid + (incr*offset+1): incr],
+        if map_in.shape[0]%(N1*N2) == 0:
+                incr -= 1
+        if incr > 0 and map_in.shape[0] > 3:
+            fig = make_velo_ch_plot(map_in[mid-(incr*offset): mid + (incr*offset+1): incr, :,:],
                             vch[mid-(incr*offset): mid + (incr*offset+1): incr],
                             N1, N2, extent=extent, interpol='None')
         #~ fig.savefig(pname + '_velo_ch_map.pdf',bbox_inches='tight')

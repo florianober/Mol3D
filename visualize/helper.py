@@ -666,6 +666,7 @@ def shrink(data, rows, cols):
                         cols, data.shape[1]/cols).sum(axis=1).sum(axis=2)
 
 def interpol_2d(data, rows, cols):
+    from scipy.interpolate import interp2d
     xx  = np.linspace(0, 1, data.shape[0])
     yy  = np.linspace(0, 1, data.shape[1])
     
