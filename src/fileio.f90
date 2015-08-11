@@ -668,18 +668,15 @@ CONTAINS
         outname = TRIM(filename)//fileext//'.gz'
         ! get a new u(nit) number
         call ftgiou(u, sta)
-        
+        print *, sta
         ! init fits file
         call ftinit(u,'!'//outname,1,sta)
-
+        print *, sta
         ! write header
         call ftphpr(u,.true.,-64,3,(/pix, pix, entries/),0,1,.true.,sta)
         ! write array to fits file
-        DO i_entry = 1, entries
-            start = 1 + (i_entry-1) * pix**2
-            call ftpprd(u,1, start, pix**2,   &
-                    (/map_out(:, :, i_entry)/),sta)
-        END DO
+        call ftpprd(u,1, 1, pix**2*entries, map_out(:, :, :),sta)
+
         ! add essential keywords
         CALL add_essential_fits_keys(u, grid%nh_n_dust, pix, model%r_ou,&
                                      GetModelName(model))
