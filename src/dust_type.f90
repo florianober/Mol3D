@@ -533,7 +533,9 @@ CONTAINS
             do i_tem=0, basics%n_tem
                 ! temperature (tabulate)
                 ! tbd: logarithmic distribution
-                this%tem_tab(i_tem) = real(i_tem, kind=r2) * basics%d_tem  +  basics%t_dust_min
+                this%tem_tab(i_tem) = basics%t_dust_min * &
+                                      (basics%t_dust_max/basics%t_dust_min)**  &
+                                      (REAL(i_tem, kind=r2)/(basics%n_tem -1))
                 ! tabulating planck function
                 this%planck_tab(:,i_tem) = planck( this%tem_tab(i_tem), this%lam(:))
 

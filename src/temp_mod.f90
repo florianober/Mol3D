@@ -123,14 +123,14 @@ CONTAINS
     
     DO i_cell = 1,grid%n_cell
         ! set correct internal cell energy
-        DO i_dust = 1, dust%n_dust
-            i_tem = min(int((grid%t_dust(i_cell, i_dust) -         &
-                         basics%t_dust_min)/basics%d_tem), basics%n_tem)
-            min_cell_energy = dust%QB(i_tem, i_dust)
-            IF (grid%cell_energy(i_dust,i_cell) .lt. min_cell_energy) THEN
-                grid%cell_energy(i_dust,i_cell) = min_cell_energy
-            END IF
-        END DO
+!~         DO i_dust = 1, dust%n_dust
+!~             i_tem = min(int((grid%t_dust(i_cell, i_dust) -         &
+!~                          basics%t_dust_min)/basics%d_tem), basics%n_tem)
+!~             min_cell_energy = dust%QB(i_tem, i_dust)
+!~             IF (grid%cell_energy(i_dust,i_cell) .lt. min_cell_energy) THEN
+!~                 grid%cell_energy(i_dust,i_cell) = min_cell_energy
+!~             END IF
+!~         END DO
 
         ! setting the gas temperature equal to the dust temperature
         ! we should generalize this
@@ -179,21 +179,9 @@ CONTAINS
         REAL(kind=r2)                                    :: min_cell_energy
                 
         !----------------------------------------------------------------------!
-        ! ---
-        ! some preprations
         ! reset flux map
         fluxes%continuum_map(:,:,:,:) = 0.0_r2
-        ! set internal cell energy
-        DO i_dust = 1, dust%n_dust
-            ! add a min temperature/energy (here 3 K)
-            i_tem = int((3.0_r2 - basics%t_dust_min)/basics%d_tem)
-            min_cell_energy = dust%QB(i_tem, i_dust)
-            WHERE (grid%cell_energy(i_dust,:) .lt. min_cell_energy)
-                grid%cell_energy(i_dust,:) = min_cell_energy
-            END WHERE
-            grid%cell_energy_sum(i_dust,:,1) = grid%cell_energy(i_dust,:) *    &
-                                               (basics%PIx4 * grid%cell_vol(:))
-        END DO
+
         ! photon transfer
         print *,'| | calculate temperature with Monte Carlo method'
         IF (basics%do_peel_off) PRINT *,"| | Peel-off technique enabled"
@@ -202,15 +190,7 @@ CONTAINS
                                 deposit_energy=.True.,                         &
                                 peel_off=basics%do_peel_off)
         ! prepare & save final results
-        DO i_dust=1,dust%n_dust
-            ! This is done, because in future we may want go back to pure lucy
-            ! iterations, thus we have a total energy array
-            ! 
-            grid%cell_energy(i_dust,:) = grid%cell_energy_sum(i_dust,:,1)/ &
-                                         (basics%PIx4 * grid%cell_vol(:))
-            grid%cell_energy_sum(i_dust,:,:) = 0.0_r2
-        END DO
-
+        print *, "| | save contiunuum maps and sed's (bined mode)"
         CALL save_continuum_map(model, basics, dust, fluxes, 1, basics%do_peel_off)
 
         CALL temp_final(basics, grid, dust)
@@ -218,7 +198,7 @@ CONTAINS
     END SUBROUTINE MC_temp
       
   SUBROUTINE temp_final(basics, grid, dust)
-    USE math_mod, ONLY : binary_search
+    USE math_mod, ONLY : binary_search, ipol2
     IMPLICIT NONE
     !--------------------------------------------------------------------------!
     TYPE(Basic_TYP),INTENT(IN)                       :: basics
@@ -235,16 +215,20 @@ CONTAINS
     hd2 = 0.0_r2
     do i_dust=1, dust%n_dust
         do nr_cell=1, grid%n_cell
-            hd2    =  (grid%cell_energy(i_dust,nr_cell) )
+            hd2 = (grid%cell_energy(i_dust, nr_cell) )/                        &
+                  (basics%PIx4 * grid%cell_vol(nr_cell))
          
             ! [2] find corresponding temperature from QB integral
-            i_tem = MIN(binary_search(hd2,dust%QB(:,i_dust))-1,basics%n_tem)
-
-            grid%t_dust(nr_cell,i_dust) = &
-                ( ( (hd2 - dust%QB(i_tem-1,i_dust)) / (dust%QB(i_tem,i_dust) - &
-                     dust%QB(i_tem-1,i_dust)) ) +                              &
-                     real(i_tem-1,kind=r2) ) *                                 &
-                     basics%d_tem 
+            i_tem = MIN(binary_search(hd2, dust%QB(:,i_dust))- 1, basics%n_tem)
+            IF (i_tem == 0) THEN
+                grid%t_dust(nr_cell, i_dust) = dust%tem_tab(i_tem)
+            ELSE
+                grid%t_dust(nr_cell, i_dust) =                                 &
+                                    ipol2( dust%QB(i_tem-1, i_dust),           &
+                                    dust%QB(i_tem, i_dust),                    &
+                                    REAL(dust%tem_tab(i_tem-1), kind=r2),      &
+                                    REAL(dust%tem_tab(i_tem), kind=r2), hd2 )
+            END IF
         end do
     end do
 

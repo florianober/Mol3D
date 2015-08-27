@@ -99,6 +99,7 @@ CONTAINS
         ! ---
         ! 1. select dust species for interaction
         i_dust = dust_select( grid, dust, rand_nr, photon)
+
         IF (photon%stokes(1) .gt. 0.01_r2) THEN
             ! 2.1 absorption
             photon%stokes(:) = photon%stokes(:) *                              &

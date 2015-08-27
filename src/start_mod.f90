@@ -92,20 +92,10 @@ contains
 
     ! 3. get new wavelength
     IF (.not. photon%fixed_lam) THEN
-        DO
-            CALL GetNewRandomNumber(rand_nr,rndx)
-            IF (rndx .le. 1.0e-300_r2) CYCLE
-            IF (rndx .gt. maxval(sources_in%source(i_source)%wave_cdf) ) THEN
-                i_lam = -1
-                photon%kill = .True.
-                photon%inside  = .False.
-            ELSE
-                i_lam = GetNewLam(sources_in, i_source, rndx)
-                photon%kill = .False.
-                photon%inside  = .True.
-            END IF
-            EXIT
-        END DO
+        i_lam = GetNewLam(sources_in, i_source, rndx)
+        photon%kill = .False.
+        photon%inside  = .True.
+
     END IF
     ! 4. starting point = location of source
     photon%pos_xyz(:) = sources_in%source(i_source)%pos_xyz

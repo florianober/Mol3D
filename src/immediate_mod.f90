@@ -112,8 +112,8 @@ CONTAINS
         !----------------------------------------------------------------------!
         ! ---
         ! 
-        hd1    = (grid%cell_energy_sum(i_dust, i_cell,1)/                      &
-                 (basics%PIx4 * grid%cell_vol(i_cell)))
+        hd1 = (grid%cell_energy(i_dust, i_cell)/                               &
+              (basics%PIx4 * grid%cell_vol(i_cell)))
 
         i_tem = MIN(binary_search(hd1, dust%QB(:,i_dust))-1, basics%n_tem)
         IF ( (hd1 - dust%QB(i_tem-1,i_dust))/                                  &

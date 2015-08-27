@@ -40,9 +40,10 @@ MODULE math_mod
     PRIVATE
     PUBLIC ::   planck, planckhz, integ1, rad2grad, grad2rad, atan3, atanx,    &
                 norm,cy2ca, sp2ca, ca2sp, ipol1, ipol2,                        &
-                arcdis, dasico, gauss_arr, solve_eq, binary_search,         &
+                arcdis, dasico, gauss_arr, solve_eq, binary_search,            &
                 get_expo,get_opa,dB_dT_l,                                      &
-                generate_rotation_matrix, Vector3d, isotropic_sphere
+                generate_rotation_matrix, Vector3d, isotropic_sphere,          &
+                linspace, logspace
 
     INTERFACE binary_search
         MODULE PROCEDURE binary_search_r1, binary_search_r2
@@ -118,6 +119,37 @@ CONTAINS
         endif
 
     END FUNCTION dB_dT_l
+
+    PURE FUNCTION linspace(x_min, x_max, N) RESULT(x_array)
+        !----------------------------------------------------------------------!
+        INTEGER, INTENT(IN)            :: N
+        INTEGER                        :: i
+        REAL(kind=r2), DIMENSION(1:N)  :: x_array
+        REAL(kind=r2), INTENT(IN)      :: x_min, x_max
+        REAL(kind=r2)                  :: dx
+        !----------------------------------------------------------------------!
+        dx = (x_max - x_min)/(N-1)
+        x_array(1) = x_min
+        DO i = 2, N
+            x_array(i) = x_array(i-1) + dx
+        END DO 
+        
+    END FUNCTION linspace
+    
+    PURE FUNCTION logspace(x_min, x_max, N) RESULT(x_array)
+        !----------------------------------------------------------------------!
+        INTEGER, INTENT(IN)            :: N
+        INTEGER                        :: i
+        REAL(kind=r2), DIMENSION(1:N)  :: x_array
+        REAL(kind=r2), INTENT(IN)      :: x_min, x_max
+        REAL(kind=r2)                  :: dx
+        !----------------------------------------------------------------------!
+
+        DO i = 1, N
+            x_array(i) = x_min*(x_max/x_min)**(REAL(i-1, kind=r2)/(N-1))
+        END DO 
+        
+    END FUNCTION logspace
 
     ELEMENTAL FUNCTION get_expo(var_in) result(var_out)
         !----------------------------------------------------------------------!
