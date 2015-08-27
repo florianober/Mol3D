@@ -668,10 +668,10 @@ CONTAINS
         outname = TRIM(filename)//fileext//'.gz'
         ! get a new u(nit) number
         call ftgiou(u, sta)
-        print *, sta
+
         ! init fits file
         call ftinit(u,'!'//outname,1,sta)
-        print *, sta
+
         ! write header
         call ftphpr(u,.true.,-64,3,(/pix, pix, entries/),0,1,.true.,sta)
         ! write array to fits file
