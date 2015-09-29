@@ -234,10 +234,10 @@ CONTAINS
     max_iteration = 100
     ! add external radiation field
 
-!~     J_ext(:) = 1e-14_r2*planckhz(1000.0_r2, gas%trans_freq(:)) +         &
+!~     J_ext(:) = 1e-14_r2*planckhz(10000.0_r2, gas%trans_freq(:)) +         &
 !~                         planckhz(2.72_r2,gas%trans_freq(:))
 
-    J_ext(:) = planckhz(2.75, gas%trans_freq(:))
+    J_ext(:) = planckhz(2.73, gas%trans_freq(:))
 
     k = grid%n_cell/100
     !$omp parallel num_threads(basics%num_core)

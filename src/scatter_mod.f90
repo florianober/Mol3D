@@ -140,7 +140,7 @@ CONTAINS
         CALL GetNewRandomNumber(rand_nr, rndx)
 
         if (abs(PHIPAR) < 0.1_r2) then
-           PHI = rndx * basics%PIx2                ! PHI = rndx * 2.0_r2 * PI
+            PHI = rndx * basics%PIx2                ! PHI = rndx * 2.0_r2 * PI
         else
            do
               HELP = rndx * basics%PIx4            ! HELP = rndx * 4.0_r2 * PI
@@ -216,7 +216,7 @@ CONTAINS
                                             photon%SINTHE, photon%COSTHE)
         photon%lot_th = nint( rad2grad(dasico( photon%SINTHE, photon%COSTHE )) )
         IF (photon%lot_th==0) THEN
-           photon%lot_th = 1
+            photon%lot_th = 1
         END IF
 
     END SUBROUTINE isosca
