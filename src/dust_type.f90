@@ -108,7 +108,7 @@ MODULE Dust_type
     !--------------------------------------------------------------------------!
 CONTAINS
 
-    SUBROUTINE InitDust(this,basics , gas, model, ut,un, ndust,dendust,        &
+    SUBROUTINE InitDust(this,basics , gas, ut,un, ndust,dendust,              &
                         sizexp, aniso, dust_cat, n_scatt_th, nrndpt)
         
         USE math_mod
@@ -117,8 +117,7 @@ CONTAINS
         TYPE(Basic_TYP)  , INTENT(IN)         :: basics
         TYPE(Dust_TYP)                        :: this
         TYPE(Gas_TYP)                         :: gas
-        TYPE(Model_TYP), INTENT(IN)           :: model
-        
+
         INTEGER                               :: ut
         INTEGER                               :: hi1
         INTEGER                               :: tr

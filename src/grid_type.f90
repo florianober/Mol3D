@@ -107,7 +107,6 @@ MODULE Grid_type
         REAL(kind=r1),DIMENSION(:),ALLOCATABLE        :: absvelo
         REAL(kind=r2),DIMENSION(:,:),ALLOCATABLE      :: cellmidcaco
         REAL(kind=r2),DIMENSION(:,:),ALLOCATABLE      :: cell_energy
-        REAL(kind=r2),DIMENSION(:,:,:),ALLOCATABLE    :: cell_energy_sum
         REAL(kind=r1),DIMENSION(:,:),ALLOCATABLE      :: t_dust
         REAL(kind=r1),DIMENSION(:),ALLOCATABLE        :: t_gas
         REAL(kind=r2), DIMENSION(:),ALLOCATABLE       :: ddust
@@ -144,28 +143,20 @@ MODULE Grid_type
     !--------------------------------------------------------------------------!
 CONTAINS
 
-    SUBROUTINE InitGrid(this,ut,un, n_a, sf, n_b, n_c, n_dust, egy_lvl)
+    SUBROUTINE InitGrid(this, ut, un, n_a, sf, n_b, n_c, n_dust, egy_lvl)
 
         IMPLICIT NONE
         !----------------------------------------------------------------------!
         TYPE(Grid_TYP)        :: this        
         REAL(kind=r2)         :: sf
-        REAL(kind=r2)         :: trash
-        REAL(kind=r2),DIMENSION(1:2)         :: d_angle
-            
         INTEGER               :: ut
-        INTEGER,DIMENSION(1:3)  :: n
-        INTEGER               :: i
-        INTEGER               :: i_abc
         INTEGER               :: n_a
         INTEGER               :: n_b
         INTEGER               :: n_c
         INTEGER               :: n_dust
         INTEGER               :: egy_lvl       !from gas type
-        
+
         CHARACTER(LEN=*)      :: un
-        CHARACTER(LEN=256)    :: waste
-        
         !----------------------------------------------------------------------!
         INTENT(IN)            :: ut, un, n_a, sf, n_b, n_c, n_dust, egy_lvl
         INTENT(INOUT)         :: this
@@ -256,7 +247,6 @@ CONTAINS
             this%Nv_col(       0:this%n_cell, 1:3 ), &
             this%Nv_mol(       0:this%n_cell), &
             this%cell_energy( 1:n_dust, 0:this%n_cell), &
-            this%cell_energy_sum( 1:n_dust, 0:this%n_cell,1:2), &
             this%grd_dust_density( 0:this%n_cell, 1:n_dust ), &
             this%grd_mol_density( 0:this%n_cell), &
             this%grd_col_density( 0:this%n_cell,1:3), &
@@ -293,7 +283,6 @@ CONTAINS
         this%t_gas(:)             = 0.0
         this%d_l_min              = 0.0_r2
         this%cell_energy(:,:)     = 0.0_r2
-        this%cell_energy_sum(:,:,:)     = 0.0_r2
         this%lvl_pop(:,:)         = 0.0
         this%counter              = 0
         IF (show_error) PRINT *, 'grid arrays initialized'
@@ -329,8 +318,7 @@ CONTAINS
             this%t_dust, &
             this%t_gas, &
             this%lvl_pop, &
-            this%cell_energy, &
-            this%cell_energy_sum)
+            this%cell_energy)
         
         
     END SUBROUTINE CloseGrid
@@ -398,16 +386,14 @@ CONTAINS
     ! ##########################################################################
     ! check: is current position of photon stil inside the model space?
     ! ---
-    FUNCTION check_inside_cellno(cellno, this, model) result(check_inside_result)
+    FUNCTION check_inside_cellno(cellno, this) result(check_inside_result)
         USE math_mod, ONLY : norm
         
         IMPLICIT NONE
         !----------------------------------------------------------------------!
         TYPE(Grid_TYP), INTENT(IN)                  :: this
-        TYPE(Model_TYP), INTENT(IN)                 :: model
-        
         INTEGER                                     :: cellno
-        
+
         LOGICAL                                     :: check_inside_result   
         !----------------------------------------------------------------------!
 

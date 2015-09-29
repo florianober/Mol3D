@@ -821,16 +821,11 @@ CONTAINS
         INTEGER                                     :: i_r
         INTEGER                                     :: i_th
         INTEGER                                     :: i_ph
-        INTEGER                                     :: i_abc
-        INTEGER                                     :: i
         
         REAL(kind=r2)                               :: dr1
         REAL(kind=r2)                               :: dth
         REAL(kind=r2)                               :: dph
-        REAL(kind=r2)                               :: trash
         REAL(kind=r2)                               :: value_in
-        
-        Character(256)                              :: waste
         !----------------------------------------------------------------------!
         SELECT CASE(GetGridType(grid))
         
@@ -1047,11 +1042,10 @@ CONTAINS
         TYPE(Basic_TYP), INTENT(IN)                 :: basics
         TYPE(Vector3d)                              :: p_vec
         !----------------------------------------------------------------------!
-        
-        INTEGER                                     :: i_cell, i_cell_in, i, k
-        INTEGER                                     :: i_in, i_r, i_th, i_ph
+        INTEGER                                     :: i_cell, i, k
+        INTEGER                                     :: i_r, i_th, i_ph
         INTEGER                                     :: io, N_dummy
-        
+
         REAL(kind=r2), DIMENSION(3)                 :: moco, velo_hlp
         REAL(kind=r2), DIMENSION(3,3)               :: S
         REAL(kind=r2)                               :: value_in
@@ -1065,7 +1059,7 @@ CONTAINS
             
         IF (basics%old_model) THEN
             print '(2A)', ' | loading model parameter from: ', TRIM(basics%pronam_old)
-            CALL read_model(grid, TRIM(basics%path_results) //                 &
+            CALL read_model(grid, dust, TRIM(basics%path_results) //           &
                                   TRIM(basics%pronam_old)//'_model.fits')
 
             PRINT *, "| done!                        "
@@ -1130,7 +1124,7 @@ CONTAINS
             ! should be a symbolic link to the actual model file.
 
             PRINT *, "Read model distribution from file"
-            CALL read_model(grid, "input/grid/model.fits")
+            CALL read_model(grid, dust, "input/grid/model.fits")
 
         ELSE
             ! analytical density distribution, defined in the model_mod.f90 file

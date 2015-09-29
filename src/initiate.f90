@@ -114,7 +114,6 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
     INTEGER                                          :: n_a
     INTEGER                                          :: n_b
     INTEGER                                          :: n_c
-    INTEGER                                          :: concept_ps
     INTEGER                                          :: n_map
     INTEGER(8)                                       :: no_photon
     INTEGER                                          :: n_bin_map
@@ -176,7 +175,7 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
     n_scatt_th        = 361
     nrndpt            = 10000
     n_tem             = 500
-    t_dust_min        = 3
+    t_dust_min        = 2.73
     t_dust_max        = 3000.0
     n_interact_max    = 100000
     
@@ -215,7 +214,7 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
     WRITE(unit=3,fmt='(A)')  '#                                                                                #'
     WRITE(unit=3,fmt='(A)')  '# All parameters that can be changed without recompiling Mol3D are listed here.  #'
     WRITE(unit=3,fmt='(A)')  '# Please be aware that some parameters are not intended to be changeable yet.    #'
-    WRITE(unit=3,fmt='(A)')  '# They are note listed here, but accessable via the                              #'
+    WRITE(unit=3,fmt='(A)')  '# They are not listed here, but accessable via the                               #'
     WRITE(unit=3,fmt='(A)')  '# "src/initiate.f90" source file.                                                #'
     WRITE(unit=3,fmt='(A)')  '# If you have questions, please feel free to ask me.                             #'
     WRITE(unit=3,fmt='(A)')  '#                                                                                #'
@@ -461,7 +460,7 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
     
     !dust_cat(2) = 'mrn---v4'
 
-    CALL InitDust(dust, basics, gas, model, 1, 'mrn', n_dust, dens_dust,       &
+    CALL InitDust(dust, basics, gas, 1, 'mrn', n_dust, dens_dust,       &
                   sizexp, aniso, dust_cat, n_scatt_th, nrndpt)
     DEALLOCATE( dens_dust, &
                 dust_cat)

@@ -54,7 +54,6 @@ module transfer_mod
     !--------------------------------------------------------------------------!
     PUBLIC  ::  path,                                                          &
                 path_skip, next_pos_const, get_total_tau_direction
-                
     !--------------------------------------------------------------------------!
 contains
 
@@ -74,13 +73,11 @@ contains
         TYPE(PHOTON_TYP),INTENT(INOUT)                    :: photon
         LOGICAL,INTENT(IN)                                :: deposit_energy
         !----------------------------------------------------------------------!
-                    
-        LOGICAL                                           :: kill_photon
+
         INTEGER                                           :: i_dust
         REAL(kind=r2)                                     :: tau_end, d_tau
         REAL(kind=r2)                                     :: d_l
         REAL(kind=r2)                                     :: rndx
-   
         !----------------------------------------------------------------------!
         ! ---
         ! 1. determine optical depth (distance) to next point of interaction
@@ -96,7 +93,7 @@ contains
                                photon%pos_xyz_new,photon%nr_cell_new,d_l)
                 photon%pos_xyz = photon%pos_xyz_new
                 photon%nr_cell = photon%nr_cell_new
-                IF (.not. check_inside(photon%nr_cell, grid, model) ) THEN
+                IF (.not. check_inside(photon%nr_cell, grid) ) THEN
                     photon%inside = .false.
                     EXIT
                 END IF
@@ -167,7 +164,7 @@ contains
                                 model%ref_unit
                     END DO
                 END IF
-                IF ( check_inside(photon%nr_cell_new, grid, model) ) THEN
+                IF ( check_inside(photon%nr_cell_new, grid) ) THEN
                     ! photon still inside model space
                     ! ---
                     ! b) set new starting point; adjust optical depth
@@ -200,7 +197,6 @@ contains
         TYPE(Dust_TYP),INTENT(IN)                        :: dust
         TYPE(PHOTON_TYP),INTENT(INOUT)                   :: photon
         !----------------------------------------------------------------------!
-        INTEGER                                          :: i_map
         REAL(kind=r2)                                    :: d_l
         REAL(kind=r2)                                    :: d_tau
         REAL(kind=r2), INTENT(OUT)                       :: tau
@@ -209,7 +205,7 @@ contains
         tau = 0.0_r2
         d_tau = 0.0_r2
         ! transport photon in direction to observer
-        DO WHILE (check_inside(photon%nr_cell, grid, model))
+        DO WHILE (check_inside(photon%nr_cell, grid))
 
             ! 1. inside the dust sublimation radius: skip
             IF (photon%nr_cell == 0) THEN
@@ -218,7 +214,7 @@ contains
                                photon%pos_xyz_new, photon%nr_cell_new, d_l)
                 photon%pos_xyz = photon%pos_xyz_new
                 photon%nr_cell = photon%nr_cell_new
-                IF (.not. check_inside(photon%nr_cell, grid, model) ) THEN
+                IF (.not. check_inside(photon%nr_cell, grid) ) THEN
                     photon%inside = .False.
                     photon%kill = .True.
                     EXIT
@@ -297,8 +293,6 @@ contains
     INTEGER,INTENT(OUT)                              :: nr_cell_new
     REAL(kind=r2),INTENT(OUT)                        :: d_l
     !--------------------------------------------------------------------------!
-    
-    real(kind=r2) :: d_l1
     real(kind=r2) :: a,b,c
     !--------------------------------------------------------------------------!
     ! ---
@@ -429,7 +423,7 @@ contains
   
     SUBROUTINE path_ca( grid, pos_xyz, pos_xyz_new, nr_cell, nr_cell_new, d_l, &
                         kill_photon, dir_xyz)
-        ! not tested!
+        !
         IMPLICIT NONE
         !----------------------------------------------------------------------!
         TYPE(Grid_TYP),INTENT(IN)                         :: grid
@@ -446,8 +440,7 @@ contains
         logical,                     intent(out)          :: kill_photon
         !----------------------------------------------------------------------!
         real(kind=r2),dimension(6) :: d_l_selc
-        integer       :: i_x, i_y, i_z, i, hi1
-        
+        integer       :: i_x, i_y, i_z, hi1
         !----------------------------------------------------------------------!
         ! ---
         ! default:
@@ -563,7 +556,7 @@ contains
         !----------------------------------------------------------------------!
         real(kind=r2),dimension(6) :: d_l_selc
         real(kind=r2) :: d_r, p_r, d_ph, a, p, q, sq
-        integer       :: i_r, i_ph, i_z, i
+        integer       :: i_r, i_ph, i_z
         integer       :: hi1
         !----------------------------------------------------------------------!
         ! ---
@@ -719,7 +712,6 @@ contains
 
         integer,                     intent(in)           :: nr_cell
         integer,                     intent(out)          :: nr_cell_new
-        integer                                           :: nr_cell_new2
 
         logical,                     intent(inout)        :: kill_photon
         !----------------------------------------------------------------------!

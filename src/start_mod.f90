@@ -57,7 +57,7 @@ contains
   ! ############################################################################
   ! start photon from random source
   ! ---
-  SUBROUTINE start_photon(basics, grid, model, rand_nr, dust,photon, sources_in)
+  SUBROUTINE start_photon(basics, grid, model, rand_nr, photon, sources_in)
     
     IMPLICIT NONE
     !--------------------------------------------------------------------------!
@@ -65,7 +65,6 @@ contains
     TYPE(Grid_TYP),INTENT(IN)                        :: grid
     TYPE(Basic_TYP),INTENT(IN)                       :: basics
     TYPE(Randgen_TYP),INTENT(INOUT)                  :: rand_nr
-    TYPE(Dust_TYP),INTENT(IN)                        :: dust
     TYPE(SOURCES),INTENT(IN)                         :: sources_in
     
     TYPE(PHOTON_TYP),INTENT(INOUT)                   :: photon

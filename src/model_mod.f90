@@ -39,7 +39,7 @@ MODULE model_mod
 
     IMPLICIT NONE
     PRIVATE
-    PUBLIC :: get_density, get_velocity, get_temperature
+    PUBLIC :: get_density, get_velocity, get_temperature, get_J_ext
 
 CONTAINS
     ! -------------------------------------------------------------------------!
@@ -183,5 +183,23 @@ CONTAINS
         temps   = 200.0_r2*P_xy**(-0.5)
 
     END FUNCTION get_temperature
-END MODULE model_mod
 
+    ! -------------------------------------------------------------------------!
+    ! external radiation field (required to calculate lvl populations)
+    ! -------------------------------------------------------------------------!
+    FUNCTION get_J_ext(freq) RESULT(J_ext)
+        USE math_mod, ONLY : planckhz
+        ! analytical temperature distribution
+        !
+        IMPLICIT NONE
+        !----------------------------------------------------------------------!
+        REAL(kind=r2), DIMENSION(:), INTENT(IN)  :: freq
+        REAL(kind=r2), DIMENSION(1:size(freq))              :: J_ext
+        !----------------------------------------------------------------------!
+
+        !define your own external radiation field here
+!~         J_ext(:) = 1e-14_r2*planckhz(10000.0, freq(:)) +                       &
+!~                             planckhz(2.73, freq(:))
+        J_ext(:) = planckhz(2.73, freq(:))
+    END FUNCTION get_J_ext
+END MODULE model_mod

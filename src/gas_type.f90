@@ -239,7 +239,7 @@ CONTAINS
             ! check if all col partner have the same number of transitions 
             ! if False, stop the code. This should be done in future!
             IF (this%col_trans /= waste_i) THEN
-                PRINT *, 'ERROR: The number of collistional & 
+                PRINT *, 'ERROR: The number of collisional & 
                           &transitions is not &
                           &the same for all col partners.'
                 PRINT *, 'Solution: Choose an other molecule like CO'

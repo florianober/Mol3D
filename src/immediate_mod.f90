@@ -90,7 +90,6 @@ CONTAINS
         photon%nr_lam       = i_lam
     END SUBROUTINE immediate
 
-
     ! ##########################################################################
     ! estimation of the  dust temperature in the cell
     ! ---

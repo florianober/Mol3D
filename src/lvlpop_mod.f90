@@ -45,7 +45,7 @@ MODULE lvlpop_mod
     
     USE grd_mod
     USE math_mod
-    USE transfer_mod
+    USE model_mod, ONLY : get_J_ext
 
     IMPLICIT NONE
 
@@ -57,18 +57,13 @@ MODULE lvlpop_mod
     !--------------------------------------------------------------------------!
 CONTAINS
 
-    SUBROUTINE calc_lvlpop(basics,grid , model, gas)
+    SUBROUTINE calc_lvlpop(grid, model, gas)
 
     IMPLICIT NONE
     !--------------------------------------------------------------------------!
-    TYPE(Basic_TYP),INTENT(IN)                       :: basics
     TYPE(Grid_TYP),INTENT(INOUT)                     :: grid
     TYPE(Model_TYP),INTENT(IN)                       :: model
     TYPE(Gas_TYP),INTENT(IN)                         :: gas
-!~     CHARACTER(len=252)                               :: filename
-!~     CHARACTER(len=252)                               :: fmtstr
-!~     CHARACTER(len=4)                                 :: fileext
-!~     CHARACTER(len=256)                               :: outname
     !--------------------------------------------------------------------------!
 
     SELECT CASE(GetGasType(gas))
@@ -77,34 +72,16 @@ CONTAINS
         CALL pop_LTE(grid, gas)
     CASE(2)
         print *, '| | using FEP method'
-        CALL pop_FEP(basics, grid, gas)
+        CALL pop_FEP(grid, gas)
     CASE(3)
         print *, '| | using LVG method'
-        CALL pop_LVG(basics, grid, model, gas)
+        CALL pop_LVG(grid, model, gas)
     CASE DEFAULT
         print *, 'ERROR: in calc_lvlpop!'
         print *, 'ERROR: selected method is not implemended yet'
         stop
     END SELECT
 
-    ! save results
-    ! for default we don't save the level populations to hdd, but you can enable
-    ! it by uncomment the following lines:
-    ! Note: depending on the number of grid cells, this file can be enormous
-    
-!~     fileext = '.dat'
-!~     filename = TRIM(basics%path_results)//Getproname(basics)//'_lvl_pop'
-!~     outname = TRIM(filename)//fileext
-!~     OPEN(unit=1, file=TRIM(outname), &
-!~         action="write", status="unknown", form="formatted")
-!~     WRITE(fmtstr,'(A,I0,A)') '(I8,',gas%egy_lvl,'(ES15.6E3))'
-!~
-!~     DO i = 1, grid%n_cell
-!~ 
-!~         WRITE(unit=1,fmt=fmtstr) i, grid%lvl_pop(:,i)
-!~
-!~     END DO
-!~     CLOSE(unit=1)
     END SUBROUTINE calc_lvlpop
 
     !--------------------------------------------------------------------------!
@@ -141,16 +118,14 @@ CONTAINS
     END SUBROUTINE pop_LTE
 
 
-    SUBROUTINE pop_FEP(basics, grid, gas)
+    SUBROUTINE pop_FEP(grid, gas)
 
     ! ---    free escape probability
     
     IMPLICIT NONE
     !--------------------------------------------------------------------------!
-    TYPE(Basic_TYP),INTENT(IN)                                 :: basics
     TYPE(Grid_TYP),INTENT(INOUT)                               :: grid
     TYPE(Gas_TYP),INTENT(IN)                                   :: gas
-
     !--------------------------------------------------------------------------!
     REAL(kind=r1),DIMENSION(1:gas%egy_lvl,1:gas%egy_lvl)       :: A
     REAL(kind=r1),DIMENSION(1:gas%egy_lvl)                     :: c
@@ -159,14 +134,11 @@ CONTAINS
     REAL(kind=r2),DIMENSION(1:gas%trans_lvl)                   :: J_ext
     REAL(kind=r1)                                              :: sum_p
     REAL(kind=r2),DIMENSION(1:gas%col_trans,1:2)               :: final_col_para
-    INTEGER                                                    :: i_cell, i, k
+    INTEGER                                                    :: i_cell, k
     !--------------------------------------------------------------------------!
     new_pop = 0.0
-    ! calculate external radiation field
-
-!~             J_ext(:) = 1e-14_r2*planckhz(1000.0_r2, gas%trans_freq(:)) + &
-!~                         planckhz(2.72_r2, gas%trans_freq(:))
-    J_ext(:) = planckhz(2.75_r1, gas%trans_freq(:))
+    ! get external radiation field -> definition in model_mod.f90
+    J_ext(:) = get_J_ext(gas%trans_freq(:))
 
     J_mid = J_ext
     k = grid%n_cell/100
@@ -192,7 +164,7 @@ CONTAINS
             print *, 'Warning, level polulation do not sum to 1'
             print *, abs(1.0-sum_p)
         END IF
-        
+
         grid%lvl_pop(:,i_cell) = new_pop
     END DO
     !$omp end do nowait
@@ -201,7 +173,7 @@ CONTAINS
     END SUBROUTINE pop_FEP
     
     
-    SUBROUTINE pop_LVG(basics, grid, model, gas)
+    SUBROUTINE pop_LVG(grid, model, gas)
     !
     ! In the LVG (for a keplerian disk) approach we estimate the
     ! coherence length L at each cells mitpoint. Here, we assume that the disk 
@@ -212,11 +184,10 @@ CONTAINS
     
     IMPLICIT NONE
     !--------------------------------------------------------------------------!
-    TYPE(Basic_TYP),INTENT(IN)                       :: basics
     TYPE(Grid_TYP),INTENT(INOUT)                     :: grid
     TYPE(Model_TYP),INTENT(IN)                       :: model
     TYPE(Gas_TYP),INTENT(IN)                         :: gas
-    
+    !--------------------------------------------------------------------------!
     REAL(kind=r1),DIMENSION(1:gas%egy_lvl,1:gas%egy_lvl)       :: A
     REAL(kind=r1),DIMENSION(1:gas%egy_lvl)                     :: c
     REAL(kind=r1),DIMENSION(1:gas%egy_lvl)                     :: old_pop
@@ -228,16 +199,11 @@ CONTAINS
 
     INTEGER                                       :: i_cell, max_iteration
     INTEGER                                       :: i, j, k
-
     !--------------------------------------------------------------------------!
 
     max_iteration = 100
-    ! add external radiation field
-
-!~     J_ext(:) = 1e-14_r2*planckhz(10000.0_r2, gas%trans_freq(:)) +         &
-!~                         planckhz(2.72_r2,gas%trans_freq(:))
-
-    J_ext(:) = planckhz(2.73, gas%trans_freq(:))
+    ! get external radiation field -> definition in model_mod.f90
+    J_ext(:) = get_J_ext(gas%trans_freq(:))
 
     k = grid%n_cell/100
     !$omp parallel num_threads(basics%num_core)

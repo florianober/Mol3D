@@ -63,18 +63,16 @@ MODULE raytrace_mod
     END INTERFACE
 
 CONTAINS
-    FUNCTION get_line_intensity_in_px(basics, grid, model, dust, gas,          &
+    FUNCTION get_line_intensity_in_px(grid, model, dust, gas,                  &
                               coor_map1, coor_map2, i_map)                     &
                               RESULT(px_intensity)
 
     IMPLICIT NONE
         !----------------------------------------------------------------------!
-        TYPE(Basic_TYP),INTENT(IN)                       :: basics
         TYPE(Grid_TYP),INTENT(IN)                        :: grid
         TYPE(Model_TYP),INTENT(IN)                       :: model
         TYPE(Dust_TYP),INTENT(IN)                        :: dust
         TYPE(Gas_TYP),INTENT(IN)                         :: gas
-        
         !----------------------------------------------------------------------!
         REAL(KIND=r2),INTENT(IN)                         :: coor_map1
         REAL(KIND=r2),INTENT(IN)                         :: coor_map2
@@ -159,7 +157,7 @@ CONTAINS
                     dz_sum = dz_sum + d_l
                     pos_xyz = pos_xyz_new
                     nr_cell = nr_cell_new
-                    IF (.not. check_inside(nr_cell, grid, model) ) EXIT
+                    IF (.not. check_inside(nr_cell, grid) ) EXIT
                 END IF
 
                 CALL path( grid, pos_xyz, pos_xyz_new, nr_cell, nr_cell_new,   &
@@ -265,7 +263,7 @@ CONTAINS
         END IF
     END FUNCTION get_line_intensity_in_px
     
-    FUNCTION get_continuum_intensity_along_one_path(grid, model, dust, gas,   &
+    FUNCTION get_continuum_intensity_along_one_path(grid, model, dust,        &
                               coor_map1, coor_map2, i_map)                    &
                               RESULT(intensity)
         
@@ -274,19 +272,14 @@ CONTAINS
         TYPE(Grid_TYP),INTENT(IN)                        :: grid
         TYPE(Model_TYP),INTENT(IN)                       :: model
         TYPE(Dust_TYP),INTENT(IN)                        :: dust
-        TYPE(Gas_TYP),INTENT(IN)                         :: gas
-        
         !------------------------------------------------------------- --------!
         REAL(KIND=r2),INTENT(IN)                         :: coor_map1
         REAL(KIND=r2),INTENT(IN)                         :: coor_map2
         INTEGER, INTENT(IN)                              :: i_map
 
-!~         REAL(KIND=r2), DIMENSION(1:dust%n_lam,1:4)           :: px_intensity
-
         REAL(KIND=r2)                                    :: ray_len
         REAL(KIND=r2)                                    :: dz
         REAL(KIND=r2)                                    :: dz_new
-        REAL(KIND=r2)                                    :: dz_sum
         REAL(KIND=r2)                                    :: j_dust
         REAL(KIND=r2)                                    :: alpha_dust
 
@@ -310,7 +303,7 @@ CONTAINS
         
          
         INTEGER                                          :: i_lam
-        INTEGER                                          :: tr, k
+        INTEGER                                          :: k
         INTEGER                                          :: nr_cell
         INTEGER                                          :: nr_cell_new
     
@@ -336,14 +329,14 @@ CONTAINS
         IF ( ray_len .gt. 0.0_r2 ) THEN
 
             nr_cell      = get_cell_nr(grid, pos_xyz)
-            DO WHILE (check_inside(nr_cell, grid, model))
+            DO WHILE (check_inside(nr_cell, grid))
                 IF ( nr_cell==0 ) THEN
                     CALL path_skip( grid, pos_xyz,model%D_2obs(3, :, i_map), &
                                    pos_xyz_new,nr_cell_new,d_l)
 
                     pos_xyz = pos_xyz_new
                     nr_cell = nr_cell_new
-                    IF (.not. check_inside(nr_cell, grid, model) ) EXIT
+                    IF (.not. check_inside(nr_cell, grid) ) EXIT
                 END IF
 
                 CALL path( grid, pos_xyz, pos_xyz_new, nr_cell, nr_cell_new,   &
@@ -449,8 +442,7 @@ CONTAINS
         IF (.not. present(intensity_mid)) THEN
             
             intensity_central = get_continuum_intensity_along_one_path(grid,   &
-                            model, dust, gas,                                  &
-                            coor_map1, coor_map2, i_map)
+                            model, dust, coor_map1, coor_map2, i_map)
         ELSE
             intensity_central = intensity_mid
         END IF
@@ -473,8 +465,7 @@ CONTAINS
 
         DO k = 1, 4
             intensity(:, k) = get_continuum_intensity_along_one_path(grid,     &
-                                model, dust, gas,                              &
-                                coor_x_arr(k), coor_y_arr(k) , i_map)
+                               model, dust, coor_x_arr(k), coor_y_arr(k), i_map)
             diff = maxval(abs(intensity(:, k)                    &
                      - intensity_central)/(intensity_central+epsilon(1.0_r2)))
             IF (diff .gt. 0.1 .and. depth .lt. 4) EXIT
@@ -573,7 +564,7 @@ CONTAINS
 
             IF ( ray_len .gt. 0.0_r2 .and. .not. log_size) THEN
                 nr_cell  = get_cell_nr(grid, pos_xyz)
-                DO WHILE (check_inside(nr_cell, grid, model))
+                DO WHILE (check_inside(nr_cell, grid))
                     IF ( nr_cell==0 ) THEN
                         ray_minA = MIN(ray_minA, grid%cell_minA(0))
                         CALL path_skip( grid, pos_xyz, model%D_2obs(3, :, i_map), &
@@ -582,7 +573,7 @@ CONTAINS
                         pos_xyz = pos_xyz_new
                         nr_cell = nr_cell_new
                         
-                        IF (.not. check_inside(nr_cell, grid, model) ) EXIT
+                        IF (.not. check_inside(nr_cell, grid) ) EXIT
                     END IF
                     ray_minA = MIN(ray_minA, grid%cell_minA(nr_cell))
                     IF ( xxres*yyres .gt. ray_minA) THEN

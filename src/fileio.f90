@@ -296,18 +296,23 @@ CONTAINS
 
     END SUBROUTINE  save_boundaries
 
-    SUBROUTINE read_model(grid, filename)
+    SUBROUTINE read_model(grid, dust, filename)
+        USE math_mod
 
         IMPLICIT NONE
         !----------------------------------------------------------------------!
         TYPE(Grid_TYP), INTENT(INOUT)                :: grid
+        TYPE(Dust_TYP), INTENT(IN)                   :: dust
         !----------------------------------------------------------------------!
         INTEGER                                      :: i_cell
+        INTEGER                                      :: i_dust
+        INTEGER                                      :: i_tem
         INTEGER                                      :: n_dust
         INTEGER                                      :: k
         INTEGER                                      :: entries
-        INTEGER                                      :: sta, u, bs, rw, nfound
+        INTEGER                                      :: sta, u, bs, nfound
         INTEGER,DIMENSION(2)                         :: naxes
+        REAL(kind=r2)                                :: QB
         REAL(kind=r2), DIMENSION(:), ALLOCATABLE     :: line
         CHARACTER(len=*), INTENT(IN)                 :: filename
         CHARACTER(len=256)                           :: comment
@@ -326,14 +331,12 @@ CONTAINS
         END IF
         ! check number of dust species
         call ftgkyj(u, 'N_DUST', n_dust, comment, sta)
-
-        IF (sta == 1) THEN
+        IF (sta /= 0) THEN
             print *, "ERROR, N_DUST keyword not found in model fits file"
             STOP
         END IF
         entries = n_dust*2 + 11
-        
-        IF (n_dust /= grid%nh_n_dust .or. naxes(1) /= entries) THEN
+        IF (n_dust /= dust%n_dust .or. naxes(1) /= entries) THEN
             print *, "ERROR, the number of dust species is not consistent in model fits file"
             STOP
         END IF
@@ -364,8 +367,20 @@ CONTAINS
 
             grid%grd_col_density(i_cell,1:3) = line(n_dust+5:n_dust+7)
 
-            ! set temperature
+            ! set dust temperature
             grid%t_dust(i_cell,:) = line(n_dust+8:2*n_dust+7)
+            ! calculate corresponding internal cell energy
+            DO i_dust = 1, dust%n_dust
+                i_tem = binary_search(grid%t_dust(i_cell, i_dust), dust%tem_tab(:))-1
+                QB = ipol2(REAL(dust%tem_tab(i_tem), kind=r2),                 &
+                           REAL(dust%tem_tab(i_tem + 1), kind=r2),             &
+                           dust%QB(i_tem, i_dust), dust%QB(i_tem + 1, i_dust), &
+                           REAL(grid%t_dust(i_cell, i_dust), kind=r2) )
+                                                    
+                grid%cell_energy(i_dust, i_cell) = QB * PI * 4.0_r2 *          &
+                                                   grid%cell_vol(i_cell)
+            END DO
+            ! set gas temperature
             grid%t_gas(i_cell)    = line(2*n_dust + 8)
             ! set velocity
             grid%velo(i_cell,:) = line(2*n_dust+9:2*n_dust+11)
@@ -378,12 +393,11 @@ CONTAINS
 
     END SUBROUTINE read_model
         
-    SUBROUTINE save_model(grid, model, basics)
+    SUBROUTINE save_model(grid, basics)
     
         IMPLICIT NONE
         !----------------------------------------------------------------------!
         TYPE(Grid_TYP), INTENT(IN)                   :: grid
-        TYPE(Model_TYP), INTENT(IN)                  :: model
         TYPE(Basic_TYP), INTENT(IN)                  :: basics
         !----------------------------------------------------------------------!
         INTEGER                                      :: i_cell
@@ -426,7 +440,7 @@ CONTAINS
         call ftfiou(u, sta)
 
         ! save x cuts
-        CALL save_x_cuts(basics, model, grid)
+        CALL save_x_cuts(basics, grid)
     END SUBROUTINE save_model
 
     SUBROUTINE vis_plane(grid, basics, model, plane, pix)
@@ -604,8 +618,7 @@ CONTAINS
         CHARACTER(len=5)                             :: fileext
         CHARACTER(len=256)                           :: outname
         
-        INTEGER                                      :: i_cell, i_entry
-        INTEGER                                      :: start
+        INTEGER                                      :: i_cell
         INTEGER                                      :: i_x, i_y
 
         INTEGER                                      :: k
@@ -834,24 +847,21 @@ CONTAINS
         END DO
     END SUBROUTINE sv_temp_x
 
-    SUBROUTINE save_x_cuts(basics, model, grid)
+    SUBROUTINE save_x_cuts(basics, grid)
         ! save model cuts along the x-axis (y,z = 0)
     
         IMPLICIT NONE
         !----------------------------------------------------------------------!
         TYPE(Basic_TYP), INTENT(IN)             :: basics
-        TYPE(Model_TYP), INTENT(IN)             :: model
         TYPE(Grid_TYP), INTENT(IN)              :: grid
         !----------------------------------------------------------------------!
         INTEGER                                 :: i_a, i_b, i_c
-        INTEGER                                 :: i_dust, i_cell
+        INTEGER                                 :: i_cell
         INTEGER                                 :: entries
         REAL(kind=r2)                           :: hd_r
-        REAL(kind=r2)                           :: hd_tem, hd_tem_gas
-        
+
         CHARACTER(len=256)                      :: outname
         CHARACTER(len=20)                       :: fmt_string
-
         !----------------------------------------------------------------------!
         entries = 9 + 2*grid%nh_n_dust
         write (fmt_string, fmt='(A, I2, A)') '(', entries, '(ES15.6E3))'

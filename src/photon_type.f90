@@ -236,7 +236,6 @@ CONTAINS
         TYPE(PHOTON_TYP), INTENT(INOUT)                     :: this
         
         real(kind=r2), dimension(1:3,1:3)                   :: D_help
-        REAL(kind=r2), dimension(1:3)                       :: dir_help
         REAL(kind=r2), dimension(1:3)                       :: dir_rlp
         REAL(kind=r2)                                       :: theta, phi
         REAL(kind=r2)                                       :: d_ang

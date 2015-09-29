@@ -74,7 +74,7 @@ CONTAINS
             CALL miesca(basics, rand_nr, dust, photon, i_dust_sca)
 
         ELSE IF (dust%aniiso == 2) then         ! isotropic scattering
-            CALL isosca(rand_nr, photon, i_dust_sca)
+            CALL isosca(rand_nr, photon)
 
         ELSE IF (dust%aniiso == 3) then         ! henyey-greenstein scattering
             CALL hgsca(rand_nr, dust, photon, i_dust_sca)
@@ -200,13 +200,12 @@ CONTAINS
     ! ##########################################################################
     ! isotropic scattering
     ! ---
-    SUBROUTINE isosca(rand_nr, photon, i_dust)
+    SUBROUTINE isosca(rand_nr, photon)
         IMPLICIT NONE
         !----------------------------------------------------------------------!
         TYPE(Randgen_TYP),INTENT(INOUT)                  :: rand_nr
         TYPE(PHOTON_TYP),INTENT(INOUT)                   :: photon
         !----------------------------------------------------------------------!
-        integer, intent(in)                              :: i_dust
         REAL(kind=r2)                                    :: rndx1, rndx2
         !----------------------------------------------------------------------!
         ! ---

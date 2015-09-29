@@ -65,20 +65,15 @@ CONTAINS
         TYPE(Fluxes_TYP),INTENT(INOUT)                   :: fluxes
         TYPE(Model_TYP),INTENT(IN)                       :: model
         TYPE(PHOTON_TYP),INTENT(IN)                      :: photon
-        
         !----------------------------------------------------------------------!
         INTEGER                                          :: i_map, i_stokes
         INTEGER                                          :: x, y
         REAL(kind=r2)                                    :: angle
         REAL(kind=r2)                                    :: SINPHI, COSPHI
         REAL(kind=r2)                                    :: SIN2PH, COS2PH
-        REAL(kind=r2)                                    :: QHELP, hd2
+        REAL(kind=r2)                                    :: QHELP
         REAL(kind=r2),DIMENSION(1:4)                     :: stokes
-        REAL(kind=r2),DIMENSION(1:3)                     :: dir_help
         REAL(kind=r2),DIMENSION(1:3,1:3)                 :: D_help
-        REAL(kind=r2),DIMENSION(1:3)                     :: dir_rlp
-        REAL(kind=r2)                                    :: theta, phi
-        
         !----------------------------------------------------------------------!
         DO i_map = 1, model%n_map  !tbd
             ! assume observer is at infinity

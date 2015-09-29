@@ -81,7 +81,6 @@ CONTAINS
         LOGICAL, INTENT(IN)                              :: deposit_energy
         LOGICAL, INTENT(IN)                              :: peel_off
         INTEGER                                          :: seed
-        REAL(kind=r2)                                    :: rndx
 
         INTEGER, INTENT(IN), OPTIONAL                    :: i_lam_in
         INTEGER(8)                                       :: i_phot, k_phot
@@ -118,8 +117,7 @@ CONTAINS
             END IF
 
             ! 1. start photon (from included sources)
-            CALL start_photon(basics, grid, model, rand_nr,                    &
-                              dust, photon, sources_in)
+            CALL start_photon(basics, grid, model, rand_nr, photon, sources_in)
 
             IF (photon%kill) THEN
                 !$omp atomic
@@ -145,7 +143,7 @@ CONTAINS
             DO
                 IF (photon%inside .and. (photon%n_interact < n_interact_max)) THEN
                     photon%n_interact = photon%n_interact +1
-                    CALL interact(basics, grid, dust, rand_nr, fluxes, photon)
+                    CALL interact(basics, grid, dust, rand_nr, photon)
 
                     IF (PRESENT(i_lam_in) .and. (photon%last_interaction_type == 'E') ) THEN
                         ! monochromatic RT
@@ -211,7 +209,6 @@ CONTAINS
         TYPE(Dust_TYP),INTENT(IN)                        :: dust
         TYPE(SOURCES),INTENT(IN)                         :: sources_in
         !----------------------------------------------------------------------!
-        INTEGER                                          :: i_dust
         INTEGER                                          :: i_lam
         !----------------------------------------------------------------------!
         ! reset maps

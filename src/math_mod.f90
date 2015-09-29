@@ -142,7 +142,6 @@ CONTAINS
         INTEGER                        :: i
         REAL(kind=r2), DIMENSION(1:N)  :: x_array
         REAL(kind=r2), INTENT(IN)      :: x_min, x_max
-        REAL(kind=r2)                  :: dx
         !----------------------------------------------------------------------!
 
         DO i = 1, N
@@ -575,79 +574,6 @@ CONTAINS
         dasico_result = sign( acos(dcosw), dsinw)
     end function dasico
 
-
-  ! ############################################################################
-  ! conversion: W/m/ x sr => W/m/sr !TBD!-!
-  ! ---
-!~     PURE FUNCTION cnv_Wmsr( lum_x, map_x ) result(cnv_Wmsr_result)
-!~         use datatype
-!~         use var_global
-!~         
-!~         IMPLICIT NONE
-!~         
-!~         !-------------------------------------------------------------------!
-!~         real(kind=r2), intent(in) :: lum_x
-!~         integer,       intent(in) :: map_x
-!~         !-------------------------------------------------------------------!
-!~         real(kind=r2)             :: cnv_Wmsr_result
-!~         !-------------------------------------------------------------------!
-!~         ! ---
-!~         ! 1. normalization to W/m/sr
-!~         !if ((photon_type==2 .or. photon_type==3) .and. ree_type==2) then
-!~             ! raytracing: default: W/m/sr => no conversion needed
-!~         cnv_Wmsr_result = lum_x
-!~         !else
-!~         !    ! MC RT
-!~         !    if (n_ph==1 .and. project_2D) then
-!~         !        ! rotational symmetry used
-!~         !        cnv_Wmsr_result = lum_x / ( PIx2  * ( cos(th_map(map_x)-al_map(map_x)) - &
-!~         !        cos(th_map(map_x)+al_map(map_x)) ) )
-!~         !    else
-!~         !        ! rotational symmetry NOT used
-!~         !        cnv_Wmsr_result = lum_x / ( PIx2 * (1.0_r2 - cos(al_map(map_x))) )
-!~         !    end if
-!~         !end if
-!~     END FUNCTION cnv_Wmsr
-
-
-  ! ############################################################################
-  ! conversion: W/m => Jy
-  ! ---
-!~     function cnv_lum2Jy( lum_x, lam_x, map_x, distance ) result(cnv_lum2Jy_result)
-!~         use datatype
-!~         use var_global
-!~         
-!~         IMPLICIT NONE
-!~         
-!~         !--------------------------------------------------------------------------!
-!~         real(kind=r2), intent(in) :: lum_x
-!~         real(kind=r2), intent(in) :: lam_x
-!~         real(kind=r2), intent(in) :: distance
-!~         
-!~         integer,       intent(in) :: map_x
-!~         !--------------------------------------------------------------------------!
-!~         real(kind=r2)             :: hd_ny
-!~         real(kind=r2)             :: hd_flux
-!~         real(kind=r2)             :: cnv_lum2Jy_result
-!~         !--------------------------------------------------------------------------!
-!~         
-!~         ! ---
-!~         ! 1. normalization to W/m/sr
-!~         hd_flux = cnv_Wmsr( lum_x, map_x )
-!~ 
-!~         ! 2. frequency
-!~         hd_ny = con_c  / lam_x
-!~ 
-!~         ! 3. [L_ny] = W * Hz^-1 * sr^-1
-!~         hd_flux = hd_flux  *  con_c/(hd_ny**2)
-!~         
-!~         ! 4. if we know the distance to the observer we know how much energy is flowing
-!~         !    through a square meter - at his location - each second and Hz. Thus, we arrive at Jansky.
-!~         hd_flux = hd_flux  *  1.0e+26_r2 / ((distance*con_pc)**2)
-!~ 
-!~         cnv_lum2Jy_result = hd_flux
-!~     end function cnv_lum2Jy
-    
     ELEMENTAL FUNCTION gauss_arr(lscale, a, velo) RESULT (gaussian_result)
     
         !USE gas_type

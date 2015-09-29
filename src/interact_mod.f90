@@ -59,7 +59,7 @@ CONTAINS
     ! ##########################################################################
     ! interaction: steering routine
     ! ---
-    SUBROUTINE interact(basics, grid, dust, rand_nr, fluxes, photon)
+    SUBROUTINE interact(basics, grid, dust, rand_nr, photon)
   
         IMPLICIT NONE
         !----------------------------------------------------------------------!
@@ -67,11 +67,10 @@ CONTAINS
         TYPE(Randgen_TYP),INTENT(INOUT)                  :: rand_nr
         TYPE(Grid_TYP),INTENT(IN)                        :: grid
         TYPE(Dust_TYP),INTENT(IN)                        :: dust
-        TYPE(Fluxes_TYP),INTENT(IN)                      :: fluxes
         
         TYPE(PHOTON_TYP),INTENT(INOUT)                   :: photon
         !----------------------------------------------------------------------!
-        CALL interact_temp(basics, grid, dust, rand_nr, fluxes, photon)
+        CALL interact_temp(basics, grid, dust, rand_nr, photon)
 
         ! update last point of interaction
         photon%pos_xyz_li(:) = photon%pos_xyz(:)
@@ -82,7 +81,7 @@ CONTAINS
     !                     scattering and absorption at the same time
     ! not used at the moment
     ! ---
-    SUBROUTINE interact_mc(basics, grid, dust, rand_nr, fluxes, photon)
+    SUBROUTINE interact_mc(basics, grid, dust, rand_nr, photon)
 
         IMPLICIT NONE
         !----------------------------------------------------------------------!
@@ -90,7 +89,6 @@ CONTAINS
         TYPE(Randgen_TYP),INTENT(INOUT)                  :: rand_nr
         TYPE(Grid_TYP),INTENT(IN)                        :: grid
         TYPE(Dust_TYP),INTENT(IN)                        :: dust
-        TYPE(Fluxes_TYP),INTENT(IN)                      :: fluxes
         
         TYPE(PHOTON_TYP),INTENT(INOUT)                   :: photon
         !----------------------------------------------------------------------!
@@ -124,7 +122,7 @@ CONTAINS
     ! interaction type 2: temperature calculation:
     !                     interaction in immediate reemission scheme
     ! ---
-    SUBROUTINE interact_temp(basics, grid, dust, rand_nr, fluxes, photon)
+    SUBROUTINE interact_temp(basics, grid, dust, rand_nr, photon)
 
         IMPLICIT NONE
         !----------------------------------------------------------------------!
@@ -132,7 +130,6 @@ CONTAINS
         TYPE(Randgen_TYP),INTENT(INOUT)                  :: rand_nr
         TYPE(Grid_TYP),INTENT(IN)                        :: grid
         TYPE(Dust_TYP),INTENT(IN)                        :: dust
-        TYPE(Fluxes_TYP),INTENT(IN)                      :: fluxes
         
         TYPE(PHOTON_TYP),INTENT(INOUT)                   :: photon
         !----------------------------------------------------------------------!

@@ -105,7 +105,7 @@ CONTAINS
     ! --- save all results for later use
     ! first save the model itself
     print *, "| saving the model"
-    CALL save_model(grid, model, basics)
+    CALL save_model(grid, basics)
     print *, "| done!                 "
     print *, "|"
     ! now, provide some extra visualisation output 
@@ -136,7 +136,7 @@ CONTAINS
         ! --- first calculate level populations
         IF (basics%do_velo_ch_map ) THEN
             print *,"| calculate level populations"
-            CALL calc_lvlpop(basics, grid , model, gas)
+            CALL calc_lvlpop(grid, model, gas)
             print *, "| done!                 "
             print *, "|"
         END IF
@@ -244,8 +244,7 @@ CONTAINS
                                   char(27)//'[A'
                     END IF 
                     
-                    inten_px(:,:) = raytrace_px(basics,                        &
-                                    grid, model, dust, gas,                    &
+                    inten_px(:,:) = raytrace_px(grid, model, dust, gas,        &
                                     pixel_data%pos_xy(1), pixel_data%pos_xy(2), i_map)
                 
                     !$omp critical

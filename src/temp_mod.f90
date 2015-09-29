@@ -47,6 +47,7 @@ MODULE temp_mod
     USE model_mod, ONLY : get_temperature
     
     USE MCRT_mod, ONLY : MC_photon_transfer
+    USE math_mod, ONLY : binary_search, ipol2
 
     USE fileio
 
@@ -60,14 +61,7 @@ MODULE temp_mod
     
 CONTAINS
 
-  ! ############################################################################
-  ! simulation of primary source radiation:  
-  ! ---------------------------------------
-  !
-  ! ---
-  
     SUBROUTINE set_temperature(basics, grid, model, dust, gas, sources_in,fluxes)
-
 
     IMPLICIT NONE
     
@@ -82,7 +76,7 @@ CONTAINS
     !--------------------------------------------------------------------------!
     REAL(kind=r2), DIMENSION(1:3)                    :: caco
     REAL(kind=r2), DIMENSION(1:3)                    :: moco
-    REAL(kind=r2)                                    :: min_cell_energy
+    REAL(kind=r2)                                    :: QB
     
     INTEGER                                          :: i_cell
     INTEGER                                          :: i_dust
@@ -92,10 +86,16 @@ CONTAINS
     INTEGER                                          :: i_c
     
     !--------------------------------------------------------------------------!
+
     IF (.not. basics%old_model) THEN
+        ! First set minimal internal cell energy
+        DO i_dust = 1, dust%n_dust
+            grid%cell_energy(i_dust, :) = dust%QB(0, i_dust)*                  &
+                                          basics%PIx4 * grid%cell_vol(:)
+        END DO
         IF ( basics%do_MC_temperature) THEN
             IF (.not. SourcesInitialized(sources_in)) THEN
-                print *, 'ERROR: There is no source defined'
+                print *, 'ERROR: There is no source of radiation defined'
                 stop
             END IF
             CALL MC_temp(basics,grid,model,dust,sources_in,fluxes)
@@ -107,39 +107,37 @@ CONTAINS
                     DO i_c=1, grid%n(3)
                         i_cell = i_cell + 1
                         ! set temperature analytical 
-                        moco(1) = ( grid%co_mx_a( i_a ) + grid%co_mx_a( i_a  -1) ) / 2.0_r2
-                        moco(2) = ( grid%co_mx_b(i_b) + grid%co_mx_b(i_b -1) ) / 2.0_r2
-                        moco(3) = ( grid%co_mx_c(i_c) + grid%co_mx_c(i_c -1) ) / 2.0_r2
+                        moco(1) = (grid%co_mx_a(i_a) + grid%co_mx_a(i_a - 1)) / 2.0_r2
+                        moco(2) = (grid%co_mx_b(i_b) + grid%co_mx_b(i_b - 1)) / 2.0_r2
+                        moco(3) = (grid%co_mx_c(i_c) + grid%co_mx_c(i_c - 1)) / 2.0_r2
                         
                         caco = mo2ca(grid, moco)
                         DO i_dust = 1, dust%n_dust
                             grid%t_dust(i_cell, i_dust) = get_temperature(caco)
+                            
+                            ! calculate corresponding internal cell energy
+                            i_tem = binary_search(grid%t_dust(i_cell, i_dust), &
+                                                  dust%tem_tab(:))-1
+                            QB = ipol2(REAL(dust%tem_tab(i_tem), kind=r2),     &
+                                       REAL(dust%tem_tab(i_tem + 1), kind=r2), &
+                                       dust%QB(i_tem, i_dust),                 &
+                                       dust%QB(i_tem + 1, i_dust),             &
+                                       REAL(grid%t_dust(i_cell, i_dust), kind=r2) )
+                                                    
+                            grid%cell_energy(i_dust, i_cell) = QB *            &
+                                            PI * 4.0_r2 * grid%cell_vol(i_cell)
                         END DO
                     END DO
                 END DO
             END DO
         END IF
+        ! the gas temperature equals the dust temperature (of dust species 1)
+        ! tbd.: this should be generalized
+        grid%t_gas(:) = grid%t_dust(:, 1)
     END IF
-    
-    DO i_cell = 1,grid%n_cell
-        ! set correct internal cell energy
-!~         DO i_dust = 1, dust%n_dust
-!~             i_tem = min(int((grid%t_dust(i_cell, i_dust) -         &
-!~                          basics%t_dust_min)/basics%d_tem), basics%n_tem)
-!~             min_cell_energy = dust%QB(i_tem, i_dust)
-!~             IF (grid%cell_energy(i_dust,i_cell) .lt. min_cell_energy) THEN
-!~                 grid%cell_energy(i_dust,i_cell) = min_cell_energy
-!~             END IF
-!~         END DO
 
-        ! setting the gas temperature equal to the dust temperature
-        ! we should generalize this
-        grid%t_gas(i_cell) = grid%t_dust(i_cell, 1)
-        
-    END DO
-    
     ! CALCULATE PROBERTIES, WHICH NEED TEMPERATURE INFORMATIONS
-    
+
     IF (basics%do_velo_ch_map) THEN
         !
         DO i_cell = 1,grid%n_cell
@@ -164,7 +162,7 @@ CONTAINS
                        dust, sources_in, fluxes)
 
         IMPLICIT NONE
-        
+
         !----------------------------------------------------------------------!
         TYPE(Basic_TYP),INTENT(IN)                       :: basics
         TYPE(Fluxes_TYP),INTENT(INOUT)                   :: fluxes
@@ -172,12 +170,6 @@ CONTAINS
         TYPE(Model_TYP),INTENT(IN)                       :: model
         TYPE(Dust_TYP),INTENT(IN)                        :: dust
         TYPE(SOURCES),INTENT(IN)                         :: sources_in
-        
-        !----------------------------------------------------------------------!
-        INTEGER                                          :: i_dust
-        INTEGER                                          :: i_tem
-        REAL(kind=r2)                                    :: min_cell_energy
-                
         !----------------------------------------------------------------------!
         ! reset flux map
         fluxes%continuum_map(:,:,:,:) = 0.0_r2
@@ -198,7 +190,7 @@ CONTAINS
     END SUBROUTINE MC_temp
       
   SUBROUTINE temp_final(basics, grid, dust)
-    USE math_mod, ONLY : binary_search, ipol2
+
     IMPLICIT NONE
     !--------------------------------------------------------------------------!
     TYPE(Basic_TYP),INTENT(IN)                       :: basics
