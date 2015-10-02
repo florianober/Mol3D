@@ -136,7 +136,7 @@ CONTAINS
         ! --- first calculate level populations
         IF (basics%do_velo_ch_map ) THEN
             print *,"| calculate level populations"
-            CALL calc_lvlpop(grid, model, gas)
+            CALL calc_lvlpop(basics, grid, model, gas)
             print *, "| done!                 "
             print *, "|"
         END IF

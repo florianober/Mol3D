@@ -57,10 +57,11 @@ MODULE lvlpop_mod
     !--------------------------------------------------------------------------!
 CONTAINS
 
-    SUBROUTINE calc_lvlpop(grid, model, gas)
+    SUBROUTINE calc_lvlpop(basics, grid, model, gas)
 
     IMPLICIT NONE
     !--------------------------------------------------------------------------!
+    TYPE(Basic_TYP),INTENT(IN)                       :: basics
     TYPE(Grid_TYP),INTENT(INOUT)                     :: grid
     TYPE(Model_TYP),INTENT(IN)                       :: model
     TYPE(Gas_TYP),INTENT(IN)                         :: gas
@@ -72,10 +73,10 @@ CONTAINS
         CALL pop_LTE(grid, gas)
     CASE(2)
         print *, '| | using FEP method'
-        CALL pop_FEP(grid, gas)
+        CALL pop_FEP(basics, grid, gas)
     CASE(3)
         print *, '| | using LVG method'
-        CALL pop_LVG(grid, model, gas)
+        CALL pop_LVG(basics, grid, model, gas)
     CASE DEFAULT
         print *, 'ERROR: in calc_lvlpop!'
         print *, 'ERROR: selected method is not implemended yet'
@@ -118,12 +119,13 @@ CONTAINS
     END SUBROUTINE pop_LTE
 
 
-    SUBROUTINE pop_FEP(grid, gas)
+    SUBROUTINE pop_FEP(basics, grid, gas)
 
     ! ---    free escape probability
     
     IMPLICIT NONE
     !--------------------------------------------------------------------------!
+    TYPE(Basic_TYP),INTENT(IN)                                 :: basics
     TYPE(Grid_TYP),INTENT(INOUT)                               :: grid
     TYPE(Gas_TYP),INTENT(IN)                                   :: gas
     !--------------------------------------------------------------------------!
@@ -173,7 +175,7 @@ CONTAINS
     END SUBROUTINE pop_FEP
     
     
-    SUBROUTINE pop_LVG(grid, model, gas)
+    SUBROUTINE pop_LVG(basics, grid, model, gas)
     !
     ! In the LVG (for a keplerian disk) approach we estimate the
     ! coherence length L at each cells mitpoint. Here, we assume that the disk 
@@ -184,6 +186,7 @@ CONTAINS
     
     IMPLICIT NONE
     !--------------------------------------------------------------------------!
+    TYPE(Basic_TYP),INTENT(IN)                       :: basics
     TYPE(Grid_TYP),INTENT(INOUT)                     :: grid
     TYPE(Model_TYP),INTENT(IN)                       :: model
     TYPE(Gas_TYP),INTENT(IN)                         :: gas
