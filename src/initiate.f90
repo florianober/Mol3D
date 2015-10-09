@@ -601,7 +601,7 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
     ! we allways use Jy/pixel from now on, other units can be calculated in the
     ! post processing
     flux_unit = 'Jy_pix'
-    flux_unit = 'T_mb'
+!~     flux_unit = 'T_mb'
     
     CALL InitFluxes(fluxes,1, flux_unit, basics,                               &
                     model%n_bin_map,gas%n_tr, gas%i_vel_chan, dust%n_lam)
