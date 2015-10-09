@@ -45,6 +45,7 @@ MODULE lvlpop_mod
     
     USE grd_mod
     USE math_mod
+    USE fileio, ONLY : vis_T_exc_fits
     USE model_mod, ONLY : get_J_ext
 
     IMPLICIT NONE
@@ -78,11 +79,14 @@ CONTAINS
         print *, '| | using LVG method'
         CALL pop_LVG(basics, grid, model, gas)
     CASE DEFAULT
-        print *, 'ERROR: in calc_lvlpop!'
-        print *, 'ERROR: selected method is not implemended yet'
+        print *, 'ERROR: in calc_lvlpop routine (lvlpop_mod.f90)!'
+        print *, 'ERROR: the selected method is not implemended'
         stop
     END SELECT
-
+    IF (basics%do_save_T_exc) THEN
+        print *, '| | saving excitation temperatures'
+        CALL vis_T_exc_fits(basics, grid, model, gas)
+    END IF
     END SUBROUTINE calc_lvlpop
 
     !--------------------------------------------------------------------------!
@@ -138,7 +142,7 @@ CONTAINS
     REAL(kind=r2),DIMENSION(1:gas%col_trans,1:2)               :: final_col_para
     INTEGER                                                    :: i_cell, k
     !--------------------------------------------------------------------------!
-    new_pop = 0.0
+    new_pop = 1.0e-30
     ! get external radiation field -> definition in model_mod.f90
     J_ext(:) = get_J_ext(gas%trans_freq(:))
 
@@ -220,8 +224,8 @@ CONTAINS
                       ' % done'//char(27)//'[A'
         END IF
         !starting values
-        new_pop(:) = 0.0
-        old_pop(:) = 0.0
+        new_pop(:) = 1e-30
+        old_pop(:) = 1e-30
         old_pop(1) = 1.0
         new_pop(1) = 1.0
         A(:,:) = 0.0
@@ -261,7 +265,7 @@ CONTAINS
                 print *, 'Warning, level polulation do not sum to 1'
                 print *, abs(1.0-sum_p)
             ELSE IF (isnan(sum_p)) THEN
-                print *, 'lvl_populations are nan', i_cell, i
+                print *, 'ERROR: lvl_populations are nan', i_cell, i
                 print *, old_pop
                 print *, 'news pop'
                 print *, new_pop
@@ -285,7 +289,6 @@ CONTAINS
             print *, abs(new_pop(MAXLOC(new_pop, 1))-old_pop(MAXLOC(new_pop, 1)))/ &
                         (old_pop(MAXLOC(new_pop, 1))+EPSILON(old_pop))
             print *, ''
-
         END IF
         grid%lvl_pop(:,i_cell) = new_pop
     END DO

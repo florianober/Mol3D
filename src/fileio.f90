@@ -49,7 +49,7 @@ MODULE fileio
     !--------------------------------------------------------------------------!
     PUBLIC :: vis_plane, vis_plane_fits, save_ch_map,                          &
               save_model, save_boundaries, read_boundaries, read_no_cells,     &
-              save_continuum_map, read_model
+              save_continuum_map, read_model, vis_T_exc_fits
     !--------------------------------------------------------------------------!
 
 CONTAINS
@@ -1143,13 +1143,14 @@ CONTAINS
         
         IMPLICIT NONE
         !----------------------------------------------------------------------!
-        TYPE(Model_TYP), INTENT(IN)                  :: model
-        TYPE(Basic_TYP), INTENT(IN)                  :: basics
-        TYPE(Gas_TYP), INTENT(IN)                    :: gas
-        TYPE(Fluxes_TYP), INTENT(IN)                 :: fluxes
-        INTEGER, INTENT(IN)                          :: n_dust
+        TYPE(Model_TYP), INTENT(IN)                    :: model
+        TYPE(Basic_TYP), INTENT(IN)                    :: basics
+        TYPE(Gas_TYP), INTENT(IN)                      :: gas
+        TYPE(Fluxes_TYP), INTENT(IN)                   :: fluxes
+        INTEGER, INTENT(IN)                            :: n_dust
+        REAL(kind=r2),DIMENSION(:,:), ALLOCATABLE      :: map_out
         !----------------------------------------------------------------------!
-        INTEGER                                      :: vch, u, sta
+        INTEGER                                        :: vch, u, sta
         !----------------------------------------------------------------------!
         
         ! write velocity channel map to fits file
@@ -1172,7 +1173,9 @@ CONTAINS
         call ftclos(u, sta)
         ! free the (u)nit number
         call ftfiou(u, sta)
-        
+
+        ALLOCATE(map_out(0:2*model%n_bin_map, 0:2*model%n_bin_map))
+        map_out = sum(fluxes%channel_map(:,:,:,1),DIM=3)/REAL(gas%i_vel_chan, kind=r2)*gas%vel_max*1e-3
         ! write velocity integrated map to fits file
         sta = 0
         
@@ -1183,10 +1186,11 @@ CONTAINS
         ! write header
         call ftphpr(u,.true.,-64,2,(/2*model%n_bin_map+1,2*model%n_bin_map+1/),0,1,.true.,sta)
         ! write array to fits file
-        call ftpprd(u,1,1,(2*model%n_bin_map+1)**2,sum(fluxes%channel_map(:,:,:,1),DIM=3)/ &
-                    real(gas%i_vel_chan, kind=r2)*gas%vel_max*1e-3,sta)
-        ! add other header keywords
-!~         call ftpkyj(u,'EXPOSURE',1500,'Total Exposure Time',sta)
+        
+        call ftpprd(u,1,1,(2*model%n_bin_map+1)**2,map_out(:,:),sta)
+        CALL add_essential_fits_keys(u, n_dust,                                &
+                                     2*model%n_bin_map+1, model%r_ou,          &
+                                     GetModelName(model))
         ! close the fits file
         call ftclos(u, sta)
         ! free the (u)nit number
@@ -1209,5 +1213,94 @@ CONTAINS
         CLOSE(unit=2)
         
     END SUBROUTINE save_ch_map
+
+    SUBROUTINE vis_T_exc_fits(basics, grid, model, gas)
+        ! calculates the excitation temperature and writes it into a fits file
+        !
+        IMPLICIT NONE
+        !----------------------------------------------------------------------!
+        TYPE(Basic_TYP), INTENT(IN)                    :: basics
+        TYPE(Grid_TYP), INTENT(IN)                     :: grid
+        TYPE(Model_TYP), INTENT(IN)                    :: model
+        TYPE(Gas_TYP), INTENT(IN)                      :: gas
+        INTEGER                                        :: plane
+        INTEGER                                        :: pix
+
+        REAL(kind=r2),DIMENSION(1:3)                   :: caco
+        REAL(kind=r2)                                  :: dxyz
+        REAL(kind=r2), DIMENSION(:,:,:), ALLOCATABLE   :: map_out
+
+        INTEGER                                        :: i_cell
+        INTEGER                                        :: i_x, i_y
+        !----------------------------------------------------------------------!
+        INTEGER                                        :: i_trans, u, sta
+        !----------------------------------------------------------------------!
+        pix = 600
+        ALLOCATE(map_out(0:pix-1,0:pix-1, 1:gas%trans_lvl))
+        map_out = 0.0_r2
+        dxyz = 2.0*model%r_ou/pix
+        DO plane=1, 3
+            sta = 0
+            DO i_y=0, pix-1
+                DO i_x=0,pix-1
+                    IF (plane == 1) THEN
+                        caco(1) = -model%r_ou+(0.5 + i_x) * dxyz
+                        caco(2) =  0.0_r2
+                        caco(3) = -model%r_ou+(0.5 + i_y) * dxyz
+                    ELSE IF (plane == 2) THEN
+                        caco(1) = -model%r_ou+(0.5 + i_x) * dxyz
+                        caco(2) = -model%r_ou+(0.5 + i_y) * dxyz
+                        caco(3) =  0.0_r2
+                    ELSE IF (plane == 3) THEN
+                        caco(1) =  0.0_r2
+                        caco(2) = -model%r_ou+(0.5 + i_x) * dxyz
+                        caco(3) = -model%r_ou+(0.5 + i_y) * dxyz
+                    ELSE 
+                        PRINT *, 'plane not specified'
+                        RETURN
+                    END IF
+                    IF ( check_inside(caco, grid, model) ) THEN
+                        i_cell = get_cell_nr(grid, caco)
+                        DO i_trans = 1, gas%trans_lvl
+                            map_out(i_x,i_y, i_trans) =                        &
+                                con_h / con_k * gas%trans_freq(i_trans) /      &
+                                (log(gas%g_level(gas%trans_upper(i_trans)) /    &
+                                    gas%g_level(gas%trans_lower(i_trans)) *    &
+                                    grid%lvl_pop(gas%trans_lower(i_trans),i_cell) /&
+                                    (grid%lvl_pop(gas%trans_upper(i_trans),i_cell)+ &
+                                    1.0e-200_r2))+1.0e-200_r2)
+                        END DO
+                    ELSE
+                        map_out(i_x,i_y, :) = 0.0_r2
+                    END IF
+                END DO
+            END DO
+            
+            ! get a new u(nit) number
+            call ftgiou(u,sta)
+            ! init fits file
+            IF ( plane ==  1) THEN
+                !view xz-plane
+                CALL ftinit(u,'!'//TRIM(basics%path_results)//                 &
+                            Getproname(basics)//'_T_exc_xz.fits.gz',1,sta)
+            ELSE IF ( plane == 2) THEN
+                !view xy-plane
+                CALL ftinit(u,'!'//TRIM(basics%path_results)//                 &
+                Getproname(basics)//'_T_exc_xy.fits.gz',1,sta)
+            ELSE IF ( plane == 3) THEN
+                !view yz-plane
+                CALL ftinit(u,'!'//TRIM(basics%path_results)//                 &
+                            Getproname(basics)//'_T_exc_yz.fits.gz',1,sta)
+            END IF
+            ! write header
+            call ftphpr(u,.true.,-64,3,(/pix, pix, gas%trans_lvl/),0,1,.true.,sta)
+            ! write array to fits file
+            call ftpprd(u,1,1,pix**2*gas%trans_lvl, map_out(:,:,:), sta)
+            ! close the fits file
+            call ftclos(u, sta)
+            ! free the (u)nit number
+            call ftfiou(u, sta)
+        END DO
+    END SUBROUTINE vis_T_exc_fits
 
 END MODULE fileio

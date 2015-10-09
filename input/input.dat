@@ -3,13 +3,13 @@
 #                                                                                   #
 # All parameters that can be changed without recompiling Mol3D are listed here.     #
 # Please be aware that some parameters are not intended to be changeable.           #
-# They are note listed here, but accessable via the src/initiate.f90 source file.   #
+# They are not listed here, but accessable via the src/initiate.f90 source file.    #
 #                                                                                   #
 # If you have questions, please feel free to ask me.                                #
 #                                                                                   #
 # author: Florian Ober                                                              #
 # email : fober@astrophysik.uni-kiel.de                                             #
-# date  : Jul 2015                                                                  #
+# date  : Oct 2015                                                                  #
 #####################################################################################
 
                                           (+) working, (o) testing, (-) not working
@@ -63,7 +63,7 @@ vel_max = {1500.0}                        max velocity in spectrum (in m/s
 v_turb = {100}                            turbulent velocity (in m/s)'
 
 gas_cat_name = {co.dat}                   gas catalog name (in input/mol) (Leiden database style)
-dust_cat_name = {mrn--250}                dust catalog name (in input/dust) (in mc3d style)
+dust_cat_name = {mrn---v4}                dust catalog name (in input/dust) (in mc3d style)
 grid_name = {spherical}                   possible values: spherical (+), cylindrical (+), cartesian (o)
 grid_type = {1}                           default = 1, 2 and higher values for user defined grids
                                                     9 is reserved for a grid defined in a text file (+)

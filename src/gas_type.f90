@@ -142,7 +142,7 @@ CONTAINS
         this%dust_mol_ratio = moldustratio
         abundance           = nvratio
         this%mol_abund      = abundance
-        this%v_turb = v_turb
+        this%v_turb         = v_turb
         
     END SUBROUTINE InitGas
 

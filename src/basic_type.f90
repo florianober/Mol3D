@@ -98,6 +98,7 @@ MODULE basic_type
         LOGICAL                           :: do_continuum_mc
         LOGICAL                           :: do_peel_off
         LOGICAL                           :: do_velo_ch_map
+        LOGICAL                           :: do_save_T_exc
 
     END TYPE Basic_TYP
     SAVE
@@ -119,7 +120,7 @@ CONTAINS
     SUBROUTINE InitBasic(this, ut, un, pname, presult,                         &
                          do_MC_temperature, old_pname, old_model,              &
                          do_continuum_raytrace, do_continuum_mc,               &
-                         do_velo_ch_map, do_peel_off,                          &
+                         do_velo_ch_map, do_peel_off, do_save_T_exc,           &
                          n_tem, t_dust_min, t_dust_max, num_core,              &
                          input_file, new_input_file, randgen_name)
 
@@ -148,13 +149,15 @@ CONTAINS
         LOGICAL               :: do_continuum_mc
         LOGICAL               :: do_velo_ch_map
         LOGICAL               :: do_peel_off
+        LOGICAL               :: do_save_T_exc
 
         !----------------------------------------------------------------------!
         INTENT(IN)          :: ut, un, presult, pname, num_core,               &
                                n_tem, t_dust_max, t_dust_min,                  &
                                do_MC_temperature, old_model, old_pname,        &
                                do_continuum_raytrace, do_continuum_mc,         &
-                               do_velo_ch_map, do_peel_off, randgen_name
+                               do_velo_ch_map, do_peel_off, do_save_T_exc,     &
+                               randgen_name
         INTENT(INOUT)       :: this
         !----------------------------------------------------------------------!
         CALL InitCommon(this%mtype,ut,un)
@@ -212,6 +215,7 @@ CONTAINS
         this%do_continuum_mc  = do_continuum_mc
         this%do_peel_off = do_peel_off
         this%do_velo_ch_map = do_velo_ch_map
+        this%do_save_T_exc = do_save_T_exc
 
         this%randgen_name = randgen_name
         this%velocity_type = 'ANALYTICAL_KEPLERIAN'   ! possible values: ANALYTICAL_KEPLERIAN, INTERPOLATE

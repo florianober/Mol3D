@@ -110,10 +110,10 @@ CONTAINS
     print *, "|"
     ! now, provide some extra visualisation output 
     ! 1: xz plane, 2: xy plane, 3: yz plane
-    print *, "| generate visualisation output"
-    CALL vis_plane_fits(grid, basics, model, 1, 256)
-    CALL vis_plane_fits(grid, basics, model, 2, 256)
-    CALL vis_plane_fits(grid, basics, model, 3, 256)
+    print *, "| generating visualisation output"
+    CALL vis_plane_fits(grid, basics, model, 1, 600)
+    CALL vis_plane_fits(grid, basics, model, 2, 600)
+    CALL vis_plane_fits(grid, basics, model, 3, 600)
     print *, "| done!                 "
     print *, "|"
 
@@ -135,7 +135,7 @@ CONTAINS
     IF (basics%do_raytr) THEN
         ! --- first calculate level populations
         IF (basics%do_velo_ch_map ) THEN
-            print *,"| calculate level populations"
+            print *,"| calculating level populations"
             CALL calc_lvlpop(basics, grid, model, gas)
             print *, "| done!                 "
             print *, "|"
@@ -182,8 +182,6 @@ CONTAINS
             !$omp parallel num_threads(basics%num_core)
             !$omp do schedule(dynamic) private(i,j, coor_map)
             DO i = 0, 2*model%n_bin_map
-!~             DO i = 126, 126
-!~                 DO j = 198, 202! 2*model%n_bin_map
                 DO j = 0, 2*model%n_bin_map
                     IF (l == int(k*(2.0*model%n_bin_map)**2*0.01)) THEN
                         WRITE (*,'(A,I3,A)') ' | | | ',int(l / real((2.0 *     &

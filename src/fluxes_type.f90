@@ -33,7 +33,7 @@
 ! inspired by fosite by T. Illenseer 2011
 !------------------------------------------------------------------------------!
 MODULE fluxes_type
-
+    USE basic_type
     USE datatype
     USE var_global
     USE common_type, &
@@ -69,10 +69,11 @@ MODULE fluxes_type
     !--------------------------------------------------------------------------!
 CONTAINS
 
-    SUBROUTINE InitFluxes(this, ut, un, n_bin_map, n_tr, vch, n_lam)
+    SUBROUTINE InitFluxes(this, ut, un, basics, n_bin_map, n_tr, vch, n_lam)
         IMPLICIT NONE
         !----------------------------------------------------------------------!
         TYPE(Fluxes_TYP)       :: this
+        TYPE(Basic_TYP)        :: basics
         INTEGER                :: n_bin_map
         INTEGER                :: n_tr
         INTEGER                :: ut
@@ -84,21 +85,24 @@ CONTAINS
         INTENT(INOUT)          :: this
         !----------------------------------------------------------------------!
         CALL InitCommon(this%fltype, ut, un)
-
+        
         ! stokes parameters
         this%stokes_ext(1) = "I"
         this%stokes_ext(2) = "Q"
         this%stokes_ext(3) = "U"
         this%stokes_ext(4) = "V"
-
-        ALLOCATE(                                                              &
-                 this%channel_map(0:2*n_bin_map,                               &
-                                0:2*n_bin_map,-vch:vch,1:n_tr),                &
-                 this%continuum_map(0:2*n_bin_map, 0:2*n_bin_map, 1:n_lam, 1:4))
-
-        this%channel_map(:, :, :, :) = 0.0_r2
-        this%continuum_map(:, :, :, :) = 0.0_r2
-
+        IF (basics%do_velo_ch_map) THEN
+            ALLOCATE(this%channel_map(0:2*n_bin_map,                           &
+                                      0:2*n_bin_map,-vch:vch,1:n_tr))
+            this%channel_map(:, :, :, :) = 0.0_r2
+        END IF
+        
+        IF (basics%do_MC_temperature .or. basics%do_continuum_raytrace .or.   &
+            basics%do_continuum_mc) THEN
+            ALLOCATE(this%continuum_map(0:2*n_bin_map, 0:2*n_bin_map,         &
+                                        1:n_lam, 1:4))
+            this%continuum_map(:, :, :, :) = 0.0_r2
+        END IF
     END SUBROUTINE InitFluxes
 
     SUBROUTINE CloseFluxes(this)
@@ -107,7 +111,9 @@ CONTAINS
         TYPE(Fluxes_TYP), INTENT(INOUT) :: this
         !----------------------------------------------------------------------!
         CALL CloseCommon(this%fltype)
-        DEALLOCATE(this%channel_map, this%continuum_map)
+        IF (ALLOCATED(this%channel_map)) DEALLOCATE(this%channel_map)
+        
+        IF (ALLOCATED(this%continuum_map)) DEALLOCATE(this%continuum_map)
 
     END SUBROUTINE CloseFluxes
 

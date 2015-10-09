@@ -118,6 +118,7 @@ CONTAINS
                             ! calculate corresponding internal cell energy
                             i_tem = binary_search(grid%t_dust(i_cell, i_dust), &
                                                   dust%tem_tab(:))-1
+                            i_tem = MIN(i_tem, basics%n_tem-1)
                             QB = ipol2(REAL(dust%tem_tab(i_tem), kind=r2),     &
                                        REAL(dust%tem_tab(i_tem + 1), kind=r2), &
                                        dust%QB(i_tem, i_dust),                 &
@@ -148,7 +149,7 @@ CONTAINS
                 grid%cell_gauss_a(i_cell) = 1.0_r2 /                           &
                                 (sqrt(2.0_r2 * con_k * grid%t_gas(i_cell) /    &
                                      (gas%mol_weight * 1.0e-3_r2 / con_Na) +   &
-                                      gas%v_turb))
+                                      gas%v_turb**2))
             ELSE
                 grid%cell_gauss_a(i_cell) = 0.0_r2
             END IF                

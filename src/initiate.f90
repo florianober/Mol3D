@@ -137,6 +137,7 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
     LOGICAL                                          :: do_continuum_raytrace
     LOGICAL                                          :: do_continuum_mc
     LOGICAL                                          :: peel_off
+    LOGICAL                                          :: do_save_T_exc
     !--------------------------------------------------------------------------!
     INTENT(INOUT)                                    :: basics, &
                                                         fluxes, &
@@ -179,7 +180,7 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
     t_dust_max        = 3000.0
     n_interact_max    = 100000
     
-    show_error = .True.               ! show some minor warnings
+    show_error = .False.               ! show some minor warnings
 
     ! use results of earlier calculations
     !
@@ -284,11 +285,12 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
     !                 'TAUS88'   : L'Ecuyer, P. (1996) (prefered)
     !                 'COMPILER' : The compiler own
     randgen_name = 'TAUS88'
-    
+    ! save the calculated excitation temperature?
+    do_save_T_exc = .False.
     CALL InitBasic(basics,photon_type,'Reemission map', proname, r_path,       &
                    do_MC_temperature, old_proname,                             &
                    old_model, do_continuum_raytrace,                           &
-                   do_continuum_mc, do_velo_ch_map, peel_off,                  &
+                   do_continuum_mc, do_velo_ch_map, peel_off, do_save_T_exc,   &
                    n_tem, t_dust_min, t_dust_max, num_core,                    &
                    input_file, new_input_file, randgen_name)
 
@@ -599,8 +601,9 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
     ! we allways use Jy/pixel from now on, other units can be calculated in the
     ! post processing
     flux_unit = 'Jy_pix'
+    flux_unit = 'T_mb'
     
-    CALL InitFluxes(fluxes,1, flux_unit,                                       &
+    CALL InitFluxes(fluxes,1, flux_unit, basics,                               &
                     model%n_bin_map,gas%n_tr, gas%i_vel_chan, dust%n_lam)
 
     print *, "Code initialization done !"
