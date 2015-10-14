@@ -204,7 +204,7 @@ CONTAINS
             !this%D_2obs(3, 3, i_map) =  cos(this%th_map(i_map))
 
             ! user unit, but should be fixed to [AU]
-            this%px_model_length_x(i_map) = this%r_ou/(REAL(this%n_bin_map,KIND=r2)+0.5_r2)/this%zoom_map(i_map)   
+            this%px_model_length_x(i_map) = this%r_ou/(REAL(this%n_bin_map,KIND=r2)+0.5_r2)/this%zoom_map(i_map)
             this%px_model_length_y(i_map) = this%r_ou/(REAL(this%n_bin_map,KIND=r2)+0.5_r2)/this%zoom_map(i_map)
         END DO
     END SUBROUTINE InitModel

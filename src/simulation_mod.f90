@@ -161,20 +161,18 @@ CONTAINS
         do i_map=1, model%n_map               ! orientation of the map
 !~             print *, "    - Map #", i_map, " of ", model%n_map
 
-            IF (GetFluxesName(fluxes) == 'Jy_pix') THEN
-                pix_res_i = model%px_model_length_x(i_map) /                   &
+            IF (GetFluxesName(fluxes) /= 'Jy_pix') THEN
+                PRINT *, 'Warning: The flux unit is Jy/pixel from now on.  &
+                                   Ohter units can be calculated in the    &
+                                   post process using the shipped python   &
+                                   scripts.'
+            END IF
+            pix_res_i = model%px_model_length_x(i_map) /                       &
                             model%distance * PI /(3600.0_r2*180.0_r2)
-                pix_res_j = model%px_model_length_y(i_map) /                   &
+            pix_res_j = model%px_model_length_y(i_map) /                       &
                             model%distance * PI /(3600.0_r2*180.0_r2)
 
-                unit_value = 1.0e26_r2*pix_res_i*pix_res_j
-            ELSE IF (GetFluxesName(fluxes) == 'T_mb') THEN
-                unit_value = (con_c / gas%trans_freq(gas%tr_cat(1)))**2.0_r2 / &
-                              2.0_r2/con_k 
-            ELSE
-                PRINT *, '  WARNING: requested unit not found'
-                unit_value = 1.0_r2
-            END IF
+            unit_value = 1.0e26_r2*pix_res_i*pix_res_j
 
             PRINT *,"| | check for pixel"
             k = 1

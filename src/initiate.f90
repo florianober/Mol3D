@@ -593,15 +593,9 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
                   gas%egy_lvl)
 
     !---------------------------  Init Fluxes  --------------------------------!
-
-    !CALL parse('flux_unit', flux_unit, new_input_file)
-    
-    !WRITE(unit=3,fmt='(A)') 'flux_unit = {'//TRIM(flux_unit)// &
-    !'}                 possible values: Jy_pix, T_mb'
-    ! we allways use Jy/pixel from now on, other units can be calculated in the
-    ! post processing
+    ! we allways use Jy/pixel from now on, other units (e.g. T_b)
+    ! can be calculated in the post process
     flux_unit = 'Jy_pix'
-!~     flux_unit = 'T_mb'
     
     CALL InitFluxes(fluxes,1, flux_unit, basics,                               &
                     model%n_bin_map,gas%n_tr, gas%i_vel_chan, dust%n_lam)
