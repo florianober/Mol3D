@@ -114,7 +114,7 @@ CONTAINS
         integer, intent(in)                              :: i_dust
 
         logical       :: hl1
-        real(kind=r2) :: HELP,PHI,PHI1,PHIPAR,ANGLE,GAMMA,hd1,hd2, rndx
+        real(kind=r2) :: HELP,PHI,PHI1,PHIPAR,ANGLE,GAMMA_ANGLE,hd1,hd2, rndx
         !----------------------------------------------------------------------!
         ! ---
         !                     *** THETA-Determination ***
@@ -139,58 +139,64 @@ CONTAINS
 
         CALL GetNewRandomNumber(rand_nr, rndx)
 
-        if (abs(PHIPAR) < 0.1_r2) then
+        IF (abs(PHIPAR) < 0.1_r2) THEN
             PHI = rndx * basics%PIx2                ! PHI = rndx * 2.0_r2 * PI
-        else
-           do
-              HELP = rndx * basics%PIx4            ! HELP = rndx * 4.0_r2 * PI
-              PHI  = HELP  +  PHIPAR * sin(HELP)
+        ELSE
+            DO
+                HELP = rndx * basics%PIx4            ! HELP = rndx * 4.0_r2 * PI
+                PHI  = HELP  +  PHIPAR * sin(HELP)
 
-              ! Calculation of PHI by an iterative solution of Kepler's
-              ! equation. The iteration will end if DABS(PHI-PHI1)<0.0175
-              ! (about 1 degree). 
-              do
-                 PHI1 = PHI
-                 hd1  = abs(PHI - PHI1)
-                 PHI  = HELP  +  PHIPAR * sin(PHI1)
-                 hd2  = abs(PHI - PHI1)
+                ! Calculation of PHI by an iterative solution of Kepler's
+                ! equation. The iteration will end if DABS(PHI-PHI1)<0.0175
+                ! (about 1 degree). 
+                DO
+                    PHI1 = PHI
+                    hd1  = abs(PHI - PHI1)
+                    PHI  = HELP  +  PHIPAR * sin(PHI1)
+                    hd2  = abs(PHI - PHI1)
 
-                 if(abs(PHI - PHI1) <= 0.0175_r2) then 
-                    hl1 = .false.
-                    exit
-                 else
-                    if ((hd1-hd2) < 1.0e-15_r2) then
-                         hl1 = .true.   ! endlos-schleife -> neuen wert auslosen
-                         CALL GetNewRandomNumber(rand_nr,rndx)
-                         exit
+                    if(abs(PHI - PHI1) <= 0.0175_r2) then 
+                        hl1 = .false.
+                        exit
+                    else
+                        if ((hd1-hd2) < 1.0e-15_r2) then
+                            hl1 = .true.   ! endlos-schleife -> neuen Wert auslosen
+                            CALL GetNewRandomNumber(rand_nr,rndx)
+                            exit
+                        endif
                     endif
-                 endif
-              enddo
-              if (.not. hl1) then
-                  exit
-              endif
-           enddo
-           PHI = PHI / 2.0_r2
-           ! Between the direction angle phi and the angle phi'
-           ! calculated by inverse of distribution function exists the   
-           ! following connection:  phi = phi' + 180 deg - gamma ; 
-           ! gamma=Uein/Qein.
-           GAMMA = 0.0_r2 ! not sure if needed
-           if (photon%stokes(2) /= 0.0_r2) then
-              GAMMA  = 0.5_r2 * atan2(photon%stokes(3),photon%stokes(2))
-              if  (photon%stokes(3) < 0.0_r2) then
-                 GAMMA = PI + GAMMA
-              endif
-           else
-              if     (photon%stokes(3) < 0.0_r2) then
-                 GAMMA = basics%PIx34    ! GAMMA = PI * 3.0_r2/4.0_r2
-              elseif (photon%stokes(3) > 0.0_r2) then
-                 GAMMA = basics%PI4      ! GAMMA = PI / 4.0_r2
-              endif
-           endif
-           PHI = PI - GAMMA + PHI
+                enddo
+                if (.not. hl1) then
+                    exit
+                endif
+            enddo
+            PHI = PHI / 2.0_r2
+        END IF
+        ! Between the direction angle phi and the angle phi'
+        ! calculated by inverse of distribution function exists the   
+        ! following connection:  phi = phi' + 180 deg - GAMMA_ANGLE ; 
+        ! tan(2GAMMA_ANGLE) = Uein/Qein.
+        GAMMA_ANGLE = 0.0_r2 ! not sure if needed
+        if (photon%stokes(2) /= 0.0_r2) then
+            GAMMA_ANGLE  = 0.5_r2 * atan2(photon%stokes(3),photon%stokes(2))
+            if  (photon%stokes(3) < 0.0_r2) then
+                GAMMA_ANGLE = PI + GAMMA_ANGLE
+            endif
+        else
+            if     (photon%stokes(3) < 0.0_r2) then
+                GAMMA_ANGLE = basics%PIx34    ! GAMMA_ANGLE = PI * 3.0_r2/4.0_r2
+            elseif (photon%stokes(3) > 0.0_r2) then
+                GAMMA_ANGLE = basics%PI4      ! GAMMA_ANGLE = PI / 4.0_r2
+            endif
         endif
-
+        PHI = PI - GAMMA_ANGLE + PHI
+!~         print *, rad2grad(GAMMA_ANGLE)
+!~         print *, rad2grad(PHI)
+!~         print *, rad2grad(PI - GAMMA_ANGLE + rndx * basics%PIx2), abs(PHIPAR)
+!~         print *, photon%stokes(2), photon%stokes(3)
+!~         print *, ''
+        
+!~         IF (abs(PHIPAR) > 0.1) STOP
         photon%SINPHI = sin(PHI)
         photon%COSPHI = cos(PHI)
 
@@ -242,7 +248,7 @@ CONTAINS
         CALL GetNewRandomNumber(rand_nr, rndx)
         photon%lot_th = dust%SCAANG(i_dust, photon%nr_lam,                     &
                                     nint(real(dust%nrndpt, kind=r2)*rndx))
-        ANGLE  = photon%lot_th * dust%D_ANG
+        ANGLE  = (photon%lot_th -1)* dust%D_ANG
         photon%SINTHE = sin(ANGLE)
         photon%COSTHE = cos(ANGLE)
 

@@ -174,37 +174,40 @@ CONTAINS
         REAL(kind=r2)                                    :: tau
         !----------------------------------------------------------------------!
 
-        ! create a peel of photon on basis of the current photon and raytrace
-        ! it in direction to the observer
+        ! create a peel of photon on the basis of the current photon and raytrace
+        ! raytrace it in direction to the observer
 
         photon_peel = photon
         tau = 0.0_r2
         DO i_map = 1, model%n_map !tbd
             ! direction of the new photon is the direction to the observer
             photon_peel%dir_xyz = model%D_2obs(3, :, i_map)
-
-            ! we need to convert the stokes vector
-            ! scattering in the observer's direction
-            CALL vecmat(photon_peel, dust%D_ANG)
-            IF (photon%last_interaction_type == 'S') THEN
-                ! get the phi and theta angles for the given direction
-                ! get a dust grain
-                i_dust = dust_select(grid, dust, rand_nr, photon_peel)
-                ! transformation of the stokes vector
-                CALL trafo(dust, photon_peel, i_dust)
-            END IF
             ! transport photon_peel package in direction to the observer
             CALL get_total_tau_direction(model, grid, dust, photon_peel, tau)
             ! When we arrive outside the model space, we know the total optical depth
             ! and can now reduce the amount of energy of this photon_peel package.
             ! Energy rescaling due to the observers distance will be done
             ! after the RT process.
-
+            !
+            ! Now, we need to convert the stokes vector
+            ! scattering in the observer's direction
+            CALL vecmat(photon_peel, dust%D_ANG)
+            !
+            IF (photon%last_interaction_type == 'S') THEN
+                ! get the phi and theta angles for the given direction
+                ! get a dust grain
+                i_dust = dust_select(grid, dust, rand_nr, photon_peel)
+                ! transformation of the stokes vector
+                CALL trafo(dust, photon_peel, i_dust)
+                photon_peel%energy = photon%energy * exp(-tau) *               &
+                                     dust%phase_pdf(photon%lot_th, i_dust,     &
+                                                    photon%nr_lam)/PI
+            ELSE
+                photon_peel%energy = photon%energy * exp(-tau) / (4.0_r2*PI)
+            END IF
             photon_peel%pos_xyz_li = photon_peel%pos_xyz
             IF (photon%kill) THEN
                 photon_peel%energy = 0.0
-            ELSE
-                photon_peel%energy = photon%energy * exp(-tau)
             END IF
 
             CALL project_photon_on_map(model, fluxes, photon_peel)

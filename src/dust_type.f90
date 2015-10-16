@@ -85,6 +85,7 @@ MODULE Dust_type
         REAL(kind=r2), DIMENSION(:,:,:),ALLOCATABLE        :: QdB_dT_l_cdf
         REAL(kind=r2), DIMENSION(:,:),ALLOCATABLE          :: planck_tab
         REAL(kind=r2), DIMENSION(:,:,:,:,:),ALLOCATABLE    :: SME
+        REAL(kind=r2), DIMENSION(:,:,:),ALLOCATABLE        :: phase_pdf
         REAL(kind=r2), DIMENSION(:),ALLOCATABLE            :: sctth
         REAL(kind=r1), DIMENSION(:),ALLOCATABLE            :: tem_tab
         
@@ -190,7 +191,7 @@ CONTAINS
             this%QB(       -1:basics%n_tem,1:this%n_dust ),                    &
             this%QdB_dT(        0:basics%n_tem,1:this%n_dust ),                &
             this%planck_tab(  1:this%n_lam,0:basics%n_tem ),                   &
-
+            this%phase_pdf(1:this%n_scatt_th, 1:this%n_dust, 1:this%n_lam ),   &
             this%tem_tab(      0:basics%n_tem ),                               &
             this%SME(1:4, 1:4, 1:this%n_dust, this%n_lam, this%n_scatt_th),    &
             this%SCAANG(1:this%n_dust,1:this%n_lam,0:this%nrndpt),             &
@@ -219,6 +220,7 @@ CONTAINS
         this%QdB_dT_l(:,:,:)    = 0.0_r2
         this%QdB_dT_l_cdf(:,:,:)    = 0.0_r2
         this%tem_tab(:)         = 0.0_r2
+        this%phase_pdf(:,:,:) = 0.0_r2
 
         ALLOCATE(gscatt_all(  1:this%n_dust, 1:this%n_lam ),                   &
                  REF_RE(      1:this%n_dust, 1:this%n_lam ),                   &
@@ -394,9 +396,11 @@ CONTAINS
                             phg(i_scatt_th) = 2.0_r2*PI * real(this%SME(1,1, i_dust,i_lam, i_scatt_th+1),kind=r2) * &
                             (1.0_r2 - cos(2.0_r2*hd_dth))
                         end if
-                
                         Fphg(i_scatt_th) = Fphg(i_scatt_th-1) + phg(i_scatt_th)
                     end do
+                    ! For the peel-off technique we need the probability, that a photon
+                    ! is scattered in the observers direction -> phase_pdf 
+                    this%phase_pdf(:, i_dust, i_lam) = this%SME(1, 1, i_dust, i_lam, :)/ Fphg(180)
                     Fphg(:) = Fphg(:) / Fphg(180)
              
                     ptr_1 = 0
@@ -417,7 +421,33 @@ CONTAINS
                     end do
 
                 case (2) ! --- isotropic scattering  ---
-                    ! SCAANG: not defined
+                    ! SCAANG: not defined -> this is only done to calculate the
+                    ! probability needed by the peel-off technique
+                    if (N_AN/=181) then
+                        print *,"!!! Warning: subroutine ld_dust()"
+                        print *,"             mie-scattering prepared for 181 scattering angles only"
+                        stop
+                    end if
+
+                    phg(:)  = 0.0_r2
+                    Fphg(:) = 0.0_r2
+                    hd_dth  = grad2rad(0.5_r2)
+
+                    do i_scatt_th = 0, 180
+                        if (i_scatt_th/=0 .and. i_scatt_th/=180) then
+                            hd_th = grad2rad(real(i_scatt_th,kind=r2))
+                            phg(i_scatt_th) = 2.0_r2*PI * real(this%SME(1,1, i_dust,i_lam, i_scatt_th+1),kind=r2) * &
+                            (cos(hd_th-hd_dth) - cos(hd_th+hd_dth))
+                        else
+                            phg(i_scatt_th) = 2.0_r2*PI * real(this%SME(1,1, i_dust,i_lam, i_scatt_th+1),kind=r2) * &
+                            (1.0_r2 - cos(2.0_r2*hd_dth))
+                        end if
+                        Fphg(i_scatt_th) = Fphg(i_scatt_th-1) + phg(i_scatt_th)
+                    end do
+                    ! For the peel-off technique we need the probability, that a photon
+                    ! is scattered in the observers direction -> phase_pdf 
+                    this%phase_pdf(:, i_dust, i_lam) = this%SME(1, 1, i_dust, i_lam, :) / Fphg(180)
+                    Fphg(:) = Fphg(:) / Fphg(180)
 
                 case (3) ! --- anisotropic scattering: HENYEY GREENSTEIN approximation
                     ! assumption: streuwinkel = 0, 1, 2, ..., 180 degree
@@ -440,6 +470,7 @@ CONTAINS
                              )**1.5
                         Fphg(i_scatt_th) = Fphg(i_scatt_th-1) + phg(i_scatt_th)*sin(hd_th)
                     end do
+                    this%phase_pdf(:, i_dust, i_lam) = this%SME(1, 1, i_dust, i_lam, :) / Fphg(180)
                     Fphg(:) = Fphg(:) / Fphg(180)
                  
                     ptr_1 = 0
@@ -482,25 +513,27 @@ CONTAINS
         end do
         
         ! select the suited dust wavelength for each tr(ansition) for the selected line transition
-        DO tr = 1, gas%n_tr
-          IF (con_c/gas%trans_freq(gas%tr_cat(tr)) .GT. MAXVAL(this%lam)) THEN
-               this%cont_map(tr) = MAXLOC(this%lam, 1) !position of the maximum wavelength in the array lam
-               print *, 'WARNING: the central wavelength of the gas is higher than the maximum &
-                                &  wavelength provided by the choosen dust-catalogue'
-            ELSEIF (con_c/gas%trans_freq(gas%tr_cat(tr)) .LT. MINVAL(this%lam)) THEN
-                 this%cont_map(tr) = MINLOC(this%lam, 1) !position of the minimum wavelength in the array lam
-                 print *, 'WARNING: the central wavelength of the gas is lower than the minimum &
-                                   & wavelength provided by the choosen dust-catalogue'
-            ELSE
-            hi1 = binary_search(con_c/gas%trans_freq(gas%tr_cat(tr)),this%lam(:))
-            
-            IF (this%lam(hi1+1) .gt. 2*con_c/gas%trans_freq(gas%tr_cat(tr)) - this%lam(hi1) ) THEN
-                this%cont_map(tr) = hi1
-            ELSE
-                this%cont_map(tr) = hi1+1
-            END IF
-          END IF
-        END DO
+        IF (basics%do_velo_ch_map) THEN
+            DO tr = 1, gas%n_tr
+              IF (con_c/gas%trans_freq(gas%tr_cat(tr)) .GT. MAXVAL(this%lam)) THEN
+                   this%cont_map(tr) = MAXLOC(this%lam, 1) !position of the maximum wavelength in the array lam
+                   print *, 'WARNING: the central wavelength of the gas is higher than the maximum &
+                                    &  wavelength provided by the choosen dust-catalogue'
+                ELSEIF (con_c/gas%trans_freq(gas%tr_cat(tr)) .LT. MINVAL(this%lam)) THEN
+                     this%cont_map(tr) = MINLOC(this%lam, 1) !position of the minimum wavelength in the array lam
+                     print *, 'WARNING: the central wavelength of the gas is lower than the minimum &
+                                       & wavelength provided by the choosen dust-catalogue'
+                ELSE
+                hi1 = binary_search(con_c/gas%trans_freq(gas%tr_cat(tr)),this%lam(:))
+                
+                IF (this%lam(hi1+1) .gt. 2*con_c/gas%trans_freq(gas%tr_cat(tr)) - this%lam(hi1) ) THEN
+                    this%cont_map(tr) = hi1
+                ELSE
+                    this%cont_map(tr) = hi1+1
+                END IF
+              END IF
+            END DO
+        END IF
         CALL prepare_QB(this,basics)
     
         DEALLOCATE(gscatt_all, REF_RE, REF_IM, C_back)
@@ -597,6 +630,7 @@ CONTAINS
                     this%QdB_dT_l_cdf, &
                     this%SME, &
                     this%SCAANG, &
+                    this%phase_pdf, &
                     this%tem_tab, &
                     this%sctth)
         

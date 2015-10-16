@@ -162,10 +162,10 @@ CONTAINS
 !~             print *, "    - Map #", i_map, " of ", model%n_map
 
             IF (GetFluxesName(fluxes) /= 'Jy_pix') THEN
-                PRINT *, 'Warning: The flux unit is Jy/pixel from now on.  &
-                                   Ohter units can be calculated in the    &
-                                   post process using the shipped python   &
-                                   scripts.'
+                PRINT *, 'Warning: The flux unit is Jy/pixel from now on.      &
+                        &          Ohter units can be calculated in the        &
+                        &          post process using the shipped python       &
+                        &          scripts.'
             END IF
             pix_res_i = model%px_model_length_x(i_map) /                       &
                             model%distance * PI /(3600.0_r2*180.0_r2)

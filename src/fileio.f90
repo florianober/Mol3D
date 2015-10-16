@@ -1044,9 +1044,8 @@ CONTAINS
                 DO i_lam = 2, dust%n_lam
                     IF (peel_off) THEN
                         unit_value =                                           &
-                                 1.0_r2/dust%d_nu(i_lam) *                     &
-                                 1.0e26_r2 /                                   &
-                                 (4.0_r2 * PI *(model%distance*con_pc)**2)
+                                 1.0_r2/dust%d_nu(i_lam) * 1.0e26_r2 /         &
+                                 (model%distance*con_pc)**2
                     ELSE
                         unit_value =                                           &
                                  1.0_r2/dust%d_nu(i_lam)/                      &
@@ -1068,8 +1067,7 @@ CONTAINS
                 DO i_lam = 1, dust%n_lam
                     IF (peel_off) THEN
                         unit_value =  dust%lam(i_lam)**2/con_c/                &
-                                 (4.0_r2 * PI *(model%distance*con_pc)**2)     &
-                                 *1.0e26_r2
+                                      (model%distance*con_pc)**2 *1.0e26_r2
                     ELSE
                         unit_value =  dust%lam(i_lam)**2/con_c/                &
                                  ((1.0_r2-model%al_map(i_map))*(PI*2.0_r2)) /  &
