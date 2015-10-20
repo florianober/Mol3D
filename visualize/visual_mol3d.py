@@ -52,6 +52,7 @@ import show_model as sm
 import make_spectrum as mkspec
 import make_continuum  as cont
 import glob
+import latex
 
 from mol3d_routines import mol3d
 
@@ -85,18 +86,20 @@ def main():
     if not attr:
         print("ERROR, could not find results fot the requested project")
         sys.exit()
-
+    
     if SHOW_ALL:
+        print('present model')
         # present the model
         sm.show_maps(PATH_RESULTS, P_NAME)
 
     # present line spectrum, intensity map and velocity channel maps
-    
+    print('present lines')
     mkspec.make_spectra(PATH_RESULTS, P_NAME)
 
     # present continuum maps, sed's
-
+    print('present continuum')
     cont.make_continuum_all(PATH_RESULTS, P_NAME)
+    print('done')
 
 main()
 plt.show()
