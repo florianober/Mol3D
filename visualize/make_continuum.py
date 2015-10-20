@@ -55,7 +55,7 @@ from matplotlib.colors import LogNorm
 if len(sys.argv) > 1:
     P_NAME = sys.argv[1]
 else:
-    P_NAME = 'example8'
+    P_NAME = 'example'
 
 if len(sys.argv) > 2:
     PATH_RESULTS = sys.argv[2]
