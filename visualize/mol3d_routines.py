@@ -37,8 +37,7 @@ objects and routines to access Mol3d data (output)
 
 
 """
-from numpy import zeros, array
-from numpy import linspace
+from numpy import zeros, array, linspace, pi, genfromtxt
 from astropy.io import fits as pf
 import os.path
 import helper as hlp
@@ -148,6 +147,7 @@ class mol3d:
         self.__continuum_maps_bin = []
         self.__continuum_maps_raytrace = []
         self.__vch = []
+        self.__continuum_wlen= []
         self.__path_results = path_results
 
         # search for key in input_file and add to dictionary
@@ -223,6 +223,8 @@ class mol3d:
         self.__unit = {}
         self.__unit['PX'] = 1.0
         self.__unit['AS'] = ((self.__attr['n_bin_map'] + 0.5)/self.__attr['image_arcs'])**2
+        self.__unit['TB'] = self.__unit['AS'] * (3600*180/pi)**2 * 1e-26 * \
+                            (hlp.c/self.__attr['tr_freq'])**2/(2.0*hlp.k)
 
     def __get_unit_value(self, unit):
 
@@ -241,7 +243,7 @@ class mol3d:
             if os.path.isfile(file_name):
                 self.__velochmap = load_from_fits(file_name)
             else:
-                return [] 
+                return []
         else:
             pass
         return self.__velochmap * self.__get_unit_value(unit)
@@ -293,7 +295,32 @@ class mol3d:
 
     continuum_maps_raytrace = property(return_continuum_maps_raytrace)
 
+    def return_continuum_wlen(self):
+        if self.__continuum_wlen == []:
 
+            if os.path.isfile(self.__path_results + self.__pname +             \
+                        '_continuum_sed_bin_I.dat'):
+                sed_txt = genfromtxt(self.__path_results + self.__pname +      \
+                        '_continuum_sed_bin_I.dat', skip_header=0, filling_values="0")
+                self.__continuum_wlen = sed_txt[:, 0]
+            elif os.path.isfile(self.__path_results + self.__pname +           \
+                        '_continuum_sed_mono_I.dat'):
+                sed_txt = genfromtxt(self.__path_results + self.__pname +      \
+                        '_continuum_sed_mono_I.dat', skip_header=0, filling_values="0")
+                self.__continuum_wlen = sed_txt[:, 0]
+            elif os.path.isfile(self.__path_results + self.__pname +           \
+                        '_continuum_sed_raytrace_I.dat'):
+                sed_txt = genfromtxt(self.__path_results + self.__pname +      \
+                        '_continuum_sed_raytrace_I.dat', skip_header=0, filling_values="0")
+                self.__continuum_wlen = sed_txt[:, 0]
+            else:
+                print('Warning: Wavelength table not found')
+        else:
+            pass
+        return self.__continuum_wlen
+        
+    continuum_wlen = property(return_continuum_wlen)
+    
     def return_vch_array(self):
         if self.__vch == []:
             self.__vch = linspace(-self.attr['vel_max'],

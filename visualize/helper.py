@@ -651,13 +651,17 @@ def poldegang(I, Q, U):
     # based on P. Scicluna, 2015 routine
 
     poldeg = np.zeros_like(I)
+    
     gamma = np.zeros_like(I)
+    add = np.zeros_like(I)
     
     ind = np.where(I > 0.)
     poldeg[ind] = (np.sqrt(Q[ind]*Q[ind] + U[ind]*U[ind]))/I[ind]
 
-    ind = np.where(poldeg > 0.)
-    gamma[ind] = 0.5*np.arctan2(U[ind], Q[ind])
+    
+    ind = (poldeg > 0.)
+    add[(Q < 0)] = 1
+    gamma[ind] = np.arctan(U[ind]/Q[ind])/2.0 + add[ind]*np.pi/2.0
     
     return poldeg, gamma
 

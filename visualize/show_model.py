@@ -33,9 +33,9 @@
 #------------------------------------------------------------------------------#
 """
 show the model set up
-ver.: 0.4
+ver.: 0.5
 
-date   : 16/04/2015
+date   : 20/10/2015
 author : F. Ober
 email  : fober@astrophysik.uni-kiel.de
 """
@@ -44,6 +44,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 import sys
+import latex
 
 from astropy.io import fits as pf
 from matplotlib.colors import LogNorm
@@ -61,60 +62,40 @@ else:
     FILE_IN.close()
 
 def make_cuts(path_results, p_name, axis='x'):
-    fits = pf.open(path_results + p_name + '_model.fits')
-    header = fits[0].header
-    data = fits[0].data
-    fits.close()
+    # only x-axis is working/implemented at the moment
+    #
+    data_in = np.genfromtxt(path_results+ p_name + '_cut_'+axis +'.dat')
 
-    # very rubish implementation, and not sure if generally working, but
-    # for the moment its fine
-    if axis == 'x':
-        ind = (np.abs(data[:, 1]) <= 1.0e-10) & (np.abs(data[:, 2]) <= 1.0e-10)
-    else:
-        print('ERROR, axis not defined at the moment')
-        return None
-        
-    plt.figure('dust number density midplane')
-    plt.plot(np.abs(data[ind, 0]), data[ind, 3]*1e-6, 'b+-')
+    n_dust = int((data_in.shape[1]-9)/2)
+
+    plt.figure('Number density midplane')
+    for i_dust in range(n_dust):
+        plt.plot(data_in[:, 0], data_in[:, i_dust+1]*1e-6, '+-', label='Dust %d' %(i_dust+1))
     plt.xlabel('distance [AU]')
-    plt.ylabel('number density cm^-3')
-    vmax = data[ind, 3].max()*1e-6
-    vmin = vmax * 1.0e-8
+    plt.ylabel(r'number density cm$^{-3}$')
+    plt.plot(data_in[:, 0], data_in[:, n_dust+2]*1e-6, '+-', label=r'H$_2$ %d')
+    vmax = data_in[:, 1:n_dust+3].max()*1e-6 *2
+    ind = (data_in[:, 1] > 1e-100)
+    vmin = data_in[ind, 1:n_dust+3].min()*1e-6 * 0.5
     plt.ylim(vmin, vmax)
+    plt.xlim(data_in[0, 0], data_in[-1, 0])
     plt.yscale('log')
-    plt.xscale('log')
 
-    plt.figure('temperatures midplane')
-    plt.plot(np.abs(data[ind, 0]), data[ind, 8], 'b+-')
-    plt.plot(np.abs(data[ind, 0]), data[ind, 9], 'r+-')
-    vmax = data[ind, 8].max()
-    vmin = vmax * 1.0e-2
+    plt.legend()
+
+    plt.figure('Temperatures midplane')
+    for i_dust in range(n_dust):
+        plt.plot(data_in[:, 0], data_in[:, n_dust + 5 + i_dust], '+-', label='Dust %d' %(i_dust+1))
+    plt.plot(data_in[:, 0], data_in[:, 2*n_dust + 5], '+-', label='Gas')
+    vmax = data_in[:, 6].max()*1.05
+    vmin = 0
     plt.ylim(vmin, vmax)
+    plt.xlim(data_in[0, 0], data_in[-1, 0])
     plt.xlabel('distance [AU]')
     plt.ylabel('temperature [K]')
-    plt.xscale('log')
 
-#~ 
-    #~ plt.figure()
-    #~ ind = (np.abs(data[:, 1]) <= 1.0e-10) & (data[:, 3] > 1e-11)
-#~ 
-    #~ ##~ plt.pcolormesh((np.abs(data[ind, 0]), data[ind, 2], data[ind, 8]*1e-6)
-    #~ plt.tripcolor(np.abs(data[ind, 0]), data[ind, 2], data[ind, 3]*1e-6, norm=LogNorm(vmax=1e6, vmin=1e-15), vmin=1e-15)
-    #~ plt.colorbar()
-    #~ ##~ plt.plot(np.abs(data[ind, 0]), data[ind, 2], 'k.')
-    #~ plt.xlabel('distance [AU]')
-    #~ plt.ylabel('distance [AU]')
-    #~ plt.figure()
-    #~ plt.tripcolor(np.abs(data[ind, 0]), data[ind, 2], data[ind, 8])
-    #~ plt.colorbar()
-    #~ plt.xlabel('distance [AU]')
-    #~ plt.ylabel('distance [AU]')
-    #~ plt.figure()
-    #~ plt.tripcolor(np.abs(data[ind, 0]), data[ind, 2], data[ind, 9])
-    #~ plt.colorbar()
-    #~ plt.xlabel('distance [AU]')
-    #~ plt.ylabel('distance [AU]')
-    
+    plt.legend()
+
 def show_maps(path_results, p_name):
     """ search visualisation file for different planes """
 
@@ -122,7 +103,7 @@ def show_maps(path_results, p_name):
     present_plane(path_results+p_name, 'xz')
 
     # show xy-plane
-    #~ present_plane(path_results+p_name, 'xy')
+    present_plane(path_results+p_name, 'xy')
 
     # show yz-plane
     #~ present_plane(path_results+p_name, 'yz')
@@ -252,7 +233,7 @@ def present_plane(file_in, plane):
                interpolation='None', cmap=plt.cm.jet,
                norm=LogNorm(vmin=vmin, vmax=vmax))
 
-    plt.colorbar().set_label('molecule density [cm^-3]')
+    plt.colorbar().set_label('molecule density [cm$^{-3}$]')
 
     #-------------------------------------------------
     #  dust density 
@@ -271,7 +252,7 @@ def present_plane(file_in, plane):
         plt.imshow(data, extent=m_range, origin='lower',
                    interpolation='None', cmap=plt.cm.jet,
                    norm=LogNorm(vmin=vmin, vmax=vmax))
-        plt.colorbar().set_label('dust density [cm^-3]')
+        plt.colorbar().set_label('dust density [cm$^{-3}$]')
 
     #-------------------------------------------------
     #  H2 density
@@ -292,7 +273,7 @@ def present_plane(file_in, plane):
                interpolation='None', cmap=plt.cm.jet,
                norm=LogNorm(vmin=vmin, vmax=vmax))
 
-    plt.colorbar().set_label('H2 number density [cm^-3]')
+    plt.colorbar().set_label('H2 number density [cm$^{-3}$]')
     #-------------------------------------------------
     #  N(Mol)/N(H)
     fig = plt.figure('N(mol)/N(H), ' + ext)
@@ -311,15 +292,15 @@ def present_plane(file_in, plane):
     cont = 10.0**np.linspace(np.log10(vmax), np.log10(vmin), 7)
     CS = plt.contour(data[:,:], levels=cont, linewidths=1, colors='k', extent=m_range)
     plt.clabel(CS, inline=1, fmt='%2.1e', fontsize=10)
-    
-    
+
+
     plt.imshow(data[:,:], extent=m_range, origin='lower',
                interpolation='None', cmap=plt.cm.jet, norm=LogNorm(vmin=vmin, vmax=vmax))
     plt.colorbar().set_label(r'N(HCO$^{+}$)/N(H)')
 
 if __name__ == "__main__":
     """ main routine """
-    
+
     show_maps(PATH_RESULTS, P_NAME)
     make_cuts(PATH_RESULTS, P_NAME, axis='x')
 

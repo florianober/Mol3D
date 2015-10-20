@@ -95,7 +95,6 @@ def make_continuum_maps(wlen, map_in, fig_label='', cmap='Set1',
     stokes_l = ['I', 'Q', 'U', 'V']
     if len(map_in.shape) == 4 and len(wlen) == map_in.shape[1]:
         if map_in.shape[1] > 1:
-            #~ w = np.argmax(map_in[0,:, :, :].sum(axis=1).sum(axis=1))
             w = np.argmax(np.nansum(np.nansum(map_in[0,:, :, :], axis=1), axis=1))
         else:
             w = 0
@@ -116,7 +115,6 @@ def make_continuum_maps(wlen, map_in, fig_label='', cmap='Set1',
         I = map_in[0, w, :, :]
         Q = map_in[1, w, :, :]
         U = map_in[2, w, :, :]
-        
 
         lin_pol = np.sqrt(Q**2 + U**2)
         plt.imshow(lin_pol, origin='lower',
@@ -129,11 +127,6 @@ def make_continuum_maps(wlen, map_in, fig_label='', cmap='Set1',
 
         # now we need to calculate the polarisation degree and angle
         # we merge neighbouring cells to provide better (visualisation) results
-
-        map
-        
-        
-        
         I_interpolate = hlp.interpol_2d(map_in[0, w, :, :], map_in.shape[2]-1, map_in.shape[2]-1)
 
         shrink_down = int(0.05*I_interpolate.shape[0])
@@ -147,7 +140,7 @@ def make_continuum_maps(wlen, map_in, fig_label='', cmap='Set1',
         U = hlp.shrink(U_interpolate, shrink_down, shrink_down)
 
         pol_deg, pol_angle = hlp.poldegang(I, Q, U)
-        pol_angle += np.pi/2 # Quiver and astro definition of the angle
+        pol_angle -= np.pi/2 # Quiver and astro definition of the angle
 
         x = np.linspace(extent[0], extent[1], I.shape[0])
         y = np.linspace(extent[0], extent[1], I.shape[0])
@@ -163,9 +156,9 @@ def make_continuum_maps(wlen, map_in, fig_label='', cmap='Set1',
                  'pivot': 'mid',
                  'color': 'black',
                 }
-        
-        plt.quiver(X, Y, pol_deg*np.cos(pol_angle),
-                         pol_deg*np.sin(pol_angle), **props)
+        ind = (pol_deg > 0.001)
+        plt.quiver(X[ind], Y[ind], pol_deg[ind]*np.cos(pol_angle[ind]),
+                         pol_deg[ind]*np.sin(pol_angle[ind]), **props)
         #~ plt.quiver(X, Y, 0, pol_deg, **props)
 
         qk_posX = -0.1 # quiver key position 
@@ -193,9 +186,9 @@ def make_continuum_maps(wlen, map_in, fig_label='', cmap='Set1',
         plt.tight_layout()
 
         if fig_label == '':
-            plt.figure()
+            fig = plt.figure(num=None,figsize=(8,5.5))
         else:
-            plt.figure(fig_label+ ' 2')
+            fig = plt.figure(fig_label+ ' 2',(1,17))
 
         plt.suptitle('wavelength %2.2f micron' %(wlen[w]*1e6), fontsize=14)
 
@@ -251,7 +244,6 @@ def make_continuum_maps(wlen, map_in, fig_label='', cmap='Set1',
                      bbox={'facecolor':'white', 'alpha':0.9, 'pad':5})
         plt.colorbar().set_label(r'flux density [$\frac{\rm Jy}{\rm px}$]')
         plt.xlabel(ylab)
-        plt.tight_layout()
 
 def make_continuum_all(path_results, pname, unit='PX'):
     """
@@ -275,7 +267,7 @@ def make_continuum_all(path_results, pname, unit='PX'):
         file_in = path_results + pname + '_continuum_sed' + method + stokes+'.dat'
         if os.path.isfile(file_in):
             # SED 
-            sed_txt = np.genfromtxt(file_in, skiprows=0,
+            sed_txt = np.genfromtxt(file_in, skip_header=0,
                                     filling_values="0")
             make_sed(sed_txt[:, 0], sed_txt[:, 1], fig_title=file_in)
             

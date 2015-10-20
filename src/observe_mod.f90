@@ -201,7 +201,7 @@ CONTAINS
                 CALL trafo(dust, photon_peel, i_dust)
                 photon_peel%energy = photon%energy * exp(-tau) *               &
                                      dust%phase_pdf(photon%lot_th, i_dust,     &
-                                                    photon%nr_lam)/PI
+                                                    photon%nr_lam)/(PI*2.0)
             ELSE
                 photon_peel%energy = photon%energy * exp(-tau) / (4.0_r2*PI)
             END IF

@@ -400,7 +400,7 @@ CONTAINS
                     end do
                     ! For the peel-off technique we need the probability, that a photon
                     ! is scattered in the observers direction -> phase_pdf 
-                    this%phase_pdf(:, i_dust, i_lam) = this%SME(1, 1, i_dust, i_lam, :)/ Fphg(180)
+                    this%phase_pdf(:, i_dust, i_lam) = this%SME(1, 1, i_dust, i_lam, :)/ Fphg(180) * 2.0
                     Fphg(:) = Fphg(:) / Fphg(180)
              
                     ptr_1 = 0
@@ -423,31 +423,8 @@ CONTAINS
                 case (2) ! --- isotropic scattering  ---
                     ! SCAANG: not defined -> this is only done to calculate the
                     ! probability needed by the peel-off technique
-                    if (N_AN/=181) then
-                        print *,"!!! Warning: subroutine ld_dust()"
-                        print *,"             mie-scattering prepared for 181 scattering angles only"
-                        stop
-                    end if
-
-                    phg(:)  = 0.0_r2
-                    Fphg(:) = 0.0_r2
-                    hd_dth  = grad2rad(0.5_r2)
-
-                    do i_scatt_th = 0, 180
-                        if (i_scatt_th/=0 .and. i_scatt_th/=180) then
-                            hd_th = grad2rad(real(i_scatt_th,kind=r2))
-                            phg(i_scatt_th) = 2.0_r2*PI * real(this%SME(1,1, i_dust,i_lam, i_scatt_th+1),kind=r2) * &
-                            (cos(hd_th-hd_dth) - cos(hd_th+hd_dth))
-                        else
-                            phg(i_scatt_th) = 2.0_r2*PI * real(this%SME(1,1, i_dust,i_lam, i_scatt_th+1),kind=r2) * &
-                            (1.0_r2 - cos(2.0_r2*hd_dth))
-                        end if
-                        Fphg(i_scatt_th) = Fphg(i_scatt_th-1) + phg(i_scatt_th)
-                    end do
-                    ! For the peel-off technique we need the probability, that a photon
-                    ! is scattered in the observers direction -> phase_pdf 
-                    this%phase_pdf(:, i_dust, i_lam) = this%SME(1, 1, i_dust, i_lam, :) / Fphg(180)
-                    Fphg(:) = Fphg(:) / Fphg(180)
+                    
+                    this%phase_pdf(:, i_dust, i_lam) = 0.5_r2
 
                 case (3) ! --- anisotropic scattering: HENYEY GREENSTEIN approximation
                     ! assumption: streuwinkel = 0, 1, 2, ..., 180 degree
@@ -470,7 +447,7 @@ CONTAINS
                              )**1.5
                         Fphg(i_scatt_th) = Fphg(i_scatt_th-1) + phg(i_scatt_th)*sin(hd_th)
                     end do
-                    this%phase_pdf(:, i_dust, i_lam) = this%SME(1, 1, i_dust, i_lam, :) / Fphg(180)
+                    this%phase_pdf(:, i_dust, i_lam) = this%SME(1, 1, i_dust, i_lam, :) /  Fphg(180) * 2.0
                     Fphg(:) = Fphg(:) / Fphg(180)
                  
                     ptr_1 = 0

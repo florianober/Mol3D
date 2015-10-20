@@ -371,7 +371,7 @@ CONTAINS
             grid%t_dust(i_cell,:) = line(n_dust+8:2*n_dust+7)
             ! calculate corresponding internal cell energy
             DO i_dust = 1, dust%n_dust
-                i_tem = binary_search(grid%t_dust(i_cell, i_dust), dust%tem_tab(:))-1
+                i_tem = MAX(binary_search(grid%t_dust(i_cell, i_dust), dust%tem_tab(:))-1,0)
                 QB = ipol2(REAL(dust%tem_tab(i_tem), kind=r2),                 &
                            REAL(dust%tem_tab(i_tem + 1), kind=r2),             &
                            dust%QB(i_tem, i_dust), dust%QB(i_tem + 1, i_dust), &
@@ -849,7 +849,7 @@ CONTAINS
 
     SUBROUTINE save_x_cuts(basics, grid)
         ! save model cuts along the x-axis (y,z = 0)
-    
+        ! we should generate a more general routine
         IMPLICIT NONE
         !----------------------------------------------------------------------!
         TYPE(Basic_TYP), INTENT(IN)             :: basics
@@ -875,7 +875,7 @@ CONTAINS
         CASE('spherical')
 
             i_b = ceiling(real(grid%n(2))/2.0)
-            i_c = 1
+            i_c = ceiling(real(grid%n(3))/2.0)
             ! - x
             DO i_a = grid%n(1), 1, -1
                 hd_r   = -(grid%co_mx_a(i_a-1) + grid%co_mx_a(i_a))/2.0_r2
@@ -903,6 +903,7 @@ CONTAINS
                 REAL(grid%t_gas(i_cell),kind=r2),                          &
                 REAL(grid%velo(i_cell,:), kind=r2)
 
+            i_c = 1
             hd_r = grid%co_mx_a(0) 
             write(unit=1,fmt=fmt_string)                                   &
                 hd_r,                                                      &
@@ -913,7 +914,7 @@ CONTAINS
                 REAL(grid%t_gas(i_cell),kind=r2),                          &
                 REAL(grid%velo(i_cell,:),kind=r2)
 
-            ! + x 
+            ! + x
             DO i_a = 1, grid%n(1)
                 hd_r   = (grid%co_mx_a(i_a-1) + grid%co_mx_a(i_a))/2.0_r2
                 i_cell = grid%cell_idx2nr(i_a, i_b, i_c)
@@ -929,7 +930,7 @@ CONTAINS
 
             END DO
         CASE('cylindrical')
-            i_b = 1
+            i_b = ceiling(real(grid%n(2))/2.0)
             i_c = ceiling(real(grid%n(3))/2.0)
             ! - x
             DO i_a = grid%n(1), 1 , -1
@@ -958,7 +959,8 @@ CONTAINS
                 REAL(grid%t_dust(i_cell,:),kind=r2),                       &
                 REAL(grid%t_gas(i_cell),kind=r2),                          &
                 REAL(grid%velo(i_cell,:),kind=r2)
-                
+
+            i_b = 1
             hd_r = grid%co_mx_a(0) 
             write(unit=1,fmt=fmt_string)                                   &
                 hd_r,                                                      &
