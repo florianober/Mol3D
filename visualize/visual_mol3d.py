@@ -52,7 +52,6 @@ import show_model as sm
 import make_spectrum as mkspec
 import make_continuum  as cont
 import glob
-import latex
 
 from mol3d_routines import mol3d
 

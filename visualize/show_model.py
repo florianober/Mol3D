@@ -44,7 +44,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 import sys
-import latex
 
 from astropy.io import fits as pf
 from matplotlib.colors import LogNorm
