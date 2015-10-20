@@ -81,11 +81,8 @@ CONTAINS
     TYPE(l_list), POINTER                            :: pixel_list_bak => null()
     !--------------------------------------------------------------------------!
 
-    INTEGER                       :: i_map, i_r, i, j, no_pixel, k, l
-         
-    
-    REAL(kind=r2)                 :: hd_stepwidth, dz_min, hd_rmax
-         
+    INTEGER                       :: i_map, i, j, no_pixel, k, l
+
     REAL(KIND=r2)                 :: pix_res_i, pix_res_j   ! pixelsize [arcsec]
     REAL(KIND=r2)                 :: unit_value             ! unit conversion 
 
@@ -140,26 +137,12 @@ CONTAINS
             print *, "| done!                 "
             print *, "|"
         END IF
-        hd_stepwidth = 0.2_r2
-
-        ! define step width = f(radial grid cell index)
-        dz_min = grid%co_mx_a(grid%n(1))
-        do i_r=1,grid%n(1)
-            if ( (grid%co_mx_a(i_r) - grid%co_mx_a(i_r-1)) < dz_min ) then
-              dz_min = grid%co_mx_a(i_r) - grid%co_mx_a(i_r-1)
-            end if
-        end do
-        dz_min = hd_stepwidth * dz_min
-
-        ! maximum radial distance of a pixel to center [in pixel units]
-        hd_rmax = real(model%n_bin_map,kind=r2) * sqrt(2.0_r2)
 
         ! ---
         ! raytracing
         print *, "| raytracing"
 
         do i_map=1, model%n_map               ! orientation of the map
-!~             print *, "    - Map #", i_map, " of ", model%n_map
 
             IF (GetFluxesName(fluxes) /= 'Jy_pix') THEN
                 PRINT *, 'Warning: The flux unit is Jy/pixel from now on.      &
