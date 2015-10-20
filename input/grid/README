@@ -1,0 +1,8 @@
+link your generated model to the files known by Mol3D:
+
+a_boundaries.dat
+b_boundaries.dat
+c_boundaries.dat
+
+model.fits
+
