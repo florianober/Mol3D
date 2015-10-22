@@ -691,7 +691,7 @@ CONTAINS
         call ftpprd(u,1, 1, pix**2*entries, map_out(:, :, :),sta)
 
         ! add essential keywords
-        CALL add_essential_fits_keys(u, grid%nh_n_dust, pix, model%r_ou,&
+        CALL add_essential_fits_keys(u, grid%nh_n_dust, pix, model%r_ou/model%zoom_map(1),&
                                      GetModelName(model))
         ! close the fits file
         call ftclos(u, sta)
@@ -1115,7 +1115,8 @@ CONTAINS
         
         ! add other header keywords 
         CALL add_essential_fits_keys(u, dust%n_dust,                           &
-                                     2*model%n_bin_map+1, model%r_ou,          &
+                                     2*model%n_bin_map+1,                      &
+                                     model%r_ou/model%zoom_map(1),             &
                                      GetModelName(model))
         ! close the fits file
         CALL ftclos(u, sta)
@@ -1166,7 +1167,8 @@ CONTAINS
         call ftpprd(u,1,1,(2*model%n_bin_map+1)**2*(gas%i_vel_chan*2+1),fluxes%channel_map(:,:,:,1),sta)
         ! add other header keywords 
         CALL add_essential_fits_keys(u, n_dust,                                &
-                                     2*model%n_bin_map+1, model%r_ou,          &
+                                     2*model%n_bin_map+1,                      &
+                                     model%r_ou/model%zoom_map(1),             &
                                      GetModelName(model))
 
         ! close the fits file
@@ -1189,7 +1191,8 @@ CONTAINS
         
         call ftpprd(u,1,1,(2*model%n_bin_map+1)**2,map_out(:,:),sta)
         CALL add_essential_fits_keys(u, n_dust,                                &
-                                     2*model%n_bin_map+1, model%r_ou,          &
+                                     2*model%n_bin_map+1,                      &
+                                     model%r_ou/model%zoom_map(1),             &
                                      GetModelName(model))
         ! close the fits file
         call ftclos(u, sta)
