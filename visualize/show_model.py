@@ -72,7 +72,7 @@ def make_cuts(path_results, p_name, axis='x'):
         plt.plot(data_in[:, 0], data_in[:, i_dust+1]*1e-6, '+-', label='Dust %d' %(i_dust+1))
     plt.xlabel('distance [AU]')
     plt.ylabel(r'number density cm$^{-3}$')
-    plt.plot(data_in[:, 0], data_in[:, n_dust+2]*1e-6, '+-', label=r'H$_2$ %d')
+    plt.plot(data_in[:, 0], data_in[:, n_dust+2]*1e-6, '+-', label=r'H$_2$')
     vmax = data_in[:, 1:n_dust+3].max()*1e-6 *2
     ind = (data_in[:, 1] > 1e-100)
     vmin = data_in[ind, 1:n_dust+3].min()*1e-6 * 0.5

@@ -691,7 +691,7 @@ CONTAINS
         call ftpprd(u,1, 1, pix**2*entries, map_out(:, :, :),sta)
 
         ! add essential keywords
-        CALL add_essential_fits_keys(u, grid%nh_n_dust, pix, model%r_ou/model%zoom_map(1),&
+        CALL add_essential_fits_keys(u, grid%nh_n_dust, pix, model%r_ou, &
                                      GetModelName(model))
         ! close the fits file
         call ftclos(u, sta)
