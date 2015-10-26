@@ -156,7 +156,7 @@ CONTAINS
                                  ' % done'//char(27)//'[A'
         END IF
 
-        IF (grid%grd_mol_density(i_cell) .lt. 1.0e-200_r2) CYCLE
+        !IF (grid%grd_mol_density(i_cell) .lt. 1.0e-200_r2) CYCLE
         final_col_para = calc_collision_parameter(grid,gas,i_cell)
         CALL create_matrix(gas, J_mid, A, c, final_col_para)
 
