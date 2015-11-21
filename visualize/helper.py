@@ -104,7 +104,7 @@ def get_sensitivity_from_table(mol, instrument='ALMA'):
     identifier
     """
     sensitivity = 0
-    
+
     # read all stored sensitivities from file
     if instrument == 'ALMA':
         file_in = open(dirname(__file__)+'/sensitivities_ALMA_neu.dat','r')
@@ -120,14 +120,14 @@ def get_sensitivity_from_table(mol, instrument='ALMA'):
             sensitivity = float(entry.rsplit()[1])
             break
     return sensitivity
-    
+
 def get_sensitivity_from_table_adjust(mol, instrument='ALMA'):
     """
     get the sensitivity from for a given mol(ecule) and transition
     identifier
     """
     sensitivity = 0
-    
+
     # read all stored sensitivities from file
     if instrument == 'ALMA':
         file_in_old = open(dirname(__file__)+'/sensitivities_ALMA.dat','r')
@@ -138,7 +138,7 @@ def get_sensitivity_from_table_adjust(mol, instrument='ALMA'):
 
     sensi_old = file_in_old.readlines()
     file_in_old.close
-    
+
     sensi_neu = file_in_neu.readlines()
     file_in_neu.close
 
@@ -150,7 +150,7 @@ def get_sensitivity_from_table_adjust(mol, instrument='ALMA'):
         if mol == entry.rsplit()[0]:
             sensitivity_neu = float(entry.rsplit()[1])
             break
-    
+
     return sensitivity_neu/sensitivity_old
 
 def ca2sp(p_vec):
@@ -171,7 +171,7 @@ def sp2ca(p):
 
 def cy2ca(p):
     r = np.zeros(3)
-    r[0] = p[0] * math.cos(p[1]) 
+    r[0] = p[0] * math.cos(p[1])
     r[1] = p[0] * math.sin(p[1])
     r[2] = p[2]
     return r
@@ -258,7 +258,7 @@ def beam2pixel(bmaj, bmin, delt1, delt2):
     pixel_size = deg2as(abs(delt1))*deg2as(abs(delt2))
     beam_size = deg2as(abs(bmaj))*deg2as(abs(bmin))*np.pi/4.0/np.log(2)
     beam2px = beam_size/pixel_size
-    
+
     return beam2px
 def create_CASA_fits(map_in, out_name='standard.fits',
                      position='4h33m16.50s 22d53m20.40s',
@@ -587,6 +587,33 @@ def plot_image(file_in, num=0, xlab='', ylab='', map_range=[0, 0, 0, 0],
                      hold='on', colors=('k', ))
         clabel(CS, inline=1, fmt='%2.1f', fontsize=10)
 
+def azimutal_av(map_in):
+    """
+    calculate the azumutal average of an image.
+
+    input:
+      map_in : must have shape 2 with equal odd size
+    result:
+      av: one dimensional result of the average prozes in pixel units
+    """
+    half_pix = (map_in.shape[1]-1)/2
+    r = np.linspace(0, half_pix, half_pix+1)
+    av = np.zeros_like(r)
+    counter = np.zeros_like(r)
+
+    for i in range((map_in.shape[1])):
+        for j in range((map_in.shape[1])):
+            y = i - half_pix
+            x = j - half_pix
+            R_xy = int(math.sqrt(x**2 + y**2))
+            if R_xy < half_pix:
+                av[R_xy] += map_in[i,j]
+                counter[R_xy] += 1
+    ind = (counter > 0)
+    av[ind] = av[ind]/counter[ind]
+
+    return av
+
 def star_rad(wavel, temp=4000, R=2, distance=140):
     """
     compute stars (temperature, radius) blackbody radiation for a
@@ -651,18 +678,18 @@ def poldegang(I, Q, U):
     # based on P. Scicluna, 2015 routine
 
     poldeg = np.zeros_like(I)
-    
+
     gamma = np.zeros_like(I)
     add = np.zeros_like(I)
-    
+
     ind = np.where(I > 0.)
     poldeg[ind] = (np.sqrt(Q[ind]*Q[ind] + U[ind]*U[ind]))/I[ind]
 
-    
+
     ind = (poldeg > 0.)
     add[(Q < 0)] = 1
     gamma[ind] = np.arctan(U[ind]/Q[ind])/2.0 + add[ind]*np.pi/2.0
-    
+
     return poldeg, gamma
 
 def shrink(data, rows, cols):
@@ -673,7 +700,7 @@ def interpol_2d(data, rows, cols):
     from scipy.interpolate import interp2d
     xx  = np.linspace(0, 1, data.shape[0])
     yy  = np.linspace(0, 1, data.shape[1])
-    
+
     xi  = np.linspace(0, 1, rows)
     yi  = np.linspace(0, 1, cols)
     f = interp2d(xx, yy, data, kind='linear')
@@ -700,7 +727,7 @@ class read_fosite(object):
     def readArray(f,l,d):
       dims = np.array(unpack('%s%ii' % (self.endian,d),f.read(d*self.intsize)))[::-1]
       return np.fromfile(f, dtype='%sf%s' % (self.endian,self.realsize), count=dims.prod()).reshape(dims).T
-    
+
     self.types = { \
       1 : lambda f,l: unpack('%si' % self.endian,f.read(l))[0],
       2 : lambda f,l: unpack('%sd' % self.endian,f.read(l))[0],
@@ -711,9 +738,9 @@ class read_fosite(object):
       7 : lambda f,l: readArray(f,l,3),
       8 : lambda f,l: readArray(f,l,4),
       9 : lambda f,l: np.fromfile(f, dtype='%si%s' % (self.endian,self.intsize), count=l/self.intsize)}
-    
+
     self._ReadHeader()
-    
+
   def __iter__(self):
     self.index = self.range[0]
     self.select(self.index)
@@ -771,7 +798,7 @@ class read_fosite(object):
         = f.read(6),f.read(2),f.read(1),f.read(2),f.read(2)
       if(self.endian.decode()=='II'): self.endian = '<'
       else: self.endian = '>'
-      
+
       self.version = unpack('%sB' % self.endian,self.version)[0]
       self.intsize = int(self.intsize)
       self.realsize = int(self.realsize)

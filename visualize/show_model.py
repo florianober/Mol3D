@@ -102,7 +102,7 @@ def show_maps(path_results, p_name):
     present_plane(path_results+p_name, 'xz')
 
     # show xy-plane
-    present_plane(path_results+p_name, 'xy')
+    #~ present_plane(path_results+p_name, 'xy')
 
     # show yz-plane
     #~ present_plane(path_results+p_name, 'yz')
