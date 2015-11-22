@@ -605,8 +605,8 @@ def azimutal_av(map_in):
         for j in range((map_in.shape[1])):
             y = i - half_pix
             x = j - half_pix
-            R_xy = int(math.sqrt(x**2 + y**2))
-            if R_xy < half_pix:
+            R_xy = int(round(math.sqrt(x**2 + y**2)))
+            if R_xy <= half_pix:
                 av[R_xy] += map_in[i,j]
                 counter[R_xy] += 1
     ind = (counter > 0)
