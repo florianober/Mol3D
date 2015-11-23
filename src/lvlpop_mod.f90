@@ -142,7 +142,8 @@ CONTAINS
     REAL(kind=r2),DIMENSION(1:gas%col_trans,1:2)               :: final_col_para
     INTEGER                                                    :: i_cell, k
     !--------------------------------------------------------------------------!
-    new_pop = 1.0e-30
+    new_pop    = 1.0e-30
+    new_pop(1) = 1.0
     ! get external radiation field -> definition in model_mod.f90
     J_ext(:) = get_J_ext(gas%trans_freq(:))
 
