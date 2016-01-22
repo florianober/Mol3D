@@ -4,8 +4,15 @@ Mol3D: 3D line and dust continuum radiative transfer code
 --------
 
 author:         Florian Ober  
-version:        Aug 2015  
+version:        Jan 2016 
 email:          fober@astrophysik.uni-kiel.de  
+
+You are free to use and extend this code, 
+but if you do so please cite:
+
+'Ober et al. 2015, Astronomy and Astrophysics, Volume 579, A105'
+
+and write me an E-Mail.
 
 --------
 Parts of this code are based on MC3D (Wolf et al. 1999/2003)
@@ -135,5 +142,3 @@ the file "path_results" in the visualize directory, otherwise you can provide th
 If you have further problems in running the code, please do not hesitate
 to ask me.
 
-You are free to use and extend this code, but if you do so
-please cite 'Ober et al. 2015, Astronomy and Astrophysics, Volume 579, A105'
