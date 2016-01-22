@@ -277,14 +277,18 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
     CALL parse('do_velo_ch_map', do_velo_ch_map, new_input_file)
     WRITE(help,fmt='(L1)') do_velo_ch_map
     WRITE(unit=3,fmt='(A)') 'do_velo_ch_map = {'//TRIM(help)//'}'
+    !
     !  randgen_name = name of the desired random number generator,
     !                 possible values at the moment:
-    !                 'MT'       : Mersenne Twister
+    !            XX   'MT'       : Mersenne Twister (not available at the moment)
     !                              Copyright (C) 1997 Makoto Matsumoto and
     !                                                 Takuji Nishimura
-    !                 'TAUS88'   : L'Ecuyer, P. (1996) (prefered)
+    !                 'TAUS88'   : L'Ecuyer, P. (1996)
+    !                 'LFSR113'  : L'Ecuyer, P. (1999)
+    !                 'KISS99'   : George Marsaglia 1999 (prefered)
+    !                 'CONG'     : very basic linear congruential generator
     !                 'COMPILER' : The compiler own
-    randgen_name = 'TAUS88'
+    randgen_name = 'KISS99'
     ! save the calculated excitation temperature?
     do_save_T_exc = .False.
     CALL InitBasic(basics,photon_type,'Reemission map', proname, r_path,       &
@@ -371,7 +375,6 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
     WRITE(unit=3,fmt='(A)') ''
 
     al_map(1)   = MIN(5.0_r2, MAX(th_map(1), 1.0_r2))
-
     CALL InitModel(model,1, ref_u_str, ref_u, r_in, r_ou, mass_dust, T_star,    &
                    R_star, M_star, n_map, distance, &
                    no_photon,th_map,ph_map,zoom_map,al_map,n_bin_map)
@@ -449,9 +452,9 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
                             ! Please ALLWAYS check the resulting mass of
                             ! each dust species to ensure the correct usage
 
-    aniso  = 1                 ! Scattering 1) Anisotropic (Mie, prefered) 
-                               !            2) Isotropic
-                               !            3) Henyey-Greenstein (not much tested)
+    aniso = 1               ! Scattering 1) Anisotropic (Mie, prefered) 
+                            !            2) Isotropic
+                            !            3) Henyey-Greenstein (not much tested)
 
     ALLOCATE(dust_cat(1:n_dust))
 

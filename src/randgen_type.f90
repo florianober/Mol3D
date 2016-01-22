@@ -43,25 +43,26 @@ MODULE randgen_type
     PRIVATE
     ! 
     !--------------------------------------------------------------------------!
-    INTEGER, PARAMETER       :: MNew=714025, IA=1366, IC=150889
     ! Period parameters
-    INTEGER, PARAMETER :: n = 624, n1 = n+1, m = 397, mata = -1727483681
+!~     INTEGER, PARAMETER :: n = 624, n1 = n+1, m = 397, mata = -1727483681
     !                                    constant vector a
-    INTEGER, PARAMETER :: umask = -2147483647 -1
+!~     INTEGER, PARAMETER :: umask = -2147483647 -1
     !                                    most significant w-r bits
-    INTEGER, PARAMETER :: lmask =  2147483647
+!~     INTEGER, PARAMETER :: lmask =  2147483647
     !                                    least significant r bits
     ! Tempering parameters
-    INTEGER, PARAMETER :: tmaskb= -1658038656, tmaskc= -272236544
-
-    
+!~     INTEGER, PARAMETER  :: tmaskb= -1658038656, tmaskc= -272236544
+    REAL(r2), PARAMETER :: norm_r2 = 2.328306e-10
     TYPE Randgen_TYP
-        TYPE(Common_TYP)               :: gentype
-        REAL(kind=r2)                  :: rndx
-        INTEGER                        :: s1, s2, s3
-        !                     the array for the state vector
-        INTEGER                        :: mt(0:n-1), mti = n1
-        !                     mti==N+1 means mt[N] is not initialized
+        TYPE(Common_TYP)                   :: gentype
+        REAL(kind=r2)                      :: rndx
+        ! generator array for the state vector
+        INTEGER, DIMENSION(:), ALLOCATABLE :: state_array
+        
+!~         INTEGER,
+!~         !                     the array for the state vector
+!~         INTEGER                        :: mt(0:n-1), mti = n1
+!~         !                     mti==N+1 means mt[N] is not initialized
     END TYPE Randgen_TYP
     SAVE
 
@@ -72,50 +73,75 @@ MODULE randgen_type
         ! methods
         InitRandgen, &
         CloseRandgen, &
-        GetGenSeed, &
+        GetGenID, &
         GetGenName, &
         RandgenInitialized, &
         GetNewRandomNumber
     !--------------------------------------------------------------------------!
 CONTAINS
 
-   SUBROUTINE InitRandgen(this, seed, gen_name)
+    SUBROUTINE InitRandgen(this, seed, gen_name)
         IMPLICIT NONE
         !----------------------------------------------------------------------!
         TYPE(Randgen_TYP)                    :: this
         INTEGER                              :: seed
         INTEGER                              :: N, i
-        INTEGER, DIMENSION(:), ALLOCATABLE   :: seed_array
         CHARACTER(LEN=*)                     :: gen_name
         !----------------------------------------------------------------------!
         INTENT(IN)                           :: seed, gen_name
         INTENT(INOUT)                        :: this
+
         !----------------------------------------------------------------------!
-        CALL InitCommon(this%gentype, seed, gen_name)
+        IF (RandgenInitialized(this)) THEN
+            PRINT *, 'ERROR, Generator already initialized!'
+            STOP 
+        END IF
+        
         !  gen_name = name of the desired random number generator,
         !             possible values at the moment:
-        ! 'MT' , 'TAUS88', 'COMPILER'
+        ! 'MT' , 'TAUS88', 'COMPILER', 'KISS99'
 
-        SELECT CASE(GetGenName(this))
 
-        CASE('MT')
-            CALL init_MT(this, seed*16)
-        CASE('TAUS88')
-            CALL init_TAUS88(this, seed*11, seed*117, seed*16 )
-        CASE('COMPILER')
-            CALL RANDOM_SEED(N)
-            ALLOCATE(seed_array(1:N))
-            DO i = 1, N
-                seed_array(i) = INT((seed * MNew) + i * IA + IC)
-            END DO
-            CALL RANDOM_SEED(PUT=seed_array)
-            DEALLOCATE(seed_array)
-
-        CASE DEFAULT
-            PRINT *, 'ERROR, chosen random number generator not found.'
-            STOP
+        SELECT CASE(gen_name)
+!~             CASE('MT')
+!~                 CALL init_MT(this, seed*5)
+!~                 i = 1
+            CASE('TAUS88')
+                N = 3
+                i = 2
+            CASE('LFSR113')
+                N = 4
+                i = 3
+            CASE('KISS99')
+                N = 4
+                i = 4
+            CASE('CONG')
+                N = 1
+                i = 5
+            CASE('COMPILER')
+                CALL RANDOM_SEED(N)
+                i = 6
+            CASE DEFAULT
+                PRINT *, 'ERROR, chosen random number generator not found.'
+                STOP
         END SELECT
-
+        CALL InitCommon(this%gentype, i, gen_name)
+        ALLOCATE(this%state_array(1:N))
+        
+        ! Mol3D uses CONG to generate the seeds, CONG is initialized with a
+        ! seed based on the actual thread, thus Mol3D calculates a few numbers
+        ! with CONG to ensure the quality of the numbers
+        this%state_array(1) = seed
+        DO i = 1, 2000
+            this%state_array(1) = CONG(this%state_array(1))
+        END DO
+        ! Now fill the state array
+        IF (N .gt. 1) THEN
+            DO i = 2, N
+                this%state_array(i) = CONG(this%state_array(i-1))
+            END DO
+        END IF
+        IF (GetGenName(this) == 'COMPILER') CALL RANDOM_SEED(PUT=this%state_array)
     END SUBROUTINE InitRandgen
 
     SUBROUTINE CloseRandgen(this)
@@ -124,6 +150,7 @@ CONTAINS
         TYPE(Randgen_TYP), INTENT(INOUT) :: this
         !----------------------------------------------------------------------!
         CALL CloseCommon(this%gentype)
+        DEALLOCATE(this%state_array)
     END SUBROUTINE CloseRandgen
 
     SUBROUTINE GetNewRandomNumber(this, randno)
@@ -132,15 +159,19 @@ CONTAINS
         TYPE(Randgen_TYP), INTENT(INOUT) :: this
         REAL(kind=r2),INTENT(OUT)        :: randno
         !----------------------------------------------------------------------!
-
-        SELECT CASE(GetGenName(this))
-
-        CASE('MT')
-            randno = getNumber_MT(this)
-        CASE('TAUS88')
-            randno = getNumber_TAUS88(this)
-        CASE('COMPILER')
-            CALL RANDOM_NUMBER(randno)
+        SELECT CASE(GetGenID(this))
+            !CASE(1)
+            !    randno = getNumber_MT(this)
+            CASE(2)
+                randno = getNumber_TAUS88(this)
+            CASE(3)
+                randno = getNumber_lfsr113(this)
+            CASE(4)
+                randno = getNumber_KISS99(this)
+            CASE(5)
+                randno = getNumber_CONG(this)
+            CASE(6)
+                CALL RANDOM_NUMBER(randno)
         CASE DEFAULT
             PRINT *, 'ERROR, chosen random number generator not initialized.'
             STOP
@@ -148,14 +179,14 @@ CONTAINS
 
     END SUBROUTINE GetNewRandomNumber
 
-    PURE FUNCTION GetGenSeed(this) RESULT(ut)
+    PURE FUNCTION GetGenID(this) RESULT(ut)
         IMPLICIT NONE
         !----------------------------------------------------------------------!
         TYPE(Randgen_TYP), INTENT(IN) :: this
         INTEGER :: ut
         !----------------------------------------------------------------------!
         ut = GetType_common(this%gentype)
-    END FUNCTION GetGenSeed
+    END FUNCTION GetGenID
 
 
     PURE FUNCTION GetGenName(this) RESULT(un)
@@ -172,25 +203,109 @@ CONTAINS
         !----------------------------------------------------------------------!
         TYPE(Randgen_TYP), INTENT(IN) :: this
         LOGICAL :: i
-        !----------------------------------------------------------------------!
+
         i = Initialized_common(this%gentype)
     END FUNCTION RandgenInitialized
 
-    SUBROUTINE init_TAUS88(this, i1, i2, i3)
+    !--------------------------------------------------------------------------!
+    !------------ start of the individual random number generator -------------!
+    !--------------------------------------------------------------------------!
+    !
+    ! CONG - very simple linear congruential generator
+    PURE FUNCTION CONG(s1)
         IMPLICIT NONE
         !----------------------------------------------------------------------!
-        TYPE(Randgen_TYP), INTENT(INOUT) :: this
-        INTEGER, INTENT(IN)              :: i1, i2, i3
+        INTEGER                       :: CONG
+        INTEGER, INTENT(IN)           :: s1
         !----------------------------------------------------------------------!
+        CONG = 69069 * s1 + 1327217885
+    END FUNCTION CONG
+    
+    FUNCTION getNumber_CONG(this) result(random_numb)
+        IMPLICIT NONE
+        !----------------------------------------------------------------------!
+        TYPE(Randgen_TYP)                    :: this
+        REAL(r2)                             :: random_numb
+        !----------------------------------------------------------------------!
+        this%state_array(1) = CONG(this%state_array(1))
+        random_numb = this%state_array(1) * norm_r2 + 0.5_r2
+    END FUNCTION getNumber_CONG
+    
+    !--------------------------------------------------------------------------!
 
-        this%s1 = i1
-        this%s2 = i2
-        this%s3 = i3
-        IF (IAND(this%s1,-2) == 0) this%s1 = i1 - 1023
-        IF (IAND(this%s2,-8) == 0) this%s2 = i2 - 1023
-        IF (IAND(this%s3,-16) == 0) this%s3 = i3 - 1023
+    FUNCTION getNumber_KISS99(this)  RESULT(random_numb)
+        IMPLICIT NONE
+        !----------------------------------------------------------------------!
+        TYPE(Randgen_TYP)                    :: this
+        REAL(r2)                             :: random_numb
+        INTEGER                              :: t
+        !----------------------------------------------------------------------!
+        ! equals CONG generator
+        this%state_array(1) = CONG(this%state_array(1))
 
-    END SUBROUTINE init_TAUS88
+        ! 3 Xorshift generators
+        this%state_array(2) = IEOR(this%state_array(2), ISHFT(this%state_array(2), 13))
+        this%state_array(2) = IEOR(this%state_array(2), ISHFT(this%state_array(2),-17))
+        this%state_array(2) = IEOR(this%state_array(2), ISHFT(this%state_array(2), 5))
+
+        ! 2 multiply-with-carry generators
+        this%state_array(3) = 30903*IAND(this%state_array(3), 65535)+ISHFT(this%state_array(3), -16)
+        this%state_array(4) = 18000*IAND(this%state_array(4), 65535)+ISHFT(this%state_array(4), -16)
+        t = (ISHFT(this%state_array(4), 16) + this%state_array(3))
+
+        ! combination
+        random_numb = (IEOR(t, this%state_array(1)) + this%state_array(2)) * norm_r2 + 0.5_r2
+
+    END FUNCTION getNumber_KISS99
+
+    FUNCTION getNumber_MRG32k3a(this) RESULT(random_numb)
+        ! Generates a random number between 0 and 1.
+        ! Reference: 'Good Parameters and implementations for
+        !            CMR random number generators''
+        ! L'Ecuyer, P. (1998)
+        ! Not sure if it's implemented correctly -> not used at the moment
+        IMPLICIT NONE
+        !----------------------------------------------------------------------!
+        TYPE(Randgen_TYP)                    :: this
+        REAL(kind=r2)                        :: random_numb
+        REAL(kind=r2)                        :: p1, p2
+        INTEGER                              :: k
+        !----------------------------------------------------------------------!
+        REAL(kind=r2), PARAMETER                   :: m1   = 4294967087.0
+        REAL(kind=r2), PARAMETER                   :: m2   = 4294944443.0
+        REAL(kind=r2), PARAMETER                   :: a12  =    1403580.0
+        REAL(kind=r2), PARAMETER                   :: a13n =     810728.0
+        REAL(kind=r2), PARAMETER                   :: a21  =     527612.0
+        REAL(kind=r2), PARAMETER                   :: a23n =    1370589.0
+        !----------------------------------------------------------------------!
+        !
+        ! Component 1
+        p1 = a12 * this%state_array(2) - a13n * this%state_array(1)
+        k = p1 / m1
+        p1 = p1 - k * m1
+        IF (p1 < 0.0) p1 = p1 + m1
+        this%state_array(1) = this%state_array(2)
+        this%state_array(2) = this%state_array(3)
+        this%state_array(3) = p1
+
+        ! Component 2
+        p2 = a21 * this%state_array(6) - a23n * this%state_array(4)
+        k = p2 / m2
+        p2 = p2 - k * m2
+        IF (p2 < 0.0) p2 = p2 + m2
+        this%state_array(4) = this%state_array(5)
+        this%state_array(5) = this%state_array(6)
+        this%state_array(6) = p2
+
+        ! Combination
+
+        IF (p1 <= p2) THEN
+            random_numb = ((p1 - p2 + m1) * norm_r2)
+        ELSE
+            random_numb = ((p1 - p2) * norm_r2)
+        END IF
+
+    END FUNCTION getNumber_MRG32k3a
 
     FUNCTION getNumber_TAUS88(this) RESULT(random_numb)
         ! Generates a random number between 0 and 1.
@@ -211,17 +326,69 @@ CONTAINS
 
         ! N.B. ISHFT(i,j) is a bitwise (non-circular) shift operation;
         !      to the left if j > 0, otherwise to the right.
-
-        b  = ISHFT( IEOR( ISHFT(this%s1,13), this%s1), -19)
-        this%s1 = IEOR( ISHFT( IAND(this%s1,-2), 12), b)
-        b  = ISHFT( IEOR( ISHFT(this%s2,2), this%s2), -25)
-        this%s2 = IEOR( ISHFT( IAND(this%s2,-8), 4), b)
-        b  = ISHFT( IEOR( ISHFT(this%s3,3), this%s3), -11)
-        this%s3 = IEOR( ISHFT( IAND(this%s3,-16), 17), b)
-        random_numb = IEOR( IEOR(this%s1,this%s2), this%s3) *                  &
-                           2.3283064365E-10_r2 + 0.5_r2
+        
+        b  = ISHFT( IEOR( ISHFT(this%state_array(1), 13), this%state_array(1)), -19)
+        this%state_array(1) = IEOR( ISHFT( IAND(this%state_array(1),-2), 12), b)
+        b  = ISHFT( IEOR( ISHFT(this%state_array(2), 2), this%state_array(2)), -25)
+        this%state_array(2) = IEOR( ISHFT( IAND(this%state_array(2),-8), 4), b)
+        b  = ISHFT( IEOR( ISHFT(this%state_array(3), 3), this%state_array(3)), -11)
+        this%state_array(3) = IEOR( ISHFT( IAND(this%state_array(3),-16), 17), b)
+        
+        random_numb = IEOR( IEOR(this%state_array(1),this%state_array(2)), this%state_array(3)) *   &
+                        norm_r2+ 0.5_r2
         this%rndx = random_numb
     END FUNCTION getNumber_TAUS88
+
+    !--------------------------------------------------------------------------!
+    !
+    ! Lin_Feedback_Shift_Reg
+    !
+    ! L'Ecuyer's 1999 random number generator.
+    ! Fortran version by Alan.Miller @ vic.cmis.csiro.au
+    ! N.B. This version is compatible with Lahey's ELF90
+    ! This version requires that the default integer type is of 32-bits
+    ! http://www.ozemail.com.au/~milleraj
+    ! http://users.bigpond.net.au/amiller/
+    ! Latest revision - 12 January 2001
+
+    FUNCTION getNumber_lfsr113(this) RESULT(random_numb)
+        ! Generates a random number between 0 and 1.
+        ! Translated from C function
+        ! Reference:
+        ! L'Ecuyer, P. (1999) `Tables of maximally equidistributed combined LFSR
+        ! generators', Math. of Comput., 68, 261-269.
+
+        ! The cycle length is claimed to be about 2^(113) or about 10^(34).
+        ! Actually - (2^31 - 1).(2^29 - 1).(2^28 - 1).(2^25 - 1)
+        IMPLICIT NONE
+        !----------------------------------------------------------------------!
+        TYPE(Randgen_TYP), INTENT(INOUT) :: this
+        REAL(r2)  :: random_numb
+        INTEGER   :: b
+        !----------------------------------------------------------------------!
+        ! N.B. ISHFT(i,j) is a bitwise (non-circular) shift operation;
+        !      to the left if j > 0, otherwise to the right.
+
+        b  = ISHFT( IEOR( ISHFT(this%state_array(1), 6), this%state_array(1)), -13)
+        this%state_array(1) = IEOR( ISHFT( IAND(this%state_array(1),-2), 18), b)
+        b  = ISHFT( IEOR( ISHFT(this%state_array(2), 2), this%state_array(2)), -27)
+        this%state_array(2) = IEOR( ISHFT( IAND(this%state_array(2),-8), 2), b)
+        b  = ISHFT( IEOR( ISHFT(this%state_array(3), 13), this%state_array(3)), -21)
+        this%state_array(3) = IEOR( ISHFT( IAND(this%state_array(3),-16), 7), b)
+        b  = ISHFT( IEOR( ISHFT(this%state_array(4), 3), this%state_array(4)), -12)
+        this%state_array(4) = IEOR( ISHFT( IAND(this%state_array(4),-128), 13), b)
+
+        ! The constant norm_r2 below is the reciprocal of (2^32 - 1)
+        random_numb = IEOR( IEOR( IEOR(this%state_array(1), this%state_array(2)), &
+                           this%state_array(3)), this%state_array(4)) *        &
+                           norm_r2 + 0.5_r2
+
+    END FUNCTION getNumber_lfsr113
+
+    !--------------------------------------------------------------------------!
+    !
+    ! Mersenne Twister (MT)
+    
     !***********************************************************************
     ! A Fortran-program for MT19937: Real number version
     !***********************************************************************
@@ -235,7 +402,7 @@ CONTAINS
     ! and should be compatible with most full Fortran 90 or 95 compilers.
     ! Notice the strange way in which umask is specified for ELF90.
      
-    !   genrand() generates one pseudorandom real number (double) which is
+    ! genrand() generates one pseudorandom real number (double) which is
     ! uniformly distributed on [0,1]-interval, for each call.
     ! sgenrand(seed) set initial values to the working area of 624 words.
     ! Before genrand(), sgenrand(seed) must be called once.  (seed is any 32-bit
@@ -274,113 +441,221 @@ CONTAINS
     !   ieor (i,j): Performs exclusive OR on corresponding bits of i and j.
 
     !***********************************************************************
-    SUBROUTINE init_MT(this, seed)
-        !----------------------------------------------------------------------!
-        TYPE(Randgen_TYP), INTENT(INOUT) :: this
-        INTEGER, INTENT(IN)              :: seed
-        INTEGER                          :: latest
-        INTEGER                          :: mti
-        !----------------------------------------------------------------------!
-        ! This initialization is based upon the multiplier given on p.106 of the
-        ! 3rd edition of Knuth, The Art of Computer Programming Vol. 2.
-        ! This version assumes that integer overflow does NOT cause a crash.
+!~     SUBROUTINE init_MT(this, seed)
+!~         !----------------------------------------------------------------------!
+!~         TYPE(Randgen_TYP), INTENT(INOUT) :: this
+!~         INTEGER, INTENT(IN)              :: seed
+!~         INTEGER                          :: latest
+!~         INTEGER                          :: mti
+!~         !----------------------------------------------------------------------!
+!~         ! This initialization is based upon the multiplier given on p.106 of the
+!~         ! 3rd edition of Knuth, The Art of Computer Programming Vol. 2.
+!~         ! This version assumes that integer overflow does NOT cause a crash.
 
-        this%mt(0) = seed
-        latest = seed
-        DO mti = 1, n-1
-            this%mti = mti
-            latest = IEOR( latest, ISHFT( latest, -30 ) )
-            latest = latest * 1812433253 + this%mti
-            this%mt(this%mti) = latest
-        END DO
+!~         this%mt(0) = seed
+!~         latest = seed
+!~         DO mti = 1, n-1
+!~             this%mti = mti
+!~             latest = IEOR( latest, ISHFT( latest, -30 ) )
+!~             latest = latest * 1812433253 + this%mti
+!~             this%mt(this%mti) = latest
+!~         END DO
 
-    END SUBROUTINE init_MT
-    !***********************************************************************
+!~     END SUBROUTINE init_MT
 
-    FUNCTION getNumber_MT(this) RESULT(fn_val)
-        !----------------------------------------------------------------------!
-        TYPE(Randgen_TYP), INTENT(INOUT) :: this
-        INTEGER                          :: mag01(0:1) = (/ 0, mata /)
-        INTEGER                          :: kk, y
-        REAL (kind=r2)                   :: fn_val
-        !----------------------------------------------------------------------!
+!~     FUNCTION getNumber_MT(this) RESULT(fn_val)
+!~         !----------------------------------------------------------------------!
+!~         TYPE(Randgen_TYP), INTENT(INOUT) :: this
+!~         INTEGER                          :: mag01(0:1) = (/ 0, mata /)
+!~         INTEGER                          :: kk, y
+!~         REAL (kind=r2)                   :: fn_val
+!~         !----------------------------------------------------------------------!
 
-        ! These statement functions have been replaced with separate functions
-        ! tshftu(y) = ISHFT(y,-11)
-        ! tshfts(y) = ISHFT(y,7)
-        ! tshftt(y) = ISHFT(y,15)
-        ! tshftl(y) = ISHFT(y,-18)
+!~         ! These statement functions have been replaced with separate functions
+!~         ! tshftu(y) = ISHFT(y,-11)
+!~         ! tshfts(y) = ISHFT(y,7)
+!~         ! tshftt(y) = ISHFT(y,15)
+!~         ! tshftl(y) = ISHFT(y,-18)
 
-        IF(this%mti >= n) THEN
-        !                       generate N words at one time
-            IF(this%mti == n+1) THEN
-        !                            if sgrnd() has not been called,
-                CALL init_MT(this, 4357)
-        !                              a default initial seed is used
-            END IF
+!~         IF(this%mti >= n) THEN
+!~         !                       generate N words at one time
+!~             IF(this%mti == n+1) THEN
+!~         !                            if sgrnd() has not been called,
+!~                 CALL init_MT(this, 4357)
+!~         !                              a default initial seed is used
+!~             END IF
           
-            DO  kk = 0, n-m-1
-                y = IOR(IAND(this%mt(kk),umask), IAND(this%mt(kk+1),lmask))
-                this%mt(kk) = IEOR(IEOR(this%mt(kk+m), ISHFT(y,-1)),mag01(IAND(y,1)))
-            END DO
-            DO  kk = n-m, n-2
-                y = IOR(IAND(this%mt(kk),umask), IAND(this%mt(kk+1),lmask))
-                this%mt(kk) = IEOR(IEOR(this%mt(kk+(m-n)), ISHFT(y,-1)),mag01(IAND(y,1)))
-            END DO
-            y = IOR(IAND(this%mt(n-1),umask), IAND(this%mt(0),lmask))
-            this%mt(n-1) = IEOR(IEOR(this%mt(m-1), ISHFT(y,-1)),mag01(IAND(y,1)))
-            this%mti = 0
-        END IF
+!~             DO  kk = 0, n-m-1
+!~                 y = IOR(IAND(this%mt(kk),umask), IAND(this%mt(kk+1),lmask))
+!~                 this%mt(kk) = IEOR(IEOR(this%mt(kk+m), ISHFT(y,-1)),mag01(IAND(y,1)))
+!~             END DO
+!~             DO  kk = n-m, n-2
+!~                 y = IOR(IAND(this%mt(kk),umask), IAND(this%mt(kk+1),lmask))
+!~                 this%mt(kk) = IEOR(IEOR(this%mt(kk+(m-n)), ISHFT(y,-1)),mag01(IAND(y,1)))
+!~             END DO
+!~             y = IOR(IAND(this%mt(n-1),umask), IAND(this%mt(0),lmask))
+!~             this%mt(n-1) = IEOR(IEOR(this%mt(m-1), ISHFT(y,-1)),mag01(IAND(y,1)))
+!~             this%mti = 0
+!~         END IF
 
-        y = this%mt(this%mti)
-        this%mti = this%mti + 1
-        y = IEOR(y, tshftu(y))
-        y = IEOR(y, IAND(tshfts(y),tmaskb))
-        y = IEOR(y, IAND(tshftt(y),tmaskc))
-        y = IEOR(y, tshftl(y))
+!~         y = this%mt(this%mti)
+!~         this%mti = this%mti + 1
+!~         y = IEOR(y, tshftu(y))
+!~         y = IEOR(y, IAND(tshfts(y),tmaskb))
+!~         y = IEOR(y, IAND(tshftt(y),tmaskc))
+!~         y = IEOR(y, tshftl(y))
 
-        IF(y < 0) THEN
-          fn_val = (DBLE(y) + 2.0D0**32) / (2.0D0**32 - 1.0D0)
-        ELSE
-          fn_val = DBLE(y) / (2.0D0**32 - 1.0D0)
-        END IF
+!~         IF(y < 0) THEN
+!~           fn_val = (DBLE(y) + 2.0D0**32) / (2.0D0**32 - 1.0D0)
+!~         ELSE
+!~           fn_val = DBLE(y) / (2.0D0**32 - 1.0D0)
+!~         END IF
 
-        this%rndx = fn_val
-    END FUNCTION getNumber_MT
+!~         this%rndx = fn_val
+!~     END FUNCTION getNumber_MT
 
+!~     FUNCTION tshftu(y) RESULT(fn_val)
+!~         INTEGER, INTENT(IN) :: y
+!~         INTEGER             :: fn_val
 
-    FUNCTION tshftu(y) RESULT(fn_val)
-        INTEGER, INTENT(IN) :: y
-        INTEGER             :: fn_val
+!~         fn_val = ISHFT(y,-11)
+!~         RETURN
+!~     END FUNCTION tshftu
 
-        fn_val = ISHFT(y,-11)
-        RETURN
-    END FUNCTION tshftu
+!~     FUNCTION tshfts(y) RESULT(fn_val)
+!~         INTEGER, INTENT(IN) :: y
+!~         INTEGER             :: fn_val
 
-
-    FUNCTION tshfts(y) RESULT(fn_val)
-        INTEGER, INTENT(IN) :: y
-        INTEGER             :: fn_val
-
-        fn_val = ISHFT(y,7)
-        RETURN
-    END FUNCTION tshfts
+!~         fn_val = ISHFT(y,7)
+!~         RETURN
+!~     END FUNCTION tshfts
 
 
-    FUNCTION tshftt(y) RESULT(fn_val)
-        INTEGER, INTENT(IN) :: y
-        INTEGER             :: fn_val
+!~     FUNCTION tshftt(y) RESULT(fn_val)
+!~         INTEGER, INTENT(IN) :: y
+!~         INTEGER             :: fn_val
 
-        fn_val = ISHFT(y,15)
-        RETURN
-    END FUNCTION tshftt
+!~         fn_val = ISHFT(y,15)
+!~         RETURN
+!~     END FUNCTION tshftt
 
-    FUNCTION tshftl(y) RESULT(fn_val)
-        INTEGER, INTENT(IN) :: y
-        INTEGER             :: fn_val
+!~     FUNCTION tshftl(y) RESULT(fn_val)
+!~         INTEGER, INTENT(IN) :: y
+!~         INTEGER             :: fn_val
 
-        fn_val = ISHFT(y,-18)
-        RETURN
-    END FUNCTION tshftl
+!~         fn_val = ISHFT(y,-18)
+!~         RETURN
+!~     END FUNCTION tshftl
 
 END MODULE randgen_type
+
+!~ PROGRAM main
+! A simple program to test the random number generators
+!
+!~     USE randgen_type
+!~     USE datatype
+!~     IMPLICIT NONE
+
+!~     INTEGER, PARAMETER :: buckets = 13
+!~     INTEGER            :: seed
+!~     INTEGER(8)         :: j, i
+!~     INTEGER(8)         :: count, no, error_counter
+!~     INTEGER(8), DIMENSION(buckets) :: bucket
+!~     REAL (r2)          :: temp, big, small, average, sumsq, stdev, chi
+!~     REAL               :: t1, t0
+!~     TYPE(Randgen_TYP)  :: rand_nr
+
+
+!~     no = 2000000000
+!~     bucket(:) = 0
+!~     DO i = 4, 4
+!~         temp = 0.0_r2
+!~         big = 0.5_r2
+!~         small = 0.5_r2
+!~         count = 0
+!~         average = 0.0_r2
+!~         sumsq = 0.0_r2
+!~         bucket(:) = 0
+!~         error_counter = 0
+!~         seed = 1 ! 2 , 3 ,4 ...
+        
+!~         IF (i == 1) THEN
+!~             PRINT *, 'KISS99'
+!~             CALL InitRandgen(rand_nr, seed, 'KISS99')
+!~         ELSEIF (i == 2) THEN
+!~             PRINT *, 'TAUS88'
+!~             CALL InitRandgen(rand_nr, seed, 'TAUS88')
+!~         ELSEIF (i == 3) THEN
+!~             PRINT *, 'LFSR113'
+!~             CALL InitRandgen(rand_nr, seed, 'LFSR113')
+!~         ELSEIF (i == 4) THEN
+!~             PRINT *, 'CONG'
+!~             CALL InitRandgen(rand_nr, seed, 'CONG')
+!~         END IF
+!~         CALL cpu_time(t0)
+!~         DO  j=1, no
+!~             CALL GetNewRandomNumber(rand_nr, temp)
+!~             !IF (temp < 1.0e-10_r2 .or. temp == 1.0_r2- 1.0e-10_r2) THEN
+!~             !    error_counter = error_counter + 1
+!~             !END IF
+!~             IF (temp > big) THEN
+!~                 big = temp
+!~             ELSE IF (temp < small) THEN
+!~                 small = temp
+!~             END IF
+!~             CALL update(temp, count, average, sumsq, bucket, buckets)
+!~         END DO
+!~         CALL cpu_time(t1)
+!~         stdev = SQRT( sumsq / (count - 1) )
+!~         chi = 0.0
+!~         print *, ''
+!~         DO j = 1, buckets
+!~             chi = chi + (bucket(j)-REAL(no, kind=r2)/buckets)**2/(REAL(no, kind=r2)/buckets)
+!~         END DO
+!~         WRITE(*, *) ' Smallest = ', small, '  Largest = ', big
+!~         WRITE(*, *) ' Average = ', average, '  Std. devn. = ', stdev
+!~         WRITE(*, *) ' Std. devn. should be about 1/sqrt(12) = 0.288675'
+!~         WRITE(*, *) ' Chi^2 = ', chi
+!~         !WRITE(*, *) ' Error values found: ', error_counter
+!~         WRITE(*, *) ' Calculations took = ', t1-t0 ,'s'
+!~         WRITE(*, *) ''
+!~         CALL CloseRandgen(rand_nr)
+!~     END DO
+
+
+!~     CONTAINS
+
+!~         SUBROUTINE update(x, n, avge, sumsq, bucket, bn)
+!~         REAL (r2), INTENT(IN)      :: x
+!~         INTEGER(8), INTENT(IN OUT)    :: n
+!~         INTEGER, INTENT(IN)    :: bn
+!~         REAL (r2), INTENT(IN OUT)  :: avge, sumsq
+!~         INTEGER(8), DIMENSION(bn), INTENT(IN OUT) :: bucket
+
+!~         REAL (r2)  :: dev
+
+!~         n = n + 1
+!~         dev = x - avge
+!~         avge = avge + dev / n
+!~         sumsq = sumsq + dev*(x - avge)
+!~         bucket(int(x*bn)+ 1) = bucket(int(x*bn) + 1) + 1
+
+!~         END SUBROUTINE update
+        
+!~         FUNCTION RAN0(IDUM)
+!~               IMPLICIT NONE
+!~               INTEGER, INTENT(IN OUT) :: IDUM
+!~               INTEGER, PARAMETER :: IA=16807, IM=2147483647, IQ=127773, IR=2836, MASK=123459876
+!~               REAL(r2), PARAMETER :: AM=1.0_r2/IM
+!~               REAL(r2) :: RAN0
+!~               INTEGER  :: k
+
+!~               k = IDUM/IQ
+!~               IDUM=IA*(IDUM-k*IQ)-IR*k
+!~               IF (idum .lt. 0) idum=idum+IM
+!~               RAN0 = AM*IDUM
+              
+
+!~         END FUNCTION RAN0
+
+!~ END PROGRAM main
