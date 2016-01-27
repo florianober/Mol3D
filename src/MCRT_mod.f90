@@ -96,7 +96,7 @@ CONTAINS
         kill_photon_count = 0
         ! initialize random number generator
         seed = -1
-        !$omp parallel num_threads(basics%num_core) PRIVATE(rand_nr) FIRSTPRIVATE(seed)
+        !$omp parallel num_threads(basics%num_core) FIRSTPRIVATE(rand_nr, seed)
         !$ seed = (omp_get_thread_num()+1)*(-1)
 
         CALL InitRandgen(rand_nr, seed, basics%randgen_name)
