@@ -287,7 +287,7 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
     !                 'LFSR113'  : L'Ecuyer, P. (1999)
     !                 'KISS99'   : George Marsaglia 1999 (prefered)
     !                 'CONG'     : very basic linear congruential generator
-    !                 'COMPILER' : The compiler own
+    !            XX   'COMPILER' : The compiler own (not available at the moment)
     randgen_name = 'KISS99'
     ! save the calculated excitation temperature?
     do_save_T_exc = .False.

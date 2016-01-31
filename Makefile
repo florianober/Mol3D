@@ -194,7 +194,7 @@ MAIN_OBJ = $(MAIN_SRC:f90=o)
 #
 $(MAIN_EXE): $(addprefix $(BUILD_DIR),$(MODULE_OBJ)) $(addprefix $(BUILD_DIR),$(MAIN_OBJ)) 
 ifeq ($(CO),perf) 
-		@scalasca -instrument $(FC) $(CFLAGS) $(DEPFLAGS) -o $@  $^
+		@scorep $(FC) $(CFLAGS) $(DEPFLAGS) -o $@  $^
 else
 		@$(FC) $(CFLAGS) $(DEPFLAGS) -o $@  $^
 endif
@@ -210,7 +210,7 @@ endif
 #
 $(addprefix $(BUILD_DIR),%.o): $(addprefix $(SRC_DIR),%.f90) Makefile
 ifeq ($(CO),perf) 
-		@scalasca -instrument $(FC) $(CFLAGS) $(DEPFLAGS) $(OFLAGS) -c $< -o $@ 
+		@scorep $(FC) $(CFLAGS) $(DEPFLAGS) $(OFLAGS) -c $< -o $@ 
 else 
 		@$(FC) $(CFLAGS) $(DEPFLAGS) $(OFLAGS) -c $< -o $@
 endif

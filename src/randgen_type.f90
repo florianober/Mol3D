@@ -57,7 +57,7 @@ MODULE randgen_type
         TYPE(Common_TYP)                   :: gentype
         REAL(kind=r2)                      :: rndx
         ! generator array for the state vector
-        INTEGER, DIMENSION(:), ALLOCATABLE :: state_array
+        INTEGER, DIMENSION(1:6) :: state_array
         
 !~         INTEGER,
 !~         !                     the array for the state vector
@@ -118,15 +118,15 @@ CONTAINS
             CASE('CONG')
                 N = 1
                 i = 5
-            CASE('COMPILER')
-                CALL RANDOM_SEED(N)
-                i = 6
+            !CASE('COMPILER')
+            !    CALL RANDOM_SEED(N)
+            !    i = 6
             CASE DEFAULT
                 PRINT *, 'ERROR, chosen random number generator not found.'
                 STOP
         END SELECT
+        N = 6
         CALL InitCommon(this%gentype, i, gen_name)
-        ALLOCATE(this%state_array(1:N))
         
         ! Mol3D uses CONG to generate the seeds, CONG is initialized with a
         ! seed based on the actual thread, thus Mol3D calculates a few numbers
@@ -141,7 +141,7 @@ CONTAINS
                 this%state_array(i) = CONG(this%state_array(i-1))
             END DO
         END IF
-        IF (GetGenName(this) == 'COMPILER') CALL RANDOM_SEED(PUT=this%state_array)
+        !IF (GetGenName(this) == 'COMPILER') CALL RANDOM_SEED(PUT=this%state_array)
     END SUBROUTINE InitRandgen
 
     SUBROUTINE CloseRandgen(this)
@@ -150,7 +150,6 @@ CONTAINS
         TYPE(Randgen_TYP), INTENT(INOUT) :: this
         !----------------------------------------------------------------------!
         CALL CloseCommon(this%gentype)
-        DEALLOCATE(this%state_array)
     END SUBROUTINE CloseRandgen
 
     SUBROUTINE GetNewRandomNumber(this, randno)
