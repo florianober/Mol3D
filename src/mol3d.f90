@@ -79,10 +79,17 @@ PROGRAM Mol3D
     ! ---
     CALL cpu_time(t0)
     !$ wt0=omp_get_wtime()
+    open(unit=1, file='version.txt', &
+                action="read", status="unknown", form="formatted")
+    read(unit=1, fmt=*) mol3d_version
+    close(unit=1)
 
-    PRINT *, "======================================================"
-    PRINT *, "Mol3D (version "//mol3d_version//")                      Welcome!"
-    PRINT *, "======================================================"
+    PRINT '(A)', " ======================================================"
+    PRINT '(A)', " Mol3D                                         Welcome!"
+    PRINT '(A)', ""
+    PRINT '(A)', " git commit: "
+    PRINT '(A)', " "//TRIM(mol3d_version)
+    PRINT '(A)', " ======================================================"
     
     !--------------------------------------------------------------------------!
     ! 1. initiate code 
@@ -112,7 +119,7 @@ PROGRAM Mol3D
         PRINT '(3a,i3,a,i2,a,f5.2,a,f10.2,a)', " simulation ",                 &
                     Getproname(basics), " took",                               &
                     hour, 'h ', minute, 'm ', second, 's    (', t1-t0 ,'sec)'
-        !$ write (*,'(a,1pg12.4)') 'omp_get_wtime:', wt1-wt0
+        !$ write (*,'(a,1pg12.4)') ' omp_get_wtime:', wt1-wt0
     !--------------------------------------------------------------------------!
     
     PRINT *,''

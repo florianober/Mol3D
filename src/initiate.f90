@@ -221,7 +221,7 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
     WRITE(unit=3,fmt='(A)')  '#                                                                                #'
     WRITE(unit=3,fmt='(A)')  '# author         : Florian Ober                                                  #'
     WRITE(unit=3,fmt='(A)')  '# email          : fober@astrophysik.uni-kiel.de                                 #'
-    WRITE(unit=3,fmt='(A)')  '# mol3d version  : '//mol3d_version//'                                                      #'
+    WRITE(unit=3,fmt='(A)')  '# git commit     : '//TRIM(mol3d_version)//'                      #'
     WRITE(unit=3,fmt='(A)')  '#                                                                                #'
     WRITE(unit=3,fmt='(A)')  '# execution date : '//TRIM(help)//'                                            #'
     WRITE(unit=3,fmt='(A)')  '##################################################################################'
@@ -287,8 +287,8 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
     !                 'LFSR113'  : L'Ecuyer, P. (1999)
     !                 'KISS99'   : George Marsaglia 1999 (prefered)
     !                 'CONG'     : very basic linear congruential generator
-    !            XX   'COMPILER' : The compiler own (not available at the moment)
-    randgen_name = 'KISS99'
+    !                 'COMPILER' : The compiler own
+    randgen_name = 'COMPILER'
     ! save the calculated excitation temperature?
     do_save_T_exc = .False.
     CALL InitBasic(basics,photon_type,'Reemission map', proname, r_path,       &

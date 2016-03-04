@@ -118,9 +118,9 @@ CONTAINS
             CASE('CONG')
                 N = 1
                 i = 5
-            !CASE('COMPILER')
+            CASE('COMPILER')
             !    CALL RANDOM_SEED(N)
-            !    i = 6
+                i = 6
             CASE DEFAULT
                 PRINT *, 'ERROR, chosen random number generator not found.'
                 STOP
@@ -141,7 +141,11 @@ CONTAINS
                 this%state_array(i) = CONG(this%state_array(i-1))
             END DO
         END IF
-        !IF (GetGenName(this) == 'COMPILER') CALL RANDOM_SEED(PUT=this%state_array)
+
+        IF  (GetGenName(this) == 'COMPILER') THEN
+            CALL RANDOM_SEED(N)
+            CALL RANDOM_SEED(PUT=this%state_array(1:N))
+        END IF
     END SUBROUTINE InitRandgen
 
     SUBROUTINE CloseRandgen(this)
