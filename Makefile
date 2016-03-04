@@ -45,6 +45,8 @@ AWK = awk
 DEPGEN = makedeps 
 DEP_FILE = dependencies.dep
 CO = normal
+
+$(shell git rev-parse HEAD > .version.txt)
 #
 MAIN_EXE = mol3d
 SRC_DIR = ./src/
@@ -198,12 +200,14 @@ ifeq ($(CO),perf)
 else
 		@$(FC) $(CFLAGS) $(DEPFLAGS) -o $@  $^
 endif
+
 	@date > $(LOG)
 	@echo "Compiler:  " $(FC) >> $(LOG)
 	@echo "Build Type:" $(CO) >> $(LOG)
 	@echo "CFLAGS:    " $(CFLAGS) >> $(LOG)
 	@echo "DEPFLAGS:  " $(DEPFLAGS) >> $(LOG)
 	@echo "Source dir:" $(SRC_DIR) >> $(LOG)
+
 #
 #
 # How to build an object file from an f90 source file

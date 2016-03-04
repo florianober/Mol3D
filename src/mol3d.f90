@@ -79,7 +79,7 @@ PROGRAM Mol3D
     ! ---
     CALL cpu_time(t0)
     !$ wt0=omp_get_wtime()
-    open(unit=1, file='version.txt', &
+    open(unit=1, file='.version.txt', &
                 action="read", status="unknown", form="formatted")
     read(unit=1, fmt=*) mol3d_version
     close(unit=1)
