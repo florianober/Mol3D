@@ -57,7 +57,7 @@ MODULE randgen_type
         TYPE(Common_TYP)                   :: gentype
         REAL(kind=r2)                      :: rndx
         ! generator array for the state vector
-        INTEGER, DIMENSION(1:6) :: state_array
+        INTEGER, DIMENSION(1:200) :: state_array
         
 !~         INTEGER,
 !~         !                     the array for the state vector
@@ -136,11 +136,10 @@ CONTAINS
             this%state_array(1) = CONG(this%state_array(1))
         END DO
         ! Now fill the state array
-        IF (N .gt. 1) THEN
-            DO i = 2, N
-                this%state_array(i) = CONG(this%state_array(i-1))
-            END DO
-        END IF
+
+        DO i = 2, 200
+            this%state_array(i) = CONG(this%state_array(i-1))
+        END DO
 
         IF  (GetGenName(this) == 'COMPILER') THEN
             CALL RANDOM_SEED(N)

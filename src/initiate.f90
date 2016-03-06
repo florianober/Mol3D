@@ -288,7 +288,7 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
     !                 'KISS99'   : George Marsaglia 1999 (prefered)
     !                 'CONG'     : very basic linear congruential generator
     !                 'COMPILER' : The compiler own
-    randgen_name = 'COMPILER'
+    randgen_name = 'KISS99'
     ! save the calculated excitation temperature?
     do_save_T_exc = .False.
     CALL InitBasic(basics,photon_type,'Reemission map', proname, r_path,       &
