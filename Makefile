@@ -46,7 +46,8 @@ DEPGEN = makedeps
 DEP_FILE = dependencies.dep
 CO = normal
 
-$(shell git rev-parse HEAD > .version.txt)
+GITHASH = "'$(shell git rev-parse HEAD)'"
+
 #
 MAIN_EXE = mol3d
 SRC_DIR = ./src/
@@ -198,7 +199,7 @@ $(MAIN_EXE): $(addprefix $(BUILD_DIR),$(MODULE_OBJ)) $(addprefix $(BUILD_DIR),$(
 ifeq ($(CO),perf) 
 		@scorep $(FC) $(CFLAGS) $(DEPFLAGS) -o $@  $^
 else
-		@$(FC) $(CFLAGS) $(DEPFLAGS) -o $@  $^
+		@$(FC) -DGITHASH=$(GITHASH) $(CFLAGS) $(DEPFLAGS) -o $@  $^
 endif
 
 	@date > $(LOG)
@@ -216,7 +217,7 @@ $(addprefix $(BUILD_DIR),%.o): $(addprefix $(SRC_DIR),%.f90) Makefile
 ifeq ($(CO),perf) 
 		@scorep $(FC) $(CFLAGS) $(DEPFLAGS) $(OFLAGS) -c $< -o $@ 
 else 
-		@$(FC) $(CFLAGS) $(DEPFLAGS) $(OFLAGS) -c $< -o $@
+		@$(FC) -DGITHASH=$(GITHASH) $(CFLAGS) $(DEPFLAGS) $(OFLAGS) -c $< -o $@
 endif
 #
 #
