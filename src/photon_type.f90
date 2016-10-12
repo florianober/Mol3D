@@ -256,8 +256,7 @@ CONTAINS
         this%SINTHE = sqrt(1-this%COSTHE**2)
         ! now we can calculate the remaining values
 
-        this%SIN2PH = 2.0_r2 * this%SINPHI * this%COSPHI
-        this%COS2PH = 1.0_r2 - 2.0_r2 * this%SINPHI**2
+        CALL update_angle(this)
         this%lot_th = int(theta / d_ang) + 1
 
         ! fill the rotation matrix
