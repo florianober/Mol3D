@@ -138,20 +138,21 @@ CONTAINS
                   dust%SME(1, 1, i_dust, photon%nr_lam, photon%lot_th), kind=r2)
 
         CALL GetNewRandomNumber(rand_nr, rndx)
-
         IF (abs(PHIPAR) < 0.1_r2) THEN
             PHI = rndx * basics%PIx2                ! PHI = rndx * 2.0_r2 * PI
         ELSE
-            DO
+            hl1 = .true.
+            DO WHILE (hl1)
                 HELP = rndx * basics%PIx4            ! HELP = rndx * 4.0_r2 * PI
                 PHI  = HELP  +  PHIPAR * sin(HELP)
 
                 ! Calculation of PHI by an iterative solution of Kepler's
                 ! equation. The iteration will end if DABS(PHI-PHI1)<0.0175
-                ! (about 1 degree). 
+                ! (about 1 degree).
+                PHI1 = 0.0_r2
                 DO
-                    PHI1 = PHI
                     hd1  = abs(PHI - PHI1)
+                    PHI1 = PHI
                     PHI  = HELP  +  PHIPAR * sin(PHI1)
                     hd2  = abs(PHI - PHI1)
 
@@ -159,16 +160,12 @@ CONTAINS
                         hl1 = .false.
                         exit
                     else
-                        if ((hd1-hd2) < 1.0e-15_r2) then
-                            hl1 = .true.   ! endlos-schleife -> neuen Wert auslosen
+                        if (abs(hd1-hd2) < con_eps) then
                             CALL GetNewRandomNumber(rand_nr,rndx)
                             exit
                         endif
                     endif
                 enddo
-                if (.not. hl1) then
-                    exit
-                endif
             enddo
             PHI = PHI / 2.0_r2
         END IF
@@ -176,6 +173,7 @@ CONTAINS
         ! calculated by inverse of distribution function exists the   
         ! following connection:  phi = phi' + 180 deg - GAMMA_ANGLE ; 
         ! tan(2GAMMA_ANGLE) = Uein/Qein.
+        
         GAMMA_ANGLE = 0.0_r2 ! not sure if needed
         if (photon%stokes(2) /= 0.0_r2) then
             GAMMA_ANGLE  = 0.5_r2 * atan2(photon%stokes(3),photon%stokes(2))
@@ -190,13 +188,6 @@ CONTAINS
             endif
         endif
         PHI = PI - GAMMA_ANGLE + PHI
-!~         print *, rad2grad(GAMMA_ANGLE)
-!~         print *, rad2grad(PHI)
-!~         print *, rad2grad(PI - GAMMA_ANGLE + rndx * basics%PIx2), abs(PHIPAR)
-!~         print *, photon%stokes(2), photon%stokes(3)
-!~         print *, ''
-        
-!~         IF (abs(PHIPAR) > 0.1) STOP
         photon%SINPHI = sin(PHI)
         photon%COSPHI = cos(PHI)
 
