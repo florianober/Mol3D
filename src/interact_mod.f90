@@ -46,6 +46,7 @@ MODULE interact_mod
     USE start_mod
     USE immediate_mod
     USE scatter_mod
+    USE observe_mod
     
     USE math_mod
   
@@ -59,18 +60,19 @@ CONTAINS
     ! ##########################################################################
     ! interaction: steering routine
     ! ---
-    SUBROUTINE interact(basics, grid, dust, rand_nr, photon)
-  
+    SUBROUTINE interact(basics, model, grid, dust, rand_nr, fluxes, photon)
         IMPLICIT NONE
         !----------------------------------------------------------------------!
         TYPE(Basic_TYP),INTENT(IN)                       :: basics
         TYPE(Randgen_TYP),INTENT(INOUT)                  :: rand_nr
         TYPE(Grid_TYP),INTENT(IN)                        :: grid
         TYPE(Dust_TYP),INTENT(IN)                        :: dust
+        TYPE(Fluxes_TYP),INTENT(INOUT)                   :: fluxes
+        TYPE(Model_TYP),INTENT(IN)                       :: model
         
         TYPE(PHOTON_TYP),INTENT(INOUT)                   :: photon
         !----------------------------------------------------------------------!
-        CALL interact_temp(basics, grid, dust, rand_nr, photon)
+        CALL interact_temp(basics, model, grid, dust, rand_nr, fluxes, photon)
 
         ! update last point of interaction
         photon%pos_xyz_li(:) = photon%pos_xyz(:)
@@ -122,7 +124,7 @@ CONTAINS
     ! interaction type 2: temperature calculation:
     !                     interaction in immediate reemission scheme
     ! ---
-    SUBROUTINE interact_temp(basics, grid, dust, rand_nr, photon)
+    SUBROUTINE interact_temp(basics, model, grid, dust, rand_nr, fluxes, photon)
 
         IMPLICIT NONE
         !----------------------------------------------------------------------!
@@ -130,6 +132,8 @@ CONTAINS
         TYPE(Randgen_TYP),INTENT(INOUT)                  :: rand_nr
         TYPE(Grid_TYP),INTENT(IN)                        :: grid
         TYPE(Dust_TYP),INTENT(IN)                        :: dust
+        TYPE(Fluxes_TYP),INTENT(INOUT)                   :: fluxes
+        TYPE(Model_TYP),INTENT(IN)                       :: model
         
         TYPE(PHOTON_TYP),INTENT(INOUT)                   :: photon
         !----------------------------------------------------------------------!
@@ -146,63 +150,30 @@ CONTAINS
         CALL GetNewRandomNumber(rand_nr, rndx)
         
         IF ( rndx < dust%albedo(i_dust, photon%nr_lam) ) THEN
-            
+            photon%last_interaction_type = 'S'
             ! 2.1 scattering
+            ! 2.1.1 peel of the photon if desired
+            !       in fact, we create a new photon and calculate 
+            !       the energy of this photon on the observers map
+            
+            IF (basics%do_peel_off) THEN
+                CALL peel_off_photon(model, grid, dust, fluxes, photon, i_dust)
+            END IF
             CALL scatter( basics, rand_nr, dust, photon, i_dust )
             ! apply rotation matrix -> get new direction of the photon package
 
             CALL vecmat(photon)
 
             ! update the stokes vektor to consider the correct polarization
-            ! state (testing phase)
+            ! state
             CALL trafo(dust, photon, i_dust)
-            photon%last_interaction_type = 'S'
         ELSE
-            ! 2.1 immediate re-emission B&W
-            
+            ! 2.2 immediate re-emission B&W
+            photon%last_interaction_type = 'E'
             CALL immediate(basics, rand_nr, grid, dust, photon, i_dust)
             CALL start_grain(basics, rand_nr, photon)
-            photon%last_interaction_type = 'E'
         END IF
 
     END SUBROUTINE interact_temp
-    ! ##########################################################################
-    ! Scattering causes a change of stokes vector (I,Q,U,V).  This
-    ! transformation occurs in two steps. 
-    ! At first, stokes vector is transformed into the new r,l-plane
-    ! after the PHI-rotation. 
-    ! Therefore values of SIN2PH, COS2PH are necessary. 
-    ! The second step contains the transformation of the stokes vector with the 
-    ! according  (index is pointed by LOT) scattering matrix (S11,S12,S33,S34).
-    ! ---
-    SUBROUTINE trafo(dust, photon, i_dust)
-        IMPLICIT NONE
-        !----------------------------------------------------------------------!
-        TYPE(Dust_TYP), INTENT(IN)                          :: dust
-        TYPE(PHOTON_TYP), INTENT(INOUT)                     :: photon        
-        INTEGER, INTENT(IN)                                 :: i_dust
-        REAL(kind=r2)                                       :: QHELP, i_1
-        !----------------------------------------------------------------------!
-        ! ---
-        i_1       = photon%stokes(1)
-        ! scattering
-        ! Mathematical positive rotation of r,l-plane around
-        !              p-axis by the angle PHI
-        QHELP     =  photon%COS2PH * photon%stokes(2) +                        &
-                     photon%SIN2PH * photon%stokes(3)
-        photon%stokes(3) =  - photon%SIN2PH * photon%stokes(2) +               &
-                              photon%COS2PH * photon%stokes(3)
-        photon%stokes(2) =  QHELP
-        ! Mathematical negative rotation around r-axis by THETA transformes
-        ! the Stokes vector (I,Q,U,V) with the scattering matrix.
-        ! LOT  points to the scattering matrix elements of photon angle which
-        ! was determined by throwing dice before.
-        photon%stokes(:) = matmul(dust%SME( :, :, i_dust, photon%nr_lam,       &
-                                photon%lot_th ), photon%stokes(:) )
-
-        ! normalize the stokes vector
-        photon%stokes(:) = photon%stokes(:) * i_1/photon%stokes(1)
-
-    END SUBROUTINE trafo
 
 END MODULE interact_mod

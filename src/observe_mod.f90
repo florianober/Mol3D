@@ -42,7 +42,8 @@ MODULE observe_mod
     USE dust_type
     USE source_type
     USE photon_type
-    
+
+    USE scatter_mod
     USE grd_mod
     USE math_mod
     USE transfer_mod
@@ -156,21 +157,20 @@ CONTAINS
 
     END SUBROUTINE get_pixel_on_map
 
-    SUBROUTINE peel_off_photon(model, grid, dust, rand_nr, fluxes, photon)
-        USE interact_mod, ONLY : trafo
-        USE randgen_type
+    SUBROUTINE peel_off_photon(model, grid, dust, fluxes, photon, i_dust)
         IMPLICIT NONE
 
         !----------------------------------------------------------------------!
         TYPE(Grid_TYP),INTENT(IN)                        :: grid
         TYPE(Model_TYP),INTENT(IN)                       :: model
         TYPE(Dust_TYP),INTENT(IN)                        :: dust
-        TYPE(Randgen_TYP),INTENT(INOUT)                  :: rand_nr
         TYPE(Fluxes_TYP),INTENT(INOUT)                   :: fluxes
         TYPE(PHOTON_TYP),INTENT(IN)                      :: photon
         TYPE(PHOTON_TYP)                                 :: photon_peel
+
+	INTEGER, INTENT(IN)                              :: i_dust
         !----------------------------------------------------------------------!
-        INTEGER                                          :: i_map, i_dust
+        INTEGER                                          :: i_map
         REAL(kind=r2)                                    :: tau
         !----------------------------------------------------------------------!
 
@@ -195,13 +195,12 @@ CONTAINS
             !
             IF (photon%last_interaction_type == 'S') THEN
                 ! get the phi and theta angles for the given direction
-                ! get a dust grain
-                i_dust = dust_select(grid, dust, rand_nr, photon_peel)
+
                 ! transformation of the stokes vector
                 CALL trafo(dust, photon_peel, i_dust)
-                photon_peel%energy = photon%energy * exp(-tau) *               &
-                                     dust%phase_pdf(photon%lot_th, i_dust,     &
-                                                    photon%nr_lam)/(PI*2.0)
+                photon_peel%energy = photon%energy * exp(-tau) *                &
+                                     dust%phase_pdf(photon_peel%lot_th, i_dust, &
+                                                    photon_peel%nr_lam)/(PI*2.0)
             ELSE
                 photon_peel%energy = photon%energy * exp(-tau) / (4.0_r2*PI)
             END IF

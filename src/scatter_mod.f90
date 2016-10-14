@@ -51,7 +51,7 @@ MODULE scatter_mod
     PRIVATE
     !--------------------------------------------------------------------------!
 
-    PUBLIC  :: scatter
+    PUBLIC  :: scatter, trafo
 
 CONTAINS
 
@@ -249,6 +249,45 @@ CONTAINS
         photon%COSPHI = cos( rndx * PI * 2.0_r2)
 
     END SUBROUTINE hgsca
+
+    ! ##########################################################################
+    ! Scattering causes a change of stokes vector (I,Q,U,V).  This
+    ! transformation occurs in two steps. 
+    ! At first, stokes vector is transformed into the new r,l-plane
+    ! after the PHI-rotation. 
+    ! Therefore values of SIN2PH, COS2PH are necessary. 
+    ! The second step contains the transformation of the stokes vector with the 
+    ! according  (index is pointed by LOT) scattering matrix (S11,S12,S33,S34).
+    ! ---
+    SUBROUTINE trafo(dust, photon, i_dust)
+        IMPLICIT NONE
+        !----------------------------------------------------------------------!
+        TYPE(Dust_TYP), INTENT(IN)                          :: dust
+        TYPE(PHOTON_TYP), INTENT(INOUT)                     :: photon
+        INTEGER, INTENT(IN)                                 :: i_dust
+        REAL(kind=r2)                                       :: QHELP, i_1
+        !----------------------------------------------------------------------!
+        ! ---
+        i_1       = photon%stokes(1)
+        ! scattering
+        ! Mathematical positive rotation of r,l-plane around
+        !              p-axis by the angle PHI
+        QHELP     =  photon%COS2PH * photon%stokes(2) +                        &
+                     photon%SIN2PH * photon%stokes(3)
+        photon%stokes(3) =  - photon%SIN2PH * photon%stokes(2) +               &
+                              photon%COS2PH * photon%stokes(3)
+        photon%stokes(2) =  QHELP
+        ! Mathematical negative rotation around r-axis by THETA transformes
+        ! the Stokes vector (I,Q,U,V) with the scattering matrix.
+        ! LOT  points to the scattering matrix elements of photon angle which
+        ! was determined by throwing dice before.
+        photon%stokes(:) = matmul(dust%SME( :, :, i_dust, photon%nr_lam,       &
+                                  photon%lot_th ), photon%stokes(:) )
+
+        ! normalize the stokes vector
+        photon%stokes(:) = photon%stokes(:) * i_1/photon%stokes(1)
+
+    END SUBROUTINE trafo
 
 END MODULE scatter_mod
 
