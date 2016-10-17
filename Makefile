@@ -158,6 +158,7 @@ MAIN_SRC = mol3d.f90
 #
 MODULE_SRC = 	basic_type.f90 \
 		datatype.f90 \
+		roots.f90 \
 		math_mod.f90 \
 		var_global.f90 \
 		common_type.f90 \
@@ -186,6 +187,7 @@ MODULE_SRC = 	basic_type.f90 \
 		start_mod.f90 \
 		linkedlist_mod.f90 \
 		parser_mod.f90
+
 #
 # The names of object files is derived from the source files
 #

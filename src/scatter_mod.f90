@@ -44,8 +44,18 @@ MODULE scatter_mod
     USE fluxes_type
 
     USE math_mod
+    USE roots
 
     IMPLICIT NONE
+!~     INTERFACE
+!~         PURE SUBROUTINE func(x,fx,plist)
+!~             USE datatype
+!~             IMPLICIT NONE
+!~             REAL(kind=r2), INTENT(IN)  :: x
+!~             REAL(kind=r2), INTENT(IN), DIMENSION(:), OPTIONAL :: plist
+!~             REAL(kind=r2), INTENT(OUT) :: fx
+!~         END SUBROUTINE func
+!~     END INTERFACE
 
     !--------------------------------------------------------------------------!
     PRIVATE
@@ -115,6 +125,10 @@ CONTAINS
 
         logical       :: hl1
         real(kind=r2) :: HELP,PHI,PHI1,PHIPAR,ANGLE,GAMMA_ANGLE,hd1,hd2, rndx
+
+
+        REAL(kind=r2) :: root, xm, dx_rel, dx_acc, plist(2), HELP1
+        INTEGER       :: iter, error, iter2
         !----------------------------------------------------------------------!
         ! ---
         !                     *** THETA-Determination ***
@@ -138,37 +152,52 @@ CONTAINS
                   dust%SME(1, 1, i_dust, photon%nr_lam, photon%lot_th), kind=r2)
 
         CALL GetNewRandomNumber(rand_nr, rndx)
-        IF (abs(PHIPAR) < 0.1_r2) THEN
-            PHI = rndx * basics%PIx2                ! PHI = rndx * 2.0_r2 * PI
-        ELSE
-            hl1 = .true.
-            DO WHILE (hl1)
-                HELP = rndx * basics%PIx4            ! HELP = rndx * 4.0_r2 * PI
-                PHI  = HELP  +  PHIPAR * sin(HELP)
+        HELP = rndx * basics%PIx4            ! HELP = rndx * 4.0_r2 * PI
+        plist(1) = PHIPAR
+        plist(2) = HELP
+        
+        CALL GetRoot_BrentDekker(func,-0.0_r2, 4.0_r2*PI,root,error,plist,HELP,iter)
+        HELP1 = root * 0.5_r2
+        PHI = HELP1
 
-                ! Calculation of PHI by an iterative solution of Kepler's
-                ! equation. The iteration will end if DABS(PHI-PHI1)<0.0175
-                ! (about 1 degree).
-                PHI1 = 0.0_r2
-                DO
-                    hd1  = abs(PHI - PHI1)
-                    PHI1 = PHI
-                    PHI  = HELP  +  PHIPAR * sin(PHI1)
-                    hd2  = abs(PHI - PHI1)
-
-                    if(abs(PHI - PHI1) <= 0.0175_r2) then 
-                        hl1 = .false.
-                        exit
-                    else
-                        if (abs(hd1-hd2) < con_eps) then
-                            CALL GetNewRandomNumber(rand_nr,rndx)
-                            exit
-                        endif
-                    endif
-                enddo
-            enddo
-            PHI = PHI / 2.0_r2
-        END IF
+!        IF (abs(PHIPAR) < 0.1_r2) THEN
+!            PHI = rndx * basics%PIx2                ! PHI = rndx * 2.0_r2 * PI
+!        ELSE
+!            hl1 = .true.
+!            DO WHILE (hl1)
+!                HELP = rndx * basics%PIx4            ! HELP = rndx * 4.0_r2 * PI
+!                PHI  = HELP  +  PHIPAR * sin(HELP)
+!
+!                ! Calculation of PHI by an iterative solution of Kepler's
+!                ! equation. The iteration will end if DABS(PHI-PHI1)<0.0175
+!                ! (about 1 degree).
+!                PHI1 = 0.0_r2
+!                DO
+!                    hd1  = abs(PHI - PHI1)
+!                    PHI1 = PHI
+!                    PHI  = HELP  +  PHIPAR * sin(PHI1)
+!                    hd2  = abs(PHI - PHI1)
+!                    iter2 = iter2 + 1
+!
+!                    if(abs(PHI - PHI1) <= 0.0175_r2) then 
+!                        hl1 = .false.
+!                        exit
+!                    else
+!                        if (abs(hd1-hd2) < con_eps) then
+!                            CALL GetNewRandomNumber(rand_nr,rndx)
+!                            exit
+!                        endif
+!                    endif
+!                enddo
+!            enddo
+!            PHI = PHI / 2.0_r2
+!        END IF
+        !IF (PHIPAR > 0.14) THEN
+        !    print *, iter, iter2
+        !    print *, abs(HELP1-PHI)/PHI
+        !    print *, ''
+        !END IF
+        !IF (PHIPAR > 0.2) STOP
         ! Between the direction angle phi and the angle phi'
         ! calculated by inverse of distribution function exists the   
         ! following connection:  phi = phi' + 180 deg - GAMMA_ANGLE ; 
@@ -289,5 +318,15 @@ CONTAINS
 
     END SUBROUTINE trafo
 
+    PURE SUBROUTINE func(x,fx,plist)
+        IMPLICIT NONE
+        !----------------------------------------------------------------------!
+        REAL(kind=r2), INTENT(IN)  :: x
+        REAL(kind=r2), INTENT(IN), DIMENSION(:), OPTIONAL :: plist
+        REAL(kind=r2), INTENT(OUT) :: fx
+        !----------------------------------------------------------------------!
+        fx = x - plist(1) * SIN(x) - plist(2)
+    END SUBROUTINE func
+    
 END MODULE scatter_mod
 
