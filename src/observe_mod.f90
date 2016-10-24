@@ -168,10 +168,12 @@ CONTAINS
         TYPE(PHOTON_TYP),INTENT(IN)                      :: photon
         TYPE(PHOTON_TYP)                                 :: photon_peel
 
-	INTEGER, INTENT(IN)                              :: i_dust
+        INTEGER, INTENT(IN)                              :: i_dust
         !----------------------------------------------------------------------!
         INTEGER                                          :: i_map
         REAL(kind=r2)                                    :: tau
+        REAL(kind=r2)                                    :: weighting
+        REAL(kind=r2)                                    :: PHIPAR
         !----------------------------------------------------------------------!
 
         ! create a peel of photon on the basis of the current photon and raytrace
@@ -189,21 +191,40 @@ CONTAINS
             ! Energy rescaling due to the observers distance will be done
             ! after the RT process.
             !
-            ! Now, we need to convert the stokes vector
             ! scattering in the observer's direction
             CALL vecmat(photon_peel, dust%D_ANG)
             !
-            IF (photon%last_interaction_type == 'S') THEN
+            
+            IF (photon%last_interaction_type == 'S') THEN !simulate a scatering event
                 ! get the phi and theta angles for the given direction
-
-                ! transformation of the stokes vector
+                ! Now, we need to convert the stokes vector
+                
                 CALL trafo(dust, photon_peel, i_dust)
-                photon_peel%energy = photon%energy * exp(-tau) *                &
-                                     dust%phase_pdf(photon_peel%lot_th, i_dust, &
-                                                    photon_peel%nr_lam)/(PI*2.0)
-            ELSE
-                photon_peel%energy = photon%energy * exp(-tau) / (4.0_r2*PI)
+                
+                IF (dust%aniiso == 1 ) THEN
+                    PHIPAR = (sqrt(photon_peel%stokes(2)**2 + photon_peel%stokes(3)**2) /     &
+                              photon_peel%stokes(1)) * &
+                              real(-dust%SME(1, 2, i_dust, photon_peel%nr_lam,photon_peel%lot_th) /  &
+                              dust%SME(1, 1, i_dust, photon_peel%nr_lam, photon_peel%lot_th), kind=r2)
+
+                    weighting =     1.0_r2/(2.0_r2 * PI) *                     &
+                                    (1.0_r2 - PHIPAR * photon_peel%COS2PH) *   &
+                                    dust%phase_pdf(photon_peel%lot_th, i_dust, &
+                                    photon_peel%nr_lam)
+                ELSEIF (dust%aniiso == 3 ) THEN
+                    weighting = dust%phase_pdf(photon_peel%lot_th, i_dust, &
+                                               photon_peel%nr_lam)*0.5_r2/PI
+                ELSE
+                    weighting = 0.25_r2/PI
+                END IF
+
+            ELSE !peel off from a non scattering event (e.g. defind source)
+                weighting = 0.25_r2/PI
             END IF
+
+
+            photon_peel%energy = photon%energy * exp(-tau) * weighting
+            
             photon_peel%pos_xyz_li = photon_peel%pos_xyz
             IF (photon%kill) THEN
                 photon_peel%energy = 0.0
