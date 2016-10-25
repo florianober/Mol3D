@@ -17,8 +17,10 @@ proname = {example}                       project name
 r_path = {results/}                       define results path
 
 num_core    = {003}                       number of cores to use in parallel mode
+                                          If OMP_NUM_THREADS is set and valid,
+                                          this number will be ignored
 old_model   = {F}                         use results from earlier calculations
-old_proname = {notset}                    the project name of the older calculation 
+old_proname = {notset}                    the project name of the older calculation
 
 do_MC_temperature = {T}                   calculate dust temperature (+)
                                           If F(alse) an analytical temperature distribution is
@@ -66,6 +68,8 @@ dust_cat_name = {mrn---v4}                dust catalog name (in input/dust) (in 
 grid_name = {spherical}                   possible values: spherical (+), cylindrical (+), cartesian (o)
 grid_type = {1}                           default = 1, 2 and higher values for user defined grids
                                                     9 is reserved for a grid defined in a text file (+)
+velo_type = {1}                           1 : use analytical definition in model_mod.f90 (default)
+                                          2 : lin. interpolation is used, handy for full 3D data
 
 n_a = {100}                               x - cartesian(o), rho - cylindrical(+), r     - spherical(+)
 n_b = {101}                               y - cartesian(o), phi - cylindrical(+), theta - spherical(+)
