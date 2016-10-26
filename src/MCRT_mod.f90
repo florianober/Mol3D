@@ -207,9 +207,9 @@ CONTAINS
 
         !TbD: better adjustment of the wavelength table
 
-        DO i_lam = 25, 25!dust%n_lam
+        DO i_lam = 30, 30!dust%n_lam
             ! First we calculate the scattered light from the source
-            WRITE (*,'(A,F6.3, A)') " | | | - wavelength : ",                  &
+            WRITE (*,'(A,F7.3, A)') " | | | - wavelength : ",                  &
                                 dust%lam(i_lam)*1e6, " micron"
             CALL MC_photon_transfer(basics, grid, model,                       &
                                     dust, sources_in, fluxes,                  &
