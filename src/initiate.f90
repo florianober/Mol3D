@@ -465,7 +465,7 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
                             ! Please ALLWAYS check the resulting mass of
                             ! each dust species to ensure the correct usage
 
-    aniso = 3               ! Scattering 1) Anisotropic (Mie, prefered)
+    aniso = 1               ! Scattering 1) Anisotropic (Mie, prefered)
                             !            2) Isotropic
                             !            3) Henyey-Greenstein (not much tested)
 
