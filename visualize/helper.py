@@ -647,7 +647,7 @@ def blackbody_hz(freq, temp):
 
 def alma_fwhm(wavelength, max_base=16.0):
     """
-    calculate approximate FWHM for a given wavelength [m] and the max baselength [km]
+    calculate approximate FWHM (arcsec) for a given wavelength [m] and the max baselength [km]
     """
     return 76./(max_base*(c)*1e-9/wavelength)
 
