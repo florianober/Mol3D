@@ -693,8 +693,9 @@ def poldegang(I, Q, U):
     return poldeg, gamma
 
 def shrink(data, rows, cols):
-    return data.reshape(rows, data.shape[0]/rows,
-                        cols, data.shape[1]/cols).sum(axis=1).sum(axis=2)
+    return data.reshape(rows, int(data.shape[0]/rows),
+                        cols, int(data.shape[1]/cols)).sum(axis=1).sum(axis=2)
+    
 
 def interpol_2d(data, rows, cols):
     from scipy.interpolate import interp2d

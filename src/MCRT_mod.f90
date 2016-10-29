@@ -117,17 +117,14 @@ CONTAINS
             END IF
 
             ! 1. start photon (from included sources)
-            CALL start_photon(basics, grid, model, rand_nr, photon, sources_in)
+            CALL start_photon(basics, grid, model, dust, rand_nr, photon,      &
+                              sources_in, fluxes)
 
             IF (photon%kill) THEN
                 !$omp atomic
                 kill_photon_count = kill_photon_count + 1
                 CALL ClosePhoton(photon)  
                 CYCLE
-            END IF
-
-            IF (peel_off) THEN
-                CALL peel_off_photon(model, grid, dust, rand_nr, fluxes, photon)
             END IF
 
             ! 2. determine & go to next point of interaction
@@ -143,7 +140,7 @@ CONTAINS
             DO
                 IF (photon%inside .and. (photon%n_interact < n_interact_max)) THEN
                     photon%n_interact = photon%n_interact +1
-                    CALL interact(basics, grid, dust, rand_nr, photon)
+                    CALL interact(basics, model, grid, dust, rand_nr, fluxes, photon)
 
                     IF (PRESENT(i_lam_in) .and. (photon%last_interaction_type == 'E') ) THEN
                         ! monochromatic RT
@@ -152,12 +149,6 @@ CONTAINS
                         EXIT
                     END IF
 
-                    ! 3. peel of the photon if desired
-                    !    in fact, we create a new photon and calculate 
-                    !    the energy of this photon on the observers map
-                    IF (peel_off) THEN
-                        CALL peel_off_photon(model, grid, dust, rand_nr, fluxes, photon)
-                    END IF
                     ! move on
                     CALL next_pos_const(model, rand_nr, grid,                  &
                                         dust, photon, deposit_energy)
@@ -196,7 +187,7 @@ CONTAINS
     END SUBROUTINE MC_photon_transfer
         
     SUBROUTINE monochromatic_RT(basics, grid, model,                           &
-                                 dust, sources_in, fluxes)
+                                dust, sources_in, fluxes)
         ! RT at excat wavelengths (only star sources scattering yet)
         USE fileio, ONLY : save_continuum_map
         IMPLICIT NONE
@@ -216,9 +207,9 @@ CONTAINS
 
         !TbD: better adjustment of the wavelength table
 
-        DO i_lam = 42, 42!dust%n_lam
+        DO i_lam = 30, 30!dust%n_lam
             ! First we calculate the scattered light from the source
-            WRITE (*,'(A,F6.3, A)') " | | | - wavelength : ",                  &
+            WRITE (*,'(A,F7.3, A)') " | | | - wavelength : ",                  &
                                 dust%lam(i_lam)*1e6, " micron"
             CALL MC_photon_transfer(basics, grid, model,                       &
                                     dust, sources_in, fluxes,                  &

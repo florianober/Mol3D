@@ -44,9 +44,8 @@ module var_global
   ! con_sigma ... stefan/boltzmann const. [W / (m^2 * K^4)] 
   ! con_mu    ... atomic mass unit        [kg]
   ! con_ c2   ... con_h*con_c/con_k
-  ! real(kind=r3), public, parameter :: &
 
-    real(kind=r2),parameter :: &
+    REAL(kind=r2),parameter :: &
         PI        = 3.14159265358979324_r2, &
         con_h     = 6.626176e-34_r2, &
         con_k     = 1.380662e-23_r2, &
@@ -63,8 +62,9 @@ module var_global
         R_sun     = 0.6960e+9, &
         SBK       = 5.67e-8_r2, &
         w2erg     = 1.0e+07_r2, &
-        rel_err   = 1.0e-8, &   ! controls the rel error in the raytracing alg
-        abs_err   = 1.0e-30     ! controls the abs error in the raytracing alg
+        rel_err   = 1.0e-8, &     ! controls the rel error in the raytracing alg
+        abs_err   = 1.0e-30, &    ! controls the abs error in the raytracing alg
+        con_eps   = 4.0_r2*EPSILON(1.0_r2)
 
     REAL(kind=r1), PARAMETER :: &
         linescale = con_h*con_c/(4.0*PI*sqrt(PI))

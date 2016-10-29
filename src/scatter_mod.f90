@@ -29,7 +29,8 @@
 !    Sie sollten eine Kopie der GNU General Public License zusammen mit diesem
 !    Programm erhalten haben. Wenn nicht, siehe <http://www.gnu.org/licenses/>.
 !------------------------------------------------------------------------------!
-! scattering routines (this module is mainly imported from MC3D)
+! scattering routines (this module is mainly imported from MC3D with some
+!                      corrections and improvements)
 ! ---
 MODULE scatter_mod
     USE datatype
@@ -44,6 +45,7 @@ MODULE scatter_mod
     USE fluxes_type
 
     USE math_mod
+    USE roots
 
     IMPLICIT NONE
 
@@ -51,7 +53,7 @@ MODULE scatter_mod
     PRIVATE
     !--------------------------------------------------------------------------!
 
-    PUBLIC  :: scatter
+    PUBLIC  :: scatter, trafo
 
 CONTAINS
 
@@ -114,7 +116,11 @@ CONTAINS
         integer, intent(in)                              :: i_dust
 
         logical       :: hl1
-        real(kind=r2) :: HELP,PHI,PHI1,PHIPAR,ANGLE,GAMMA_ANGLE,hd1,hd2, rndx
+        real(kind=r2) :: PHI, PHIPAR, ANGLE, GAMMA_ANGLE, hd1, hd2, rndx
+
+
+        REAL(kind=r2) :: root, xm, dx_rel, dx_acc, plist(2)
+        INTEGER       :: iter, error
         !----------------------------------------------------------------------!
         ! ---
         !                     *** THETA-Determination ***
@@ -138,44 +144,18 @@ CONTAINS
                   dust%SME(1, 1, i_dust, photon%nr_lam, photon%lot_th), kind=r2)
 
         CALL GetNewRandomNumber(rand_nr, rndx)
+        plist(1) = PHIPAR
+        plist(2) = rndx * basics%PIx4            ! HELP = rndx * 4.0_r2 * PI
+        
+        CALL GetRoot_BrentDekker(func,-0.0_r2, 4.0_r2*PI, PHI, error, plist, plist(2), iter)
+        IF (error < 0) PRINT *, 'Root finding problem in miesca detected'
+        PHI = PHI * 0.5_r2
 
-        IF (abs(PHIPAR) < 0.1_r2) THEN
-            PHI = rndx * basics%PIx2                ! PHI = rndx * 2.0_r2 * PI
-        ELSE
-            DO
-                HELP = rndx * basics%PIx4            ! HELP = rndx * 4.0_r2 * PI
-                PHI  = HELP  +  PHIPAR * sin(HELP)
-
-                ! Calculation of PHI by an iterative solution of Kepler's
-                ! equation. The iteration will end if DABS(PHI-PHI1)<0.0175
-                ! (about 1 degree). 
-                DO
-                    PHI1 = PHI
-                    hd1  = abs(PHI - PHI1)
-                    PHI  = HELP  +  PHIPAR * sin(PHI1)
-                    hd2  = abs(PHI - PHI1)
-
-                    if(abs(PHI - PHI1) <= 0.0175_r2) then 
-                        hl1 = .false.
-                        exit
-                    else
-                        if ((hd1-hd2) < 1.0e-15_r2) then
-                            hl1 = .true.   ! endlos-schleife -> neuen Wert auslosen
-                            CALL GetNewRandomNumber(rand_nr,rndx)
-                            exit
-                        endif
-                    endif
-                enddo
-                if (.not. hl1) then
-                    exit
-                endif
-            enddo
-            PHI = PHI / 2.0_r2
-        END IF
         ! Between the direction angle phi and the angle phi'
         ! calculated by inverse of distribution function exists the   
         ! following connection:  phi = phi' + 180 deg - GAMMA_ANGLE ; 
         ! tan(2GAMMA_ANGLE) = Uein/Qein.
+        
         GAMMA_ANGLE = 0.0_r2 ! not sure if needed
         if (photon%stokes(2) /= 0.0_r2) then
             GAMMA_ANGLE  = 0.5_r2 * atan2(photon%stokes(3),photon%stokes(2))
@@ -190,13 +170,6 @@ CONTAINS
             endif
         endif
         PHI = PI - GAMMA_ANGLE + PHI
-!~         print *, rad2grad(GAMMA_ANGLE)
-!~         print *, rad2grad(PHI)
-!~         print *, rad2grad(PI - GAMMA_ANGLE + rndx * basics%PIx2), abs(PHIPAR)
-!~         print *, photon%stokes(2), photon%stokes(3)
-!~         print *, ''
-        
-!~         IF (abs(PHIPAR) > 0.1) STOP
         photon%SINPHI = sin(PHI)
         photon%COSPHI = cos(PHI)
 
@@ -259,5 +232,54 @@ CONTAINS
 
     END SUBROUTINE hgsca
 
+    ! ##########################################################################
+    ! Scattering causes a change of stokes vector (I,Q,U,V).  This
+    ! transformation occurs in two steps. 
+    ! At first, stokes vector is transformed into the new r,l-plane
+    ! after the PHI-rotation. 
+    ! Therefore values of SIN2PH, COS2PH are necessary. 
+    ! The second step contains the transformation of the stokes vector with the 
+    ! according  (index is pointed by LOT) scattering matrix (S11,S12,S33,S34).
+    ! ---
+    SUBROUTINE trafo(dust, photon, i_dust)
+        IMPLICIT NONE
+        !----------------------------------------------------------------------!
+        TYPE(Dust_TYP), INTENT(IN)                          :: dust
+        TYPE(PHOTON_TYP), INTENT(INOUT)                     :: photon
+        INTEGER, INTENT(IN)                                 :: i_dust
+        REAL(kind=r2)                                       :: QHELP, i_1
+        !----------------------------------------------------------------------!
+        ! ---
+        i_1       = photon%stokes(1)
+        ! scattering
+        ! Mathematical positive rotation of r,l-plane around
+        !              p-axis by the angle PHI
+        QHELP     =  photon%COS2PH * photon%stokes(2) +                        &
+                     photon%SIN2PH * photon%stokes(3)
+        photon%stokes(3) =  - photon%SIN2PH * photon%stokes(2) +               &
+                              photon%COS2PH * photon%stokes(3)
+        photon%stokes(2) =  QHELP
+        ! Mathematical negative rotation around r-axis by THETA transformes
+        ! the Stokes vector (I,Q,U,V) with the scattering matrix.
+        ! LOT  points to the scattering matrix elements of photon angle which
+        ! was determined by throwing dice before.
+        photon%stokes(:) = matmul(dust%SME( :, :, i_dust, photon%nr_lam,       &
+                                  photon%lot_th ), photon%stokes(:) )
+
+        ! normalize the stokes vector
+        photon%stokes(:) = photon%stokes(:) * i_1/photon%stokes(1)
+
+    END SUBROUTINE trafo
+
+    PURE SUBROUTINE func(x,fx,plist)
+        IMPLICIT NONE
+        !----------------------------------------------------------------------!
+        REAL(kind=r2), INTENT(IN)  :: x
+        REAL(kind=r2), INTENT(IN), DIMENSION(:), OPTIONAL :: plist
+        REAL(kind=r2), INTENT(OUT) :: fx
+        !----------------------------------------------------------------------!
+        fx = x - plist(1) * SIN(x) - plist(2)
+    END SUBROUTINE func
+    
 END MODULE scatter_mod
 

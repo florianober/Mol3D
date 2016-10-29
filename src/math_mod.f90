@@ -78,8 +78,8 @@ CONTAINS
         real(kind=r1), intent(in)      :: tem_in
         real(kind=r2), intent(in)      :: lam_in
         real(kind=r2)                  :: planck_result
-        real(kind=r2),parameter        :: c1 = 2.0_r2 * con_h * con_c * con_c
-        real(kind=r2),parameter        :: c2 = con_h * con_c / con_k
+        real(kind=r2), parameter       :: c1 = 2.0_r2 * con_h * con_c * con_c
+        real(kind=r2), parameter       :: c2 = con_h * con_c / con_k
         !----------------------------------------------------------------------!
         
         if ( tem_in .gt. 1.0e-12 ) then
@@ -564,7 +564,7 @@ CONTAINS
     ! DCOS(winkel) [DCOSW] & DSIN(winkel) [DSINW] => W; [W]=rad
     !                                                   -3.14 <= w <= 3.14
     ! ---
-    function dasico( dsinw, dcosw ) result(dasico_result)
+    PURE function dasico( dsinw, dcosw ) result(dasico_result)
         use datatype
 
         implicit none
@@ -796,7 +796,7 @@ CONTAINS
         END SELECT
     END SUBROUTINE generate_rotation_matrix
 
-    SUBROUTINE isotropic_sphere(rndx1, rndx2, SINPHI, COSPHI, SINTHE, COSTHE)
+    PURE SUBROUTINE isotropic_sphere(rndx1, rndx2, SINPHI, COSPHI, SINTHE, COSTHE)
         ! based on two random numbers, a random point on a unit sphere is
         ! drawn, characterized by phi and theta angle
         IMPLICIT NONE

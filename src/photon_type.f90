@@ -124,7 +124,7 @@ CONTAINS
             this%nr_lam  = 0
             this%fixed_lam = .False.
         END IF
-        this%lot_th      = 0
+        this%lot_th      = 1
         
         this%pos_xyz     = 0.0_r2
         this%pos_xyz_new = 0.0_r2
@@ -256,9 +256,11 @@ CONTAINS
         this%SINTHE = sqrt(1-this%COSTHE**2)
         ! now we can calculate the remaining values
 
-        this%SIN2PH = 2.0_r2 * this%SINPHI * this%COSPHI
-        this%COS2PH = 1.0_r2 - 2.0_r2 * this%SINPHI**2
-        this%lot_th = int(theta / d_ang) + 1
+        CALL update_angle(this)
+        this%lot_th = nint(theta / d_ang) + 1
+        if (this%lot_th > 181) THEN
+            print *,this%lot_th 
+        END IF
 
         ! fill the rotation matrix
         ! new definition

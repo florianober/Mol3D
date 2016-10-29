@@ -30,7 +30,7 @@
 !    Programm erhalten haben. Wenn nicht, siehe <http://www.gnu.org/licenses/>.
 !------------------------------------------------------------------------------!
 ! In this module the analytical (disk) model is defined
-! -> please adjust for your needs and don't forget to recompile the Mol3D !
+! -> please adjust for your needs and don't forget to recompile Mol3D !
 ! --- 
 
 MODULE model_mod

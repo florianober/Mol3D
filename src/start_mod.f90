@@ -45,6 +45,7 @@ MODULE start_mod
     USE source_type
     
     USE math_mod
+    USE observe_mod
   
     IMPLICIT NONE
     !--------------------------------------------------------------------------!
@@ -57,7 +58,8 @@ contains
   ! ############################################################################
   ! start photon from random source
   ! ---
-  SUBROUTINE start_photon(basics, grid, model, rand_nr, photon, sources_in)
+  SUBROUTINE start_photon(basics, grid, model, dust, rand_nr, photon,          &
+                          sources_in, fluxes)
     
     IMPLICIT NONE
     !--------------------------------------------------------------------------!
@@ -66,11 +68,13 @@ contains
     TYPE(Basic_TYP),INTENT(IN)                       :: basics
     TYPE(Randgen_TYP),INTENT(INOUT)                  :: rand_nr
     TYPE(SOURCES),INTENT(IN)                         :: sources_in
+    TYPE(Fluxes_TYP),INTENT(INOUT)                   :: fluxes
+    TYPE(Dust_TYP),INTENT(IN)                        :: dust
     
     TYPE(PHOTON_TYP),INTENT(INOUT)                   :: photon
     !--------------------------------------------------------------------------!
 
-    integer                                          :: i_lam
+    integer                                          :: i_lam, i_dust
     integer                                          :: i_source
     REAL(kind=r2)                                    :: rndx
     !--------------------------------------------------------------------------!
@@ -85,7 +89,7 @@ contains
                               photon%COSPHI,                                   &
                               photon%SINTHE,                                   &
                               photon%COSTHE)
-
+    
     ! calculate SIN2PH/COS2PH for the stokes rotation
     CALL update_angle(photon)
 
@@ -133,6 +137,17 @@ contains
 
     photon%pos_xyz_li(:) = photon%pos_xyz(:)
     photon%last_interaction_type = 'N'
+
+    ! peel off a photon if desired
+    ! we should generalize this routine in that way it can handle different
+    ! source specific scatering probabilities: right now its just valid for
+    ! point sources
+
+    IF (basics%do_peel_off) THEN
+        i_dust = dust_select(grid, dust, rand_nr, photon)
+        CALL peel_off_photon(model, grid, dust, fluxes, photon, i_dust)
+    END IF
+
   END SUBROUTINE start_photon
 
 
