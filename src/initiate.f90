@@ -462,7 +462,7 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
 
     dens_dust(:) = 2.5      ! Density [g/cm^3] of dust grain species 1"
     sizexp = -3.0           ! Exponent of the dust grain size distribution
-                            ! Please ALLWAYS check the resulting mass of
+                            ! Please ALWAYS check the resulting mass of
                             ! each dust species to ensure the correct usage
 
     aniso = 1               ! Scattering 1) Anisotropic (Mie, prefered)
@@ -616,7 +616,7 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
                   gas%egy_lvl)
 
     !---------------------------  Init Fluxes  --------------------------------!
-    ! we allways use Jy/pixel from now on, other units (e.g. T_b)
+    ! we always use Jy/pixel from now on, other units (e.g. T_b)
     ! can be calculated in the post process
     flux_unit = 'Jy_pix'
 
