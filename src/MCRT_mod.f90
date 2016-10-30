@@ -188,7 +188,7 @@ CONTAINS
         
     SUBROUTINE monochromatic_RT(basics, grid, model,                           &
                                 dust, sources_in, fluxes)
-        ! RT at excat wavelengths (only star sources scattering yet)
+        ! RT at exact wavelengths (only star sources scattering yet)
         USE fileio, ONLY : save_continuum_map
         IMPLICIT NONE
 
