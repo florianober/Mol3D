@@ -33,7 +33,7 @@
 ! inspired by fosite by T. Illenseer 2011
 !------------------------------------------------------------------------------!
 MODULE model_type
-  
+
     USE datatype
     USE var_global
     USE common_type, &
@@ -44,7 +44,7 @@ MODULE model_type
 
     !--------------------------------------------------------------------------!
     PRIVATE
-    ! 
+    !
     !--------------------------------------------------------------------------!
     TYPE Model_TYP
         TYPE(Common_TYP) :: modltype                    ! -----------------    !
@@ -60,29 +60,32 @@ MODULE model_type
         REAL(kind=r1)        :: l_star
         REAL(kind=r1)        :: distance
         REAL(kind=r1)        :: kep_const
-        
+
         REAL(kind=r2),DIMENSION(:),ALLOCATABLE         :: th_map
         REAL(kind=r2),DIMENSION(:),ALLOCATABLE         :: ph_map
         REAL(kind=r2),DIMENSION(:),ALLOCATABLE         :: al_map
         REAL(kind=r2),DIMENSION(:),ALLOCATABLE         :: zoom_map
         REAL(kind=r2),DIMENSION(:),ALLOCATABLE         :: px_model_length_x
         REAL(kind=r2),DIMENSION(:),ALLOCATABLE         :: px_model_length_y
-        
+
         REAL(kind=r2),DIMENSION(:,:),ALLOCATABLE       :: dir_xyz
         REAL(kind=r2),DIMENSION(:,:),ALLOCATABLE       :: e_x
         REAL(kind=r2),DIMENSION(:,:),ALLOCATABLE       :: e_y
-        REAL(kind=r2),DIMENSION(:,:,:),ALLOCATABLE     :: D_2obs 
-        
-        
+        REAL(kind=r2),DIMENSION(:,:,:),ALLOCATABLE     :: D_2obs
+
+
+        REAL(kind=r2),DIMENSION(:), ALLOCATABLE        :: plist 
+
+
         INTEGER               :: n_map
         INTEGER               :: n_bin_map
         INTEGER(8)            :: no_photon
-        
-        
+
+
     END TYPE Model_TYP
     SAVE
     !--------------------------------------------------------------------------!
-    
+
     PUBLIC :: &
         ! types
         Model_TYP, &
@@ -97,19 +100,19 @@ CONTAINS
 
     SUBROUTINE InitModel(this, ut , un, ref_u, r_in, r_ou, &
                     mass_dust, t_eff, r_star,M_star, n_map, distance, &
-                    no_photon,th_map,ph_map,zoom_map,al_map,n_bin_map)
+                    no_photon,th_map,ph_map,zoom_map,al_map,n_bin_map, plist)
         IMPLICIT NONE
         !----------------------------------------------------------------------!
         TYPE(Model_TYP)       :: this
-        
+
         INTEGER               :: ut
         INTEGER               :: n_map
         INTEGER               :: n_bin_map
         INTEGER               :: i_map
         INTEGER(8)            :: no_photon
-        
+
         CHARACTER(LEN=*)      :: un
-        
+
         REAL(kind=r2)         :: ref_u
         REAL(kind=r2)         :: distance
         REAL(kind=r2)         :: r_in
@@ -118,28 +121,31 @@ CONTAINS
         REAL(kind=r2)         :: t_eff
         REAL(kind=r2)         :: r_star
         REAL(kind=r2)         :: M_star
-        
+
         REAL(kind=r2),DIMENSION(1:n_map)         :: th_map
         REAL(kind=r2),DIMENSION(1:n_map)         :: ph_map
         REAL(kind=r2),DIMENSION(1:n_map)         :: al_map
         REAL(kind=r2),DIMENSION(1:n_map)         :: zoom_map
 
-        
+        REAL(kind=r2),DIMENSION(:), OPTIONAL     :: plist
+
+
         !----------------------------------------------------------------------!
         INTENT(IN)          ::  ut,un,ref_u, r_in, r_ou, &
                                 mass_dust, t_eff, r_star, M_star, n_map, distance, &
-                                th_map,ph_map,zoom_map,al_map,n_bin_map,no_photon
+                                th_map,ph_map,zoom_map,al_map,n_bin_map,no_photon, &
+                                plist
         INTENT(INOUT)       :: this
         !----------------------------------------------------------------------!
         CALL InitCommon(this%modltype,ut,un)
-        
+
         this%ref_unit = ref_u
         this%ref_unitn = 1.0_r2/ref_u
-        
+
         this%t_star = t_eff
         this%r_star = r_star*R_sun
         this%M_star = M_star*M_sun
-        
+
         this%kep_const = (con_gamma * this%M_star/con_AU)**0.5  ! in units of m/s
         this%l_star = 4.0_r2 * PI * this%r_star**2 * con_sigma * this%t_star**4
 
@@ -153,7 +159,12 @@ CONTAINS
                     this%e_x(1:3,1:n_map), &
                     this%e_y(1:3,1:n_map), &
                     this%D_2obs(1:3,1:3, 1:n_map) )
-                    
+        
+        IF (PRESENT(plist)) THEN
+            ALLOCATE(this%plist(1:SIZE(plist)))
+            this%plist = plist
+        END IF
+        
         this%th_map     = th_map
         this%ph_map     = ph_map
         this%zoom_map   = zoom_map
@@ -171,11 +182,11 @@ CONTAINS
             this%ph_map(i_map) = grad2rad(ph_map(i_map))
             this%al_map(i_map) = cos(grad2rad(al_map(i_map)))
 
-            ! Rotationsmatrix to convert a vector from the global coordinate 
+            ! Rotationsmatrix to convert a vector from the global coordinate
             ! system into the observers one
 
             ! version of S. Wolf -> consistent to MC3D
-            
+
             ! +x-direction in the observers map
             this%D_2obs(1, 1, i_map) = -sin(this%ph_map(i_map))
             this%D_2obs(1, 2, i_map) =  cos(this%ph_map(i_map))

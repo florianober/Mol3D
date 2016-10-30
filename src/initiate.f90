@@ -103,6 +103,7 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
     REAL(kind=r2)                                    :: v_turb
 
     REAL(kind=r2), ALLOCATABLE, DIMENSION(:)         :: dens_dust
+    REAL(kind=r2), ALLOCATABLE, DIMENSION(:)         :: plist
     REAL(kind=r2), ALLOCATABLE, DIMENSION(:)         :: th_map
     REAL(kind=r2), ALLOCATABLE, DIMENSION(:)         :: ph_map
     REAL(kind=r2), ALLOCATABLE, DIMENSION(:)         :: zoom_map
@@ -384,12 +385,21 @@ SUBROUTINE inimol(basics, fluxes, grid, model, dust, gas, sources_in)
     WRITE(unit=3,fmt='(A)') 'zoom_map = {'//TRIM(help)//&
     '}                  factor to zoom inside the model >= 1 !'
     WRITE(unit=3,fmt='(A)') ''
-
+    
+    
+    !acceptance angle (MC3D style...), max 5 deg
     al_map(1)   = MIN(5.0_r2, MAX(th_map(1), 1.0_r2))
+    
+    ! additional model parameter
+    ! you can define additional model parameter via "plist" array
+    ! example:
+    !ALLOCATE(plist(1:1))
+    !CALL parse('keyword', plist(1), new_input_file)
+    
     CALL InitModel(model,1, ref_u_str, ref_u, r_in, r_ou, mass_dust, T_star,    &
-                   R_star, M_star, n_map, distance, &
-                   no_photon,th_map,ph_map,zoom_map,al_map,n_bin_map)
-
+                   R_star, M_star, n_map, distance, no_photon, th_map,ph_map,   &
+                   zoom_map, al_map, n_bin_map, plist)
+    
     DEALLOCATE( th_map,   &
                 ph_map,   &
                 zoom_map, &
