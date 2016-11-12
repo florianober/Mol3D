@@ -171,7 +171,7 @@ def present_plane(file_in, plane):
         plt.title('Dust %2.0d Temperature, %s' %(i+1, ext))
         plt.xlabel(xlab)
         plt.ylabel(ylab)
-        cont = [10, 20, 25, 30, 35, 40] * 2
+        cont = [10, 20, 25, 30, 35, 40]
         data = pic[:, :, 4+n_dust+i]
         CS = plt.contour(data, cont, linewidths=1,
                          colors='k', extent=m_range)
@@ -187,7 +187,7 @@ def present_plane(file_in, plane):
     plt.title('Gas Temperature, ' + ext)
     plt.xlabel(xlab)
     plt.ylabel(ylab)
-    cont = [10, 20, 25, 30, 35, 40] * 2
+    cont = [10, 20, 25, 30, 35, 40]
     data = pic[:, :, 4+2*n_dust]
     CS = plt.contour(data, cont, linewidths=1,
                      colors='k', extent=m_range)
@@ -225,7 +225,7 @@ def present_plane(file_in, plane):
     plt.ylabel(ylab)
     vmax = np.max(data)
     vmin = vmax*1e-6
-    cont = 10.0**np.linspace(np.log10(vmax), np.log10(vmin), 7)
+    cont = 10.0**np.linspace(np.log10(vmin), np.log10(vmax), 7)
     CS = plt.contour(data, levels=cont, linewidths=1, colors='k', extent=m_range)
     plt.clabel(CS, inline=1, fmt='%2.1e', fontsize=10)
     plt.imshow(data, extent=m_range, origin='lower',
@@ -244,7 +244,7 @@ def present_plane(file_in, plane):
         plt.ylabel(ylab)
         vmax = np.max(data)
         vmin = vmax*1e-6
-        cont = 10.0**np.linspace(np.log10(vmax), np.log10(vmin), 7)
+        cont = 10.0**np.linspace(np.log10(vmin), np.log10(vmax), 7)
     
         CS = plt.contour(data, levels=cont, linewidths=1, colors='k', extent=m_range)
         plt.clabel(CS, inline=1, fmt='%2.1e', fontsize=10)
@@ -264,7 +264,7 @@ def present_plane(file_in, plane):
     
     vmax = np.max(data)
     vmin = vmax*1e-6
-    cont = 10.0**np.linspace(np.log10(vmax), np.log10(vmin), 7)
+    cont = 10.0**np.linspace(np.log10(vmin), np.log10(vmax), 7)
     
     CS = plt.contour(data, levels=cont, linewidths=1, colors='k', extent=m_range)
     plt.clabel(CS, inline=1, fmt='%2.1e', fontsize=10)
@@ -288,7 +288,7 @@ def present_plane(file_in, plane):
     vmax = np.max(data)
     vmin = vmax*1e-6
     #~ m_range = [-100,100,-40,40]
-    cont = 10.0**np.linspace(np.log10(vmax), np.log10(vmin), 7)
+    cont = 10.0**np.linspace(np.log10(vmin), np.log10(vmax), 7)
     CS = plt.contour(data[:,:], levels=cont, linewidths=1, colors='k', extent=m_range)
     plt.clabel(CS, inline=1, fmt='%2.1e', fontsize=10)
 
