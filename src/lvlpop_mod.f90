@@ -265,7 +265,7 @@ CONTAINS
             IF ( abs(1.0-sum_p) > 1.0e4 * epsilon(sum_p) ) THEN
                 print *, 'Warning, level polulation do not sum to 1'
                 print *, abs(1.0-sum_p)
-            ELSE IF (isnan(sum_p)) THEN
+            ELSE IF (sum_p /= sum_p) THEN
                 print *, 'ERROR: lvl_populations are nan', i_cell, i
                 print *, old_pop
                 print *, 'news pop'
