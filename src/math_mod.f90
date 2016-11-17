@@ -303,7 +303,12 @@ CONTAINS
     real(kind=r2)             :: atan3_result
     real(kind=r2)             :: hd1
     ! ---
-    hd1 = atan2(y,x)
+    if (x == 0.0_r2 .and. y == 0.0_r2) then
+        hd1 = 0.0_r2
+    else
+        hd1 = atan2(y,x)
+    end if
+    
     if (hd1 > 0.0_r2) then
        atan3_result = hd1
     else
@@ -357,10 +362,10 @@ CONTAINS
         IMPLICIT NONE
         
         real(kind=r2), dimension(1:3), intent(in)   :: spco
-        real(kind=r2), dimension(1:3)               :: caco 
+        real(kind=r2), dimension(1:3)               :: caco
         ! ---
         caco(1) = spco(1) * cos( spco(2) ) * cos( spco(3) )
-        caco(2) = spco(1) * cos( spco(2) ) * sin( spco(3) )  
+        caco(2) = spco(1) * cos( spco(2) ) * sin( spco(3) )
         caco(3) = spco(1) * sin( spco(2) )
         
     END FUNCTION sp2ca
@@ -371,27 +376,30 @@ CONTAINS
         IMPLICIT NONE
         
         real(kind=r2), dimension(1:3), intent(in)  :: cyco
-        real(kind=r2), dimension(1:3)               :: caco 
+        real(kind=r2), dimension(1:3)              :: caco
         ! ---
         caco(1) = cyco(1) * cos( cyco(2) ) 
         caco(2) = cyco(1) * sin( cyco(2) )
         caco(3) = cyco(3)
         
-    END FUNCTION cy2ca    
+    END FUNCTION cy2ca
     
 
     FUNCTION ca2sp( caco ) RESULT (spco)
-  
+    
         IMPLICIT NONE
         
         real(kind=r2), dimension(1:3), intent(in)  :: caco
         real(kind=r2), dimension(1:3)              :: spco
         
         spco(1)     = norm(caco(:))
-        spco(2)     = atan2( caco(3), sqrt(caco(1)**2 + caco(2)**2))
+        if (caco(3) == 0.0_r2 .and. sqrt(caco(1)**2 + caco(2)**2) == 0.0_r2) then
+            spco(2) = 0.0_r2
+        else
+            spco(2) = atan2( caco(3), sqrt(caco(1)**2 + caco(2)**2))
+        end if
         spco(3)     = atan3( caco(2), caco(1) )
         
-    
     END FUNCTION ca2sp
 
   ! ############################################################################
