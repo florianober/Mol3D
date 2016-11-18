@@ -29,7 +29,7 @@
 !    Sie sollten eine Kopie der GNU General Public License zusammen mit diesem
 !    Programm erhalten haben. Wenn nicht, siehe <http://www.gnu.org/licenses/>.
 !------------------------------------------------------------------------------!
-MODULE MCRT_mod
+MODULE mcrt_mod
 
     USE datatype
     USE var_global
@@ -231,4 +231,4 @@ CONTAINS
                                 peel_off=basics%do_peel_off)
     END SUBROUTINE monochromatic_RT
 
-END MODULE MCRT_mod
+END MODULE mcrt_mod

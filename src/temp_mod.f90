@@ -46,7 +46,7 @@ MODULE temp_mod
 
     USE model_mod, ONLY : get_temperature
     
-    USE MCRT_mod, ONLY : MC_photon_transfer
+    USE mcrt_mod, ONLY : MC_photon_transfer
     USE math_mod, ONLY : binary_search, ipol2
 
     USE fileio

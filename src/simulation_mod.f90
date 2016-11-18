@@ -50,7 +50,7 @@ MODULE simulation_mod
     USE lvlpop_mod
     USE temp_mod
     USE linkedlist_mod
-    USE MCRT_mod
+    USE mcrt_mod
     USE raytrace_mod
 
     IMPLICIT NONE
