@@ -303,11 +303,8 @@ CONTAINS
     real(kind=r2)             :: atan3_result
     real(kind=r2)             :: hd1
     ! ---
-    if (x == 0.0_r2 .and. y == 0.0_r2) then
-        hd1 = 0.0_r2
-    else
-        hd1 = atan2(y,x)
-    end if
+    ! add tiny to 2nd argument of atan2, in case x and y are zero
+    hd1 = atan2( y, x + tiny(x) )
     
     if (hd1 > 0.0_r2) then
        atan3_result = hd1
@@ -392,13 +389,10 @@ CONTAINS
         real(kind=r2), dimension(1:3), intent(in)  :: caco
         real(kind=r2), dimension(1:3)              :: spco
         
-        spco(1)     = norm(caco(:))
-        if (caco(3) == 0.0_r2 .and. sqrt(caco(1)**2 + caco(2)**2) == 0.0_r2) then
-            spco(2) = 0.0_r2
-        else
-            spco(2) = atan2( caco(3), sqrt(caco(1)**2 + caco(2)**2))
-        end if
-        spco(3)     = atan3( caco(2), caco(1) )
+        spco(1) = norm(caco(:))
+        ! add tiny to 2nd argument of atan2, in case x and y are zero
+        spco(2) = atan2( caco(3), sqrt(caco(1)**2 + caco(2)**2) + tiny(caco(1)) )
+        spco(3) = atan3( caco(2), caco(1) )
         
     END FUNCTION ca2sp
 
