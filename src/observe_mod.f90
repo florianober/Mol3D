@@ -197,10 +197,6 @@ CONTAINS
             
             IF (photon%last_interaction_type == 'S') THEN !simulate a scatering event
                 ! get the phi and theta angles for the given direction
-                ! Now, we need to convert the stokes vector
-                
-                CALL trafo(dust, photon_peel, i_dust)
-                
                 IF (dust%aniiso == 1 ) THEN
                     PHIPAR = (sqrt(photon_peel%stokes(2)**2 + photon_peel%stokes(3)**2) /     &
                               photon_peel%stokes(1)) * &
@@ -217,12 +213,14 @@ CONTAINS
                 ELSE
                     weighting = 0.25_r2/PI
                 END IF
-
+                
+                ! Now, we need to convert the stokes vector
+                CALL trafo(dust, photon_peel, i_dust)
+                
             ELSE !peel off from a non scattering event (e.g. defind source)
                 weighting = 0.25_r2/PI
             END IF
-
-
+            
             photon_peel%energy = photon%energy * exp(-tau) * weighting
             
             photon_peel%pos_xyz_li = photon_peel%pos_xyz
