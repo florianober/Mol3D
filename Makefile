@@ -186,7 +186,8 @@ MODULE_SRC = 	basic_type.f90 \
 		temp_mod.f90 \
 		start_mod.f90 \
 		linkedlist_mod.f90 \
-		parser_mod.f90
+		parser_mod.f90 \
+		tools_mod.f90
 
 #
 # The names of object files is derived from the source files
