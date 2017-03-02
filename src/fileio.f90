@@ -40,6 +40,8 @@ MODULE fileio
     USE fluxes_type
     USE gas_type
     
+    USE tools_mod
+    
     IMPLICIT NONE
     !--------------------------------------------------------------------------!
     PRIVATE
@@ -349,11 +351,9 @@ CONTAINS
         END IF
         k = grid%n_cell/100
         DO i_cell = 1, grid%n_cell
-            IF (modulo(i_cell,k) == 0 .or. i_cell == grid%n_cell) THEN
-                WRITE (*,'(A,I3,A)') ' | | ',int(i_cell/                   &
-                       real(grid%n_cell)*100.0),' % done'//char(27)//'[A'
-            END IF
-        
+            ! show progress
+            CALL show_progress(grid%n_cell, i_cell, " | | - progress : ")
+            
             call ftgpvd(u,1,(i_cell-1)*entries + 1,entries,1e-200_r2,line,anyf,sta)
             ! set dust density and H2, the observed molecules can be set by
             ! the model module
@@ -418,11 +418,9 @@ CONTAINS
         call ftphpr(u,.true.,-64,2,(/entries, grid%n_cell/),0,1,.true.,sta)
         ! write array to fits file
         DO i_cell=1,grid%n_cell
-            IF (modulo(i_cell,k) == 0 .or. i_cell == grid%n_cell) THEN
-                WRITE (*,'(A,I3,A)') ' | | ',                                  &
-                         int(i_cell/real(grid%n_cell)*100.0),                  &
-                         ' % done'//char(27)//'[A'
-            END IF
+            ! show progress
+            CALL show_progress(grid%n_cell, i_cell, " | | - progress : ")
+
             call ftpprd(u,1,(i_cell-1)*entries+ 1,entries,                     &
                         (/ grid%cellmidcaco(i_cell,:),                         &
                         grid%grd_dust_density(i_cell,:),                       &

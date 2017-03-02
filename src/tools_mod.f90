@@ -38,46 +38,87 @@ MODULE tools_mod
     USE var_global
 
     IMPLICIT NONE
+    
+    INTERFACE show_progress
+        MODULE PROCEDURE show_progress_i4, show_progress_i8 
+    END INTERFACE
 
     !--------------------------------------------------------------------------!
-    PRIVATE 
-    !--------------------------------------------------------------------------!
-    PUBLIC  :: Mol3D_Error
+    !PUBLIC  :: Mol3D_Error, show_progress
     !--------------------------------------------------------------------------!
 
     CONTAINS
         SUBROUTINE Mol3D_Error(Error_msg, Error_type)
-        IMPLICIT NONE
-        !----------------------------------------------------------------------!
-        INTEGER, INTENT(IN), OPTIONAL                         :: Error_type
-        INTEGER                                               :: Error_code
-        CHARACTER(len=*), INTENT(IN), OPTIONAL                :: Error_msg
-        CHARACTER(len=256)                                    :: Error_msg_show
-        !----------------------------------------------------------------------!
-        
-        IF (PRESENT(ERROR_type)) THEN
-            Error_code = Error_type
-        ELSE
-            Error_code = 1
-        END IF
+            IMPLICIT NONE
+            !------------------------------------------------------------------!
+            INTEGER, INTENT(IN), OPTIONAL                     :: Error_type
+            CHARACTER(len=*), INTENT(IN), OPTIONAL            :: Error_msg
+            !------------------------------------------------------------------!
+            INTEGER                                           :: Error_code
+            CHARACTER(len=256)                                :: Error_msg_show            
+            !------------------------------------------------------------------!
+            
+            IF (PRESENT(ERROR_type)) THEN
+                Error_code = Error_type
+            ELSE
+                Error_code = 1
+            END IF
 
-        IF (PRESENT(Error_msg)) THEN
-            Error_msg_show = Error_msg
-        ELSE
-            Error_msg_show = "no reason specified"
-        END IF
-        
-        !----------------------------------------------------------------------!
-        PRINT *, ""
-        PRINT *, "ERROR: "  // TRIM(Error_msg_show)
+            IF (PRESENT(Error_msg)) THEN
+                Error_msg_show = Error_msg
+            ELSE
+                Error_msg_show = "no reason specified"
+            END IF
+            
+            !------------------------------------------------------------------!
+            PRINT *, ""
+            PRINT *, "ERROR: "  // TRIM(Error_msg_show)
 
-        IF (Error_code == 1) THEN
-            PRINT *, "Mol3D has stopped"
-            PRINT *, "If you don't know why this has happend,"
-            PRINT *, "please ask fober@astrophysik.uni-kiel.de"
-            STOP
-        END IF
+            IF (Error_code == 1) THEN
+                PRINT *, "Mol3D has stopped"
+                PRINT *, "If you don't know why this has happend,"
+                PRINT *, "please ask fober@astrophysik.uni-kiel.de"
+                STOP
+            END IF
         END SUBROUTINE Mol3D_Error
+
+
+        SUBROUTINE show_progress_i8(N, i, msg_in)
+            IMPLICIT NONE
+            !------------------------------------------------------------------!
+            INTEGER(8), INTENT(IN)                            :: N, i
+            CHARACTER(len=*), INTENT(IN), OPTIONAL            :: msg_in
+            !------------------------------------------------------------------!
+            CHARACTER(len=256)                                :: msg
+            !------------------------------------------------------------------!
+            msg = ""
+            IF (PRESENT(msg_in)) msg = msg_in
+
+            IF (MODULO(i, N/100) == 0 .or. i == N) THEN
+                write (*,'(A,I3.0,A)') TRIM(msg), nint(i/real(N)*100)         ,&
+                                       ' % done...'//char(27)//'[A'
+            END IF
+
+        END SUBROUTINE show_progress_i8
+
+        SUBROUTINE show_progress_i4(N, i, msg_in)
+            IMPLICIT NONE
+            !------------------------------------------------------------------!
+            INTEGER, INTENT(IN)                               :: N, i
+            CHARACTER(len=*), INTENT(IN), OPTIONAL            :: msg_in
+            !------------------------------------------------------------------!
+            CHARACTER(len=256)                                :: msg
+            !------------------------------------------------------------------!
+            msg = ""
+            IF (PRESENT(msg_in)) msg = msg_in
+
+            IF (MODULO(i, N/100) == 0 .or. i == N) THEN
+                write (*,'(A,I3.0,A)') TRIM(msg), nint(i/real(N)*100)         ,&
+                                       ' % done...'//char(27)//'[A'
+            END IF
+
+        END SUBROUTINE show_progress_i4
+
 
 END MODULE tools_mod
 

@@ -45,6 +45,7 @@ MODULE mcrt_mod
     
     USE grd_mod
     USE math_mod
+    USE tools_mod
     USE observe_mod
     USE transfer_mod
     
@@ -83,7 +84,7 @@ CONTAINS
         INTEGER                                          :: seed
 
         INTEGER, INTENT(IN), OPTIONAL                    :: i_lam_in
-        INTEGER(8)                                       :: i_phot, k_phot
+        INTEGER(8)                                       :: i_phot
         INTEGER(8)                                       :: kill_photon_count
         !$ INTEGER omp_get_thread_num 
         TYPE(PHOTON_TYP)                                 :: photon
@@ -91,7 +92,6 @@ CONTAINS
         IF (.not.PRESENT(i_lam_in)) THEN
             print *,'| | | starting photon transfer ... [this may take a while]'
         END IF
-        k_phot = MAX(NINT(model%no_photon/100.0_r2),1)
 
         kill_photon_count = 0
         ! initialize random number generator
@@ -111,10 +111,7 @@ CONTAINS
             END IF
 
             ! show progress
-            IF (modulo(i_phot, k_phot) == 0 .or. i_phot==model%no_photon) THEN
-                write (*,'(A,I3,A)') " | | | | - progress : ", &
-                int(i_phot/real(model%no_photon)*100.0), ' % done...'//char(27)//'[A'
-            END IF
+            CALL show_progress(model%no_photon, i_phot, " | | | | - progress : ")
 
             ! 1. start photon (from included sources)
             CALL start_photon(basics, grid, model, dust, rand_nr, photon,      &

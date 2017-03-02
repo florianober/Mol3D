@@ -45,6 +45,7 @@ MODULE simulation_mod
 
     USE grd_mod
     USE math_mod
+    USE tools_mod
     USE fileio
     USE transfer_mod
     USE lvlpop_mod
@@ -97,13 +98,13 @@ CONTAINS
     ! --- calculate or set temperature
     print *,"| temperature calculation"
     CALL set_temperature(basics, grid, model, dust, gas, sources_in,fluxes)
-    print *, "| done!                 "
+    print *, "| done!                                                  "
     print *, "|"
     ! --- save all results for later use
     ! first save the model itself
     print *, "| saving the model"
     CALL save_model(grid, basics)
-    print *, "| done!                 "
+    print *, "| done!                                                  "
     print *, "|"
     ! now, provide some extra visualisation output 
     ! 1: xz plane, 2: xy plane, 3: yz plane
@@ -124,7 +125,7 @@ CONTAINS
         IF (basics%do_peel_off) PRINT *,"| | Peel-off technique enabled"
         CALL monochromatic_RT(basics, grid, model,                            &
                                dust, sources_in, fluxes)
-        print *, "| done!                 "
+        print *, "| done!                                              "
         PRINT *, "|"
     END IF
 
@@ -134,7 +135,7 @@ CONTAINS
         IF (basics%do_velo_ch_map ) THEN
             print *,"| calculating level populations"
             CALL calc_lvlpop(basics, grid, model, gas)
-            print *, "| done!                 "
+            print *, "| done!                                          "
             print *, "|"
         END IF
 
@@ -157,20 +158,16 @@ CONTAINS
 
             unit_value = 1.0e26_r2*pix_res_i*pix_res_j
 
-            PRINT *,"| | check for pixel"
+            PRINT *,"| | checking pixel size"
             k = 1
             l = 0
             !$omp parallel num_threads(basics%num_core)
             !$omp do schedule(dynamic) private(i,j, coor_map)
             DO i = 0, 2*model%n_bin_map
                 DO j = 0, 2*model%n_bin_map
-                    IF (l == int(k*(2.0*model%n_bin_map)**2*0.01)) THEN
-                        WRITE (*,'(A,I3,A)') ' | | | ',int(l / real((2.0 *     &
-                                 model%n_bin_map)**2)*100.0),                  &
-                                 ' % done'//char(27)//'[A'
-                        k = k + 1
-                    END IF
-
+                    ! show progress
+                    CALL show_progress((2*model%n_bin_map)**2, k, " | | | - progress : ")
+                    k = k + 1
                     coor_map(1) = model%px_model_length_x(i_map) *             &
                                   (REAL(i, KIND=r2) + 0.5) - model%r_ou /      &
                                   model%zoom_map(i_map)
@@ -216,12 +213,8 @@ CONTAINS
                     pixel_data = pixel_p
                     CALL RemoveLast(pixel_list)
                     !$omp end critical
-
-                    IF (modulo(i,k) == 0 .or. i == no_pixel) THEN
-                        WRITE (*, '(A,I3,A)') ' | | | ',                       &
-                                  int(i/real(no_pixel)*100.0),' % done' //     &
-                                  char(27)//'[A'
-                    END IF 
+                    ! show progress
+                    CALL show_progress(no_pixel, i, " | | | - progress : ")
                     
                     inten_px(:,:) = raytrace_px(grid, model, dust, gas,        &
                                     pixel_data%pos_xy(1), pixel_data%pos_xy(2), i_map)
@@ -265,11 +258,9 @@ CONTAINS
                 !$omp parallel num_threads(basics%num_core)
                 !$omp do schedule(dynamic) private(i, pixel_data) firstprivate( inten_px)
                 DO i = 1, no_pixel
-                    IF (modulo(i,k) == 0 .or. i == no_pixel) THEN
-                        WRITE (*,'(A,I3,A)') ' | | | ',                        &
-                                  int(i/real(no_pixel)*100.0),' % done' //     &
-                                  char(27)//'[A'
-                    END IF
+                    ! show progress
+                    CALL show_progress(no_pixel, i, " | | | - progress : ")
+                    
                     !$omp critical
                     CALL GetLast(pixel_list, pixel_p)
                     pixel_data = pixel_p
@@ -292,12 +283,12 @@ CONTAINS
                 END DO
                 !$omp end do nowait
                 !$omp end parallel
-                print *, '| | | saving continuum maps'
+                print *, '| | | saving continuum maps                  '
 
                 CALL save_continuum_map(model, basics, dust,                   &
                                         fluxes, 3, peel_off=.False.)
                 DEALLOCATE(inten_px)
-                PRINT *, '| | done!'
+                PRINT *, '| | done!                                    '
             END IF
         END DO ! orientation map.
 

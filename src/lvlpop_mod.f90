@@ -47,6 +47,7 @@ MODULE lvlpop_mod
     USE math_mod
     USE fileio, ONLY : vis_T_exc_fits
     USE model_mod, ONLY : get_J_ext
+    USE tools_mod, ONLY : show_progress
 
     IMPLICIT NONE
 
@@ -152,10 +153,8 @@ CONTAINS
     !$omp parallel num_threads(basics%num_core)
     !$omp do schedule(dynamic) private(i_cell,new_pop,final_col_para,sum_p, A,c)
     DO i_cell = 1, grid%n_cell
-        IF (modulo(i_cell, k) == 0 .or. i_cell == grid%n_cell) THEN
-            WRITE (*,'(A,I3,A)') ' | | | ',int(i_cell/real(grid%n_cell)*100.0),&
-                                 ' % done'//char(27)//'[A'
-        END IF
+        ! show progress
+        CALL show_progress(grid%n_cell, i_cell, " | | | - progress : ")
 
         !IF (grid%grd_mol_density(i_cell) .lt. 1.0e-200_r2) CYCLE
         final_col_para = calc_collision_parameter(grid,gas,i_cell)
@@ -219,11 +218,8 @@ CONTAINS
     !$omp                              final_col_para, R_mid, L, sum_p, i, A, c)
     
     DO i_cell=1, grid%n_cell
-        IF (modulo(i_cell,k) == 0 .or. i_cell == grid%n_cell) THEN
-            WRITE (*,'(A,I3,A)') ' | | | ',                                    &
-                      int(i_cell/real(grid%n_cell)*100.0),                     &
-                      ' % done'//char(27)//'[A'
-        END IF
+        ! show progress
+            CALL show_progress(grid%n_cell, i_cell, " | | | - progress : ")
         !starting values
         new_pop(:) = 1e-30
         old_pop(:) = 1e-30
