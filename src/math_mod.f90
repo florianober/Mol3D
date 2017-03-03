@@ -669,12 +669,12 @@ CONTAINS
         int_result = 0
         L = 1
         R = SIZE(array_in)
-        IF ( var_in .gt. array_in(R)) THEN
+        IF ( var_in .ge. array_in(R)) THEN
             int_result = R
         ELSE
             DO WHILE (L .le. R )
-                MID = INT((L+R)/2)
-                IF (var_in .ge. array_in(MID) .and. var_in .le. array_in(MID+1) ) THEN
+                MID = (L+R)/2
+                IF (var_in .ge. array_in(MID) .and. var_in .lt. array_in(MID+1) ) THEN
                     int_result = MID
                     EXIT
                 ELSE
@@ -703,12 +703,12 @@ CONTAINS
         int_result = 0
         L = 1
         R = SIZE(array_in)
-        IF ( var_in .gt. array_in(R)) THEN
+        IF ( var_in .ge. array_in(R)) THEN
             int_result = R
         ELSE
             DO WHILE (L .le. R )
-                MID = INT((L+R)/2)
-                IF (var_in .ge. array_in(MID) .and. var_in .le. array_in(MID+1) ) THEN
+                MID = (L+R)/2
+                IF (var_in .ge. array_in(MID) .and. var_in .lt. array_in(MID+1) ) THEN
                     int_result = MID
                     EXIT
                 ELSE
