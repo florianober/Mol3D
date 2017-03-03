@@ -46,6 +46,7 @@ module transfer_mod
     
     USE math_mod
     USE grd_mod
+    USE tools_mod
 
     IMPLICIT NONE
     
@@ -724,7 +725,7 @@ contains
         real(kind=r2)                                   :: l1, l2
         real(kind=r2), dimension(1:6)                   :: d_lx
         real(kind=r2), dimension(1:2)                   :: hd_arr1
-        !$ INTEGER omp_get_thread_num 
+
         !----------------------------------------------------------------------!
         ! ---
         i_r  = grid%cell_nr2idx(1, nr_cell)
@@ -941,7 +942,7 @@ contains
             ! This case should not be raised, but in fact, if some routine is
             ! buggy or due to some numerics (see above), it can happen
             
-            d_l = grid%d_l_min+1.0e6_r2*epsilon(d_l)
+            d_l = grid%d_l_min
             ! -
             ! 3.new position
             pos_xyz_new(:) = p0_vec(:)  +  d_l * d_vec(:)
@@ -954,16 +955,22 @@ contains
                 print *, "WARNING, no boundary in forward direction found"
             END IF
         ELSE
-            d_l = d_lx(hi1) +1.0e6_r2*epsilon(d_l)
+            d_l = d_lx(hi1)
 
             ! -
             ! 3.new position
-            pos_xyz_new(:) = p0_vec(:)  +  d_l * d_vec(:)
+            pos_xyz_new(:) = p0_vec(:)  +  d_l * d_vec(:) * 1.000001
             ! 
             ! 4. new cell number
             ! a) use the generic routine (extensively tested)
             nr_cell_new = get_cell_nr( grid,pos_xyz_new )
-        
+!~             IF (nr_cell_new == nr_cell) THEN
+!~                 print *, d_lx
+!~                 print *, ""
+!~                 print *, hi1
+!~                 print *, d_l
+!~                 CALL Mol3D_Error("Old Cell equals new cell")
+!~             END IF
             ! b) use the cell id (tbd)
 
 !~             IF (hi1 == 1) THEN

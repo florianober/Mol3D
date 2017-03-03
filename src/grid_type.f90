@@ -571,7 +571,7 @@ CONTAINS
             i_z = binary_search(caco(3),this%co_mx_c )
         END IF
 
-        get_cell_nr_result = this%cell_idx2nr(i_r,i_ph,i_z)
+        get_cell_nr_result = this%cell_idx2nr(i_r, i_ph, i_z)
     END FUNCTION get_cell_nr_cy
     
   ! ############################################################################
@@ -601,7 +601,7 @@ CONTAINS
         IF (this%n(2) == 1) THEN
             i_th = 1
         ELSE
-            i_th = binary_search(spco(2),this%co_mx_b)
+            i_th = binary_search(spco(2), this%co_mx_b)
         END IF
         IF ( i_th .gt. this%n(2)) THEN
             i_th = this%n(2)
@@ -613,7 +613,7 @@ CONTAINS
         IF (this%n(3) == 1) THEN
             i_ph = 1
         ELSE
-            i_ph = binary_search(spco(3),this%co_mx_c)
+            i_ph = binary_search(spco(3), this%co_mx_c)
         END IF
         
         

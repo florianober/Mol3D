@@ -45,6 +45,8 @@ MODULE grd_mod
 
     USE math_mod
     USE fileio
+    USE tools_mod
+
     IMPLICIT NONE
     
     !--------------------------------------------------------------------------!
@@ -310,6 +312,8 @@ CONTAINS
         !         a r2 type floating point
         !         variable (in addition operation)
         ! - factor: 10.0_r2: margin (for safety)
+        ! this is old MC3D stuff, we keep it for now, but I think we can improve
+        ! 
         grid%d_l_min = model%r_ou * epsilon(1.0_r2) * 10.0_r2
 
         ! check if d_l_min is significantly larger (factor 10) than smallest grid cell
@@ -319,9 +323,10 @@ CONTAINS
         end do
 
         if (grid%d_l_min > 10.0_r2*minval(hd_arr1(:))) then
-            print *, "error   : mk_grd: radial extent of smallest cell is too small."
+            print *, "mk_grd: radial extent of smallest cell is too small."
             print *, "solution: (a) decrease step width factor [sf] and/or"
             print *, "          (b) reduce number of grid cells"
+            CALL Mol3D_Error('Grid generation ERROR')
         else
             print '(A,ES11.4,A,A)'," smallest step width : ", grid%d_l_min,    &
                   ' ', GetModelName(model)
